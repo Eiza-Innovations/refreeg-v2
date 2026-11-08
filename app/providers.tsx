@@ -6,6 +6,7 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { NotificationProvider } from "@/components/layout/NotificationProvider";
 import { AuthProvider } from "@/components/layout/AuthProvider";
 import { GlobalSupportBoundary } from "@/components/engagement/GlobalSupportBoundary";
+import { usePathname } from "next/navigation";
 
 function makeQueryClient() {
   return new QueryClient({
@@ -27,7 +28,22 @@ function getQueryClient() {
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const queryClient = getQueryClient();
+
+  // The standalone analytics UI must work without sessions, notifications,
+  // activity tracking, or any other backend provider.
+  if (pathname === "/admin-analytics") {
+    return (
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="light"
+        disableTransitionOnChange
+      >
+        {children}
+      </ThemeProvider>
+    );
+  }
 
   return (
     <GlobalSupportBoundary>
