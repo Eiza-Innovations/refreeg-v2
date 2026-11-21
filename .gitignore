@@ -67,3 +67,4 @@ temp_interactive_push.bat
 /repomix-output.xml
 scripts/delete-user-by-email.ts
 /scripts/list-fks.ts
+/promote-admin.ts

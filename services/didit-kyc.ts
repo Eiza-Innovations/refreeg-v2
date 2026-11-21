@@ -9,6 +9,7 @@ import {
 } from "@/services/mail";
 import { createNotification } from "@/lib/notifications/notification-service";
 import { issueReferralRewardOnKycApproval } from "@/lib/referrals/referral-utils";
+import { extractCachedDecisionFields } from "@/lib/didit";
 
 export interface ProcessDiditResultOptions {
   sessionId?: string;
@@ -201,9 +202,20 @@ export async function processDiditVerificationResult(
     fullName = webhookData.full_name || body.full_name;
   }
 
+  const cached = extractCachedDecisionFields(webhookData);
+
   const kycUpdateData = {
     status: newStatus,
     verification_notes: `Automated Didit result: ${status}${isRejected || isResubmitted ? ` - ${rejectionReason}` : ""}`,
+    ...(cached.faceMatchScore != null && {
+      face_match_score: cached.faceMatchScore,
+    }),
+    ...(cached.idType && { id_type: cached.idType }),
+    ...(cached.idNumber && { id_number: cached.idNumber }),
+    ...(cached.checksTotal != null && { checks_total: cached.checksTotal }),
+    ...(cached.checksPassed != null && {
+      checks_passed: cached.checksPassed,
+    }),
     ...(fullName && fullName !== "Didit User" && { full_name: fullName }),
     ...(dob && { dob }),
     ...(address && { address }),

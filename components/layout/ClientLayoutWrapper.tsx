@@ -3,16 +3,11 @@
 import type React from "react";
 import { usePathname } from "next/navigation";
 
-/**
- * Dashboard content chrome (max-width, padding, the rounded card look).
- * The sidebar this used to render itself (DashboardNav) is now supplied
- * globally by components/app-shell/app-shell.tsx, so this only owns the
- * content-area styling: not navigation.
- *
- * Pages migrated to the cream/ink system (docs/DESIGN_GUIDE.md) skip the
- * legacy glass card so they sit flush on AppShell's cream background.
- */
-const CREAM_ROUTES = ["/dashboard/settings", "/dashboard/donations"];
+const CREAM_ROUTES = [
+  "/dashboard/settings",
+  "/dashboard/donations",
+  "/dashboard/admin/users/kyc",
+];
 
 export default function ClientLayoutWrapper({
   children,

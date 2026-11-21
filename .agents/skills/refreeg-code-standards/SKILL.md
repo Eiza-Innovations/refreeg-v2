@@ -29,6 +29,13 @@ Tool-agnostic: works for any AI coding agent (Antigravity, subagents, Claude Cod
 9. **Use what exists.** Check `components/ui/` before raw HTML. Reuse `EmptyState`, `CalloutBanner`, `Eyebrow`, `Card`, `Button`, `Badge`, `ConfirmationModal`. Vary the empty message on the single list component — no extra empty-state ternary. Use `DESIGN_GUIDE.md` tokens, never hardcoded colors or fonts.
 10. **Small and flat.** One component per file (~200 lines max), early returns over nesting, no dead code/commented-out blocks/unused exports, plain names, and comments that explain *why* only.
 
+11. **Tables use the shared DataTable.** `components/ui/data-table.tsx` +
+    `data-table-features.ts` + a `columns.tsx` per table; never raw `<Table>`
+    markup inside a page or card.
+12. **Submits run through useMutation.** `useMutation` wraps the action call,
+    `useValidator` runs first, `isPending` guards double submit, and
+    `result.error` shows via `FieldError`.
+
 ## When writing
 
 - Apply the checklist while writing, not after. For ported or stashed code, run the checklist on it before finishing.
