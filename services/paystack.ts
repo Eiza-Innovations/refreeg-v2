@@ -7,23 +7,27 @@ import {
   recordSuccess,
 } from "@/lib/api/circuit-breaker";
 
-const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+const getPaystackSecretKey = (): string =>
+  (process.env.PAYSTACK_SECRET_KEY || "").replace(/["']/g, "").trim();
 
-if (!PAYSTACK_SECRET_KEY) {
-  console.warn(
-    "WARNING: No Paystack Secret Key found in environment variables. API calls will fail.",
-  );
-}
+const paystackApi = axios.create({
+  baseURL: "https://api.paystack.co",
+  timeout: 10000,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+paystackApi.interceptors.request.use((config) => {
+  const key = getPaystackSecretKey();
+  if (key) {
+    config.headers.Authorization = `Bearer ${key}`;
+  }
+  return config;
+});
 
 const Paystack = {
-  api: axios.create({
-    baseURL: "https://api.paystack.co",
-    timeout: 5000,
-    headers: {
-      Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
-      "Content-Type": "application/json",
-    },
-  }),
+  api: paystackApi,
 
   initializeTransaction: async function (data: TransactionData) {
     checkCircuit("paystack"); // 👈 Throws if circuit is open
@@ -39,7 +43,8 @@ const Paystack = {
         data.serviceFee +
         (data.providerFee || 0) +
         (data.tipAmount || 0);
-      const feePlusTip = data.serviceFee + (data.tipAmount || 0);
+      // Total charges retained by RefreeG (platform fee + gateway processing fee + optional tip)
+      const platformRetainedFees = Math.max(0, totalCharge - data.amount);
       const primarySubaccount = data.subaccounts?.find(
         (entry) => entry?.subaccount?.trim().length,
       )?.subaccount;
@@ -51,7 +56,7 @@ const Paystack = {
         callback_url:
           data.callbackUrl ||
           `${baseUrl}/causes/${data.causeId}/payment/verify`,
-        transaction_charge: Math.round(feePlusTip * 100),
+        transaction_charge: Math.round(platformRetainedFees * 100),
         ...(primarySubaccount
           ? {
               subaccount: primarySubaccount,
@@ -59,6 +64,9 @@ const Paystack = {
             }
           : {}),
         ...(data.plan ? { plan: data.plan } : {}),
+        ...(data.channels && data.channels.length > 0
+          ? { channels: data.channels }
+          : {}),
         metadata: {
           amount: data.amount,
           tip_amount: data.tipAmount || 0,
@@ -238,6 +246,114 @@ const Paystack = {
       );
       throw new Error(
         error.response?.data?.message || "Failed to verify account number",
+      );
+    }
+  },
+
+  charge: async function (data: any) {
+    checkCircuit("paystack");
+    try {
+      const response = await this.api.post("/charge", data);
+      recordSuccess("paystack");
+      return response.data.data;
+    } catch (error: any) {
+      recordFailure("paystack");
+      console.error(
+        "Paystack charge error:",
+        error.response?.data || error.message,
+      );
+      throw new Error(
+        error.response?.data?.message || "Failed to initiate direct charge",
+      );
+    }
+  },
+
+  submitPin: async function (pin: string, reference: string) {
+    checkCircuit("paystack");
+    try {
+      const response = await this.api.post("/charge/submit_pin", {
+        pin,
+        reference,
+      });
+      recordSuccess("paystack");
+      return response.data.data;
+    } catch (error: any) {
+      recordFailure("paystack");
+      throw new Error(
+        error.response?.data?.message || "Failed to submit card PIN",
+      );
+    }
+  },
+
+  submitOtp: async function (otp: string, reference: string) {
+    checkCircuit("paystack");
+    try {
+      const response = await this.api.post("/charge/submit_otp", {
+        otp,
+        reference,
+      });
+      recordSuccess("paystack");
+      return response.data.data;
+    } catch (error: any) {
+      recordFailure("paystack");
+      throw new Error(error.response?.data?.message || "Failed to submit OTP");
+    }
+  },
+
+  submitPhone: async function (phone: string, reference: string) {
+    checkCircuit("paystack");
+    try {
+      const response = await this.api.post("/charge/submit_phone", {
+        phone,
+        reference,
+      });
+      recordSuccess("paystack");
+      return response.data.data;
+    } catch (error: any) {
+      recordFailure("paystack");
+      throw new Error(
+        error.response?.data?.message || "Failed to submit phone",
+      );
+    }
+  },
+
+  checkPendingCharge: async function (reference: string) {
+    checkCircuit("paystack");
+    try {
+      const response = await this.api.get(`/charge/${reference}`);
+      recordSuccess("paystack");
+      return response.data.data;
+    } catch (error: any) {
+      recordFailure("paystack");
+      throw new Error(
+        error.response?.data?.message || "Failed to check charge status",
+      );
+    }
+  },
+
+  refundTransaction: async function (
+    transactionReference: string,
+    amountKobo?: number,
+  ) {
+    checkCircuit("paystack");
+    try {
+      const payload: Record<string, unknown> = {
+        transaction: transactionReference,
+      };
+      if (typeof amountKobo === "number" && amountKobo > 0) {
+        payload.amount = Math.round(amountKobo);
+      }
+      const response = await this.api.post("/refund", payload);
+      recordSuccess("paystack");
+      return response.data.data;
+    } catch (error: any) {
+      recordFailure("paystack");
+      console.error(
+        "Paystack refund error:",
+        error.response?.data || error.message,
+      );
+      throw new Error(
+        error.response?.data?.message || "Failed to initiate transaction refund",
       );
     }
   },

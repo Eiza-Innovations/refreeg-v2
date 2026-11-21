@@ -8,6 +8,7 @@ jest.mock("@/lib/prisma", () => ({
       findUnique: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       findMany: jest.fn(),
     },
     user: {
@@ -44,6 +45,10 @@ jest.mock("@/services/mail", () => ({
 jest.mock("@/lib/s3/s3-utils", () => ({
   uploadToS3: jest.fn(),
   generateS3Key: jest.fn(() => "kyc/user-1/doc.pdf"),
+}));
+
+jest.mock("@/lib/notifications/notification-service", () => ({
+  createNotification: jest.fn(),
 }));
 
 import { revalidatePath } from "next/cache";
@@ -169,7 +174,7 @@ describe("kyc-actions", () => {
 
       const result = await getVerificationStatus("user-1");
 
-      expect(global.fetch).toHaveBeenCalledTimes(2);
+      expect(global.fetch).toHaveBeenCalledTimes(1);
       expect(result.status?.status).toBe("approved");
       expect(result.status?.document_url).toBe(
         "https://verify.didit.me/session/shortURL",

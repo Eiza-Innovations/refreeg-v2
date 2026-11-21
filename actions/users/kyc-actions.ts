@@ -11,7 +11,6 @@ import {
   KycQueueItem,
   KycQueueTab,
   KycVerification,
-  PendingReferralRow,
 } from "@/types/kyc-types";
 import { logAdminActivity } from "@/actions/admin/database-actions";
 import { isAdminOrManager } from "../admin/role-actions";
@@ -22,6 +21,10 @@ import {
   sendKycReminderEmail,
   sendKycResubmittedEmail,
 } from "@/services/mail";
+import { createNotification } from "@/lib/notifications/notification-service";
+import { processDiditVerificationResult } from "@/services/didit-kyc";
+import { issueReferralRewardOnKycApproval } from "@/lib/referrals/referral-utils";
+export { issueReferralRewardOnKycApproval };
 import {
   buildResubmitNodes,
   compareKycRecord,
@@ -143,16 +146,13 @@ export async function getVerificationStatus(
 
               if (
                 sessionStatus &&
-                !["not started", "in progress", "pending"].includes(
-                  sessionStatus,
-                )
+                !["not started", "in progress"].includes(sessionStatus)
               ) {
                 console.log(
-                  `[KYC Sync] Found updated Didit session ${sessionId} with status ${sessionStatus}, forwarding to webhook...`,
+                  `[KYC Sync] Found updated Didit session ${sessionId} with status ${sessionStatus}, processing result...`,
                 );
-                const appUrl =
-                  process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
+                // Normalize the GET session API response to match the payload shape
                 const webhookPayload = {
                   ...sessionData,
                   session_id:
@@ -163,14 +163,10 @@ export async function getVerificationStatus(
                     data.user_id,
                 };
 
-                const webhookRes = await fetch(`${appUrl}/api/webhooks/didit`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(webhookPayload),
-                });
+                const syncResult =
+                  await processDiditVerificationResult(webhookPayload);
 
-                if (webhookRes.ok) {
-                  await new Promise((r) => setTimeout(r, 500));
+                if (syncResult.success) {
                   const updated = await prisma.kyc_verifications.findUnique({
                     where: { id: data.id },
                   });
@@ -180,9 +176,7 @@ export async function getVerificationStatus(
                 }
               } else if (
                 sessionStatus &&
-                ["not started", "in progress", "pending"].includes(
-                  sessionStatus,
-                )
+                ["not started", "in progress"].includes(sessionStatus)
               ) {
                 if (data.id && data.status !== "in_progress") {
                   await prisma.kyc_verifications.update({
@@ -191,6 +185,12 @@ export async function getVerificationStatus(
                   });
                 }
                 data.status = "in_progress" as any;
+                if (data.id) {
+                  await prisma.kyc_verifications.update({
+                    where: { id: data.id },
+                    data: { status: "in_progress" },
+                  });
+                }
               }
             }
           }
@@ -230,55 +230,6 @@ export async function getVerificationStatus(
             : JSON.stringify(error) || "Failed to get status",
     };
   }
-}
-
-export async function issueReferralRewardOnKycApproval(refereeUserId: string) {
-  const referrals = await prisma.$queryRaw<PendingReferralRow[]>(Prisma.sql`
-    SELECT id_v1, referrer_id_v1
-    FROM referrals_v1
-    WHERE referee_id_v1 = CAST(${refereeUserId} AS uuid)
-      AND reward_status_v1 = 'PENDING'
-    ORDER BY created_at_v1 DESC
-    LIMIT 1
-  `);
-
-  const referral = referrals[0];
-  if (!referral?.referrer_id_v1) {
-    return;
-  }
-
-  await prisma.$transaction(async (tx) => {
-    const lockedReferralCount = await tx.$executeRaw(Prisma.sql`
-      UPDATE referrals_v1
-      SET
-        reward_status_v1 = 'ISSUED',
-        kyc_verified_v1 = true,
-        rewarded_at_v1 = NOW(),
-        reward_v1 = '+5 pts'
-      WHERE id_v1 = CAST(${referral.id_v1} AS uuid)
-        AND reward_status_v1 = 'PENDING'
-    `);
-
-    if (lockedReferralCount === 0) {
-      return;
-    }
-
-    await tx.user.update({
-      where: { id: referral.referrer_id_v1 },
-      data: {
-        total_points: { increment: 5 },
-      },
-    });
-
-    await tx.rewardTransaction.create({
-      data: {
-        userId: referral.referrer_id_v1,
-        amount: 5,
-        transactionType: "referral_bonus",
-        status: "completed",
-      },
-    });
-  });
 }
 
 async function syncDecisionToDidit(
@@ -416,6 +367,34 @@ export async function updateVerificationStatus(
       status,
       notes,
     );
+
+    if (status === "approved" || status === "rejected") {
+      try {
+        await createNotification({
+          userId: verification.user_id,
+          title:
+            status === "approved"
+              ? "Identity Verified"
+              : "Verification Needs Attention",
+          message:
+            status === "approved"
+              ? "Your RefreeG identity verification has been approved. You now have full Tier 2 access."
+              : notes ||
+                "Your identity verification could not be approved. Please review requirements and try again.",
+          type: "general",
+          data: {
+            kyc_status: status,
+            verification_id: verificationId,
+          },
+        });
+      } catch (notifErr) {
+        console.error(
+          "Failed to create admin KYC update notification:",
+          notifErr,
+        );
+      }
+    }
+
     await applyVerificationOutcome(verification.user_id, status === "approved");
 
     revalidatePath("/dashboard/admin/users");

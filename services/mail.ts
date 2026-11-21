@@ -189,21 +189,31 @@ export async function sendCauseUnderReviewEmail(context: {
   causeName: string;
   reviewTimeframe?: string;
   dashboardUrl?: string;
+  userEmail?: string;
+  userName?: string;
 }) {
-  const user = await getCurrentUser();
-  if (!user) {
-    return { success: false, error: "User not found" };
+  let email = context.userEmail;
+  let name = context.userName;
+
+  if (!email) {
+    const user = await getCurrentUser();
+    if (!user) {
+      return { success: false, error: "User not found" };
+    }
+    const profile = await getProfile(user.id);
+    email = profile?.email || "";
+    name = profile?.full_name || "User";
   }
-  const profile = await getProfile(user.id);
+
   const currentYear = new Date().getFullYear();
 
   return sendMail({
-    to: profile?.email || "",
+    to: email || "",
     subject: "Your Cause is Under Review",
     templateName: "cause-under-review",
     context: {
       ...context,
-      userName: profile?.full_name || "User",
+      userName: name || "User",
       organizationName: "RefreeG",
       reviewTimeframe: context.reviewTimeframe || "3-5 business days",
       dashboardUrl: context.dashboardUrl,
@@ -215,22 +225,34 @@ export async function sendCauseUnderReviewEmail(context: {
 export async function sendPetitionUnderReviewEmail(context: {
   petitionName: string;
   reviewTimeframe?: string;
+  userEmail?: string;
+  userName?: string;
 }) {
-  const user = await getCurrentUser();
-  if (!user) {
-    return { success: false, error: "User not found" };
+  let email = context.userEmail;
+  let name = context.userName;
+
+  if (!email) {
+    const user = await getCurrentUser();
+    if (!user) {
+      return { success: false, error: "User not found" };
+    }
+    const profile = await getProfile(user.id);
+    email = profile?.email || "";
+    name = profile?.full_name || "User";
   }
-  const profile = await getProfile(user.id);
+
+  const currentYear = new Date().getFullYear();
+
   return sendMail({
-    to: profile?.email || "",
+    to: email || "",
     subject: "Your Petition is Under Review",
     templateName: "petition-under-review",
     context: {
       ...context,
-      userName: profile?.full_name || "User",
+      userName: name || "User",
       organizationName: "RefreeG",
       reviewTimeframe: context.reviewTimeframe || "3-5 business days",
-      currentYear: new Date().getFullYear(),
+      currentYear,
     },
   });
 }

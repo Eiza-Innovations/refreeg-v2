@@ -1,0 +1,90 @@
+import { NextRequest } from "next/server";
+import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
+import { enforceRateLimit } from "@/lib/api/rate-limit";
+import { trackLogin } from "@/actions/users/auth-actions";
+import { signMobileToken } from "@/lib/auth/jwt";
+import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
+
+export async function OPTIONS() {
+  return handleCorsPreflight();
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const rateLimited = enforceRateLimit(request, {
+      namespace: "mobile_auth_login",
+      limit: 15,
+      windowMs: 60_000,
+    });
+    if (rateLimited) return rateLimited;
+
+    const body = await request.json();
+    const { email, password } = body;
+
+    if (!email || !password) {
+      return apiError("Missing required fields (email, password)", 400);
+    }
+
+    const normalizedEmail = (email as string).trim().toLowerCase();
+
+    const user = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+    });
+
+    if (!user) {
+      return apiError("No account found with this email address.", 404);
+    }
+
+    if (!user.password) {
+      return apiError(
+        "This account was created using Google Sign-In. Please sign in with Google.",
+        400,
+      );
+    }
+
+    const valid = await bcrypt.compare(password, user.password);
+
+    if (!valid) {
+      return apiError("Incorrect password. Please try again.", 401);
+    }
+
+    if (user.isBlocked) {
+      return apiError("Your account has been blocked", 403);
+    }
+
+    // Track login for rewards/streaks (fire and forget)
+    trackLogin(user.id).catch(console.error);
+
+    // Send login security email notification (parity with web login)
+    import("@/services/mail")
+      .then(({ sendLoginNotificationEmail }) =>
+        sendLoginNotificationEmail({
+          email: user.email!,
+          userName: user.fullName || "User",
+          device: request.headers.get("user-agent") || "RefreeG Mobile App",
+          loginTime: new Date().toLocaleString(),
+        }),
+      )
+      .catch((err) => console.error("Mobile login email error:", err));
+
+    // Generate token
+    const token = await signMobileToken(user.id, user.email!);
+
+    return apiSuccess({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        accountType: user.accountType,
+        profilePhoto: user.profilePhoto,
+        isVerified: user.isVerified,
+        onboardingCompleted: user.onboarding_completed,
+      },
+    });
+  } catch (error: any) {
+    console.error("Mobile API Login Error:", error);
+    return apiError("Internal server error", 500);
+  }
+}

@@ -86,7 +86,7 @@ const Flutterwave = {
           {
             id: primarySubaccount,
             transaction_charge_type: "flat",
-            transaction_charge: data.serviceFee + (data.tipAmount || 0),
+            transaction_charge: Math.max(0, totalCharge - data.amount),
           },
         ];
       }

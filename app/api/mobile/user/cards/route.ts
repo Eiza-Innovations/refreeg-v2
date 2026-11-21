@@ -1,0 +1,242 @@
+import { NextRequest } from "next/server";
+import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
+import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
+import {
+  decodeStoreReviewDemoReference,
+  isStoreReviewDemoAccount,
+  STORE_REVIEW_DEMO_SAVED_CARD,
+} from "@/lib/auth/store-review-demo";
+import { prisma } from "@/lib/prisma";
+import Paystack from "@/services/paystack";
+
+export async function OPTIONS() {
+  return handleCorsPreflight();
+}
+
+/**
+ * GET /api/mobile/user/cards
+ * List all saved cards for the authenticated user.
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const authResult = await authenticateMobileRequest(request);
+    if (authResult.errorResponse) {
+      return authResult.errorResponse;
+    }
+    const user = authResult.user!;
+
+    const cards = await prisma.user_saved_cards.findMany({
+      where: { user_id: user.id },
+      orderBy: [{ is_default: "desc" }, { created_at: "desc" }],
+      select: {
+        id: true,
+        card_type: true,
+        last4: true,
+        exp_month: true,
+        exp_year: true,
+        bank: true,
+        brand: true,
+        is_default: true,
+        created_at: true,
+      },
+    });
+
+    if (cards.length === 0 && isStoreReviewDemoAccount(user.email)) {
+      return apiSuccess({ cards: [STORE_REVIEW_DEMO_SAVED_CARD] });
+    }
+
+    return apiSuccess({ cards });
+  } catch (error: any) {
+    console.error("Error fetching user saved cards:", error);
+    return apiError(error.message || "Failed to fetch saved cards", 500);
+  }
+}
+
+/**
+ * POST /api/mobile/user/cards
+ * Verify a Paystack transaction reference from in-app card setup (₦50 authorization charge)
+ * or an in-app donation, extract card authorization details, save the card token for future
+ * 1-click charges, and automatically refund the ₦50 verification charge when applicable.
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const authResult = await authenticateMobileRequest(request);
+    if (authResult.errorResponse) {
+      return authResult.errorResponse;
+    }
+    const user = authResult.user!;
+
+    const body = await request.json();
+    const { reference, refundSetupCharge = false } = body;
+
+    if (!reference) {
+      return apiError("Missing transaction reference", 400);
+    }
+
+    if (
+      isStoreReviewDemoAccount(user.email) &&
+      decodeStoreReviewDemoReference(reference)
+    ) {
+      return apiSuccess(
+        {
+          card: STORE_REVIEW_DEMO_SAVED_CARD,
+          refundInitiated: Boolean(refundSetupCharge),
+          message: refundSetupCharge
+            ? "Card saved and ₦50 verification charge refunded"
+            : "Card saved successfully",
+        },
+        201,
+      );
+    }
+
+    const tx = (await Paystack.verifyTransactionFull(reference)) as {
+      status?: string;
+      amount?: number;
+      metadata?: {
+        cause_id?: string;
+        purpose?: string;
+        email?: string;
+        user_id?: string;
+      };
+      authorization?: {
+        authorization_code?: string;
+        card_type?: string;
+        last4?: string;
+        exp_month?: string;
+        exp_year?: string;
+        bin?: string;
+        bank?: string;
+        brand?: string;
+        signature?: string;
+        reusable?: boolean;
+      };
+      customer?: {
+        email?: string;
+      };
+    };
+
+    if (tx.status !== "success") {
+      return apiError("Transaction was not successful", 400);
+    }
+
+    const auth = tx.authorization;
+    if (!auth?.authorization_code || !auth.last4) {
+      return apiError(
+        "Card authorization data could not be retrieved from provider",
+        400,
+      );
+    }
+
+    const txEmail = (
+      tx.metadata?.email ||
+      tx.customer?.email ||
+      ""
+    ).toLowerCase();
+    const txUserId = tx.metadata?.user_id;
+    if (
+      (txUserId && txUserId !== user.id) ||
+      (txEmail &&
+        txEmail !== user.email.toLowerCase() &&
+        txEmail !== "donor@refreeg.com" &&
+        txEmail !== "donor@refreeg.org")
+    ) {
+      return apiError("Transaction does not belong to authenticated user", 403);
+    }
+
+    const CARD_SETUP_KOBO = 5000; // ₦50.00 in Paystack kobo units (100 kobo = ₦1)
+    const isSetupTx =
+      (tx.metadata?.cause_id === "card_setup" ||
+        tx.metadata?.purpose === "card_setup") &&
+      typeof tx.amount === "number" &&
+      tx.amount > 0 &&
+      tx.amount <= CARD_SETUP_KOBO;
+
+    let refundInitiated = false;
+    if (isSetupTx) {
+      try {
+        await Paystack.refundTransaction(
+          reference,
+          Math.min(tx.amount || CARD_SETUP_KOBO, CARD_SETUP_KOBO),
+        );
+        refundInitiated = true;
+      } catch (refundErr) {
+        console.warn(
+          "Non-fatal: Could not auto-refund ₦50 card setup charge immediately:",
+          refundErr,
+        );
+      }
+    }
+
+    // Check if user already has any cards saved
+    const existingCardsCount = await prisma.user_saved_cards.count({
+      where: { user_id: user.id },
+    });
+
+    // Check if this specific card signature or authorization is already saved
+    const duplicate = auth.signature
+      ? await prisma.user_saved_cards.findFirst({
+          where: {
+            user_id: user.id,
+            signature: auth.signature,
+          },
+        })
+      : null;
+
+    if (duplicate) {
+      return apiSuccess({
+        card: {
+          id: duplicate.id,
+          card_type: duplicate.card_type,
+          last4: duplicate.last4,
+          exp_month: duplicate.exp_month,
+          exp_year: duplicate.exp_year,
+          bank: duplicate.bank,
+          brand: duplicate.brand,
+          is_default: duplicate.is_default,
+        },
+        refundInitiated,
+        message: "Card already saved",
+      });
+    }
+
+    const savedCard = await prisma.user_saved_cards.create({
+      data: {
+        user_id: user.id,
+        authorization_code: auth.authorization_code,
+        card_type: auth.card_type || "visa",
+        last4: auth.last4,
+        exp_month: auth.exp_month || "12",
+        exp_year: auth.exp_year || "30",
+        bin: auth.bin || null,
+        bank: auth.bank || "Card Issuer",
+        brand: auth.brand || auth.card_type || "Card",
+        signature: auth.signature || null,
+        email: tx.customer?.email || user.email,
+        is_default: existingCardsCount === 0,
+      },
+    });
+
+    return apiSuccess(
+      {
+        card: {
+          id: savedCard.id,
+          card_type: savedCard.card_type,
+          last4: savedCard.last4,
+          exp_month: savedCard.exp_month,
+          exp_year: savedCard.exp_year,
+          bank: savedCard.bank,
+          brand: savedCard.brand,
+          is_default: savedCard.is_default,
+        },
+        refundInitiated,
+        message: refundInitiated
+          ? "Card saved and ₦50 verification charge refunded"
+          : "Card saved successfully",
+      },
+      201,
+    );
+  } catch (error: any) {
+    console.error("Error saving card:", error);
+    return apiError(error.message || "Failed to save card", 500);
+  }
+}

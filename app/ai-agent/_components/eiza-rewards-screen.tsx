@@ -55,15 +55,15 @@ export default function EizaRewardsScreen() {
     try {
       const walletData = await getUserWallet(user.id);
       if (walletData.wallet) {
-        setBalance(walletData.wallet.balance || 0);
+        setBalance(Number(walletData.wallet.balance) || 0);
       }
 
       if (walletData.transactions && Array.isArray(walletData.transactions)) {
         const formatted = walletData.transactions.map(
-          (t: RewardTransaction) => ({
+          (t: any) => ({
             id: t.id,
-            label: formatTransactionLabel(t.transaction_type),
-            time: formatTime(t.created_at),
+            label: formatTransactionLabel(t.transactionType || t.transaction_type),
+            time: formatTime(t.createdAt || t.created_at),
             amount: `+${t.amount}`,
           }),
         );
@@ -71,7 +71,7 @@ export default function EizaRewardsScreen() {
       }
 
       const userStats = await getUserStats(user.id);
-      setStats(userStats);
+      setStats(userStats as any);
     } catch (error) {
       console.error("Error fetching wallet data:", error);
     } finally {
@@ -111,6 +111,7 @@ export default function EizaRewardsScreen() {
     onDonation: async (payload) => {
       handleEventPayload(payload);
     },
+    // onLogin handled separately by handleLoginReward
     onWeeklyStreak: async (payload) => {
       handleEventPayload(payload);
       await fetchWalletData();

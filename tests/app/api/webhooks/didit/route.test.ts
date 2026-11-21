@@ -1,16 +1,19 @@
 /**
  * @jest-environment node
  */
+import crypto from "crypto";
 import { POST } from "@/app/api/webhooks/didit/route";
 import { prisma } from "@/lib/prisma";
 import { sendKycApprovedEmail } from "@/services/mail";
-import { NextResponse } from "next/server";
 
 jest.mock("@/lib/prisma", () => ({
   prisma: {
     kyc_verifications: {
       findFirst: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
+      create: jest.fn(),
+      delete: jest.fn(),
     },
     user: {
       findUnique: jest.fn(),
@@ -28,30 +31,91 @@ jest.mock("@/services/mail", () => ({
   sendKycSubmittedEmail: jest.fn(),
 }));
 
+jest.mock("@/lib/notifications/notification-service", () => ({
+  createNotification: jest.fn(),
+}));
+
 jest.mock("@/actions/admin/database-actions", () => ({
   logAdminActivity: jest.fn(),
 }));
 
-jest.mock("@/actions/users/kyc-actions", () => ({
+jest.mock("@/lib/referrals/referral-utils", () => ({
   issueReferralRewardOnKycApproval: jest.fn(),
 }));
 
 const mockPrisma = prisma as unknown as {
-  kyc_verifications: { findFirst: jest.Mock; update: jest.Mock };
+  kyc_verifications: {
+    findFirst: jest.Mock;
+    update: jest.Mock;
+    updateMany: jest.Mock;
+    create: jest.Mock;
+  };
   user: { findUnique: jest.Mock; update: jest.Mock };
 };
 
 describe("Didit Webhook POST", () => {
+  const originalEnv = process.env;
+  const TEST_SECRET = "webhook-test-secret-123";
+
   beforeEach(() => {
     jest.clearAllMocks();
+    process.env = { ...originalEnv, DIDIT_WEBHOOK_SECRET: TEST_SECRET };
+    mockPrisma.kyc_verifications.updateMany.mockResolvedValue({ count: 1 });
   });
 
-  const createRequest = (body: any) =>
-    new Request("http://localhost/api/webhooks/didit", {
+  afterAll(() => {
+    process.env = originalEnv;
+  });
+
+  const sign = (bodyStr: string, secret: string) => {
+    return crypto
+      .createHmac("sha256", secret)
+      .update(bodyStr, "utf-8")
+      .digest("hex");
+  };
+
+  const createRequest = (
+    body: any,
+    options: { secret?: string; rawBody?: string } = {},
+  ) => {
+    const rawBody =
+      options.rawBody !== undefined ? options.rawBody : JSON.stringify(body);
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    const secret = options.secret !== undefined ? options.secret : TEST_SECRET;
+    if (secret) {
+      headers["x-signature-v2"] = sign(rawBody, secret);
+    }
+    return new Request("http://localhost/api/webhooks/didit", {
+      method: "POST",
+      headers,
+      body: rawBody,
+    });
+  };
+
+  it("returns 401 if x-signature-v2 header is missing when secret is configured", async () => {
+    const req = new Request("http://localhost/api/webhooks/didit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ id: "uuid-123", status: "Approved" }),
     });
+    const res = await POST(req);
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 401 in production if DIDIT_WEBHOOK_SECRET is not configured (fail-closed)", async () => {
+    (process.env as any).NODE_ENV = "production";
+    delete process.env.DIDIT_WEBHOOK_SECRET;
+
+    const req = new Request("http://localhost/api/webhooks/didit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: "uuid-123", status: "Approved" }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(401);
+  });
 
   it("returns 400 if session_id is missing from all fallback fields", async () => {
     const req = createRequest({ status: "Approved" }); // No id, session_id, session
@@ -88,8 +152,12 @@ describe("Didit Webhook POST", () => {
     const res = await POST(req);
 
     expect(res.status).toBe(200);
-    expect(mockPrisma.kyc_verifications.update).toHaveBeenCalledWith(
+    expect(mockPrisma.kyc_verifications.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
+        where: {
+          id: "kyc-1",
+          status: { in: ["pending", "resubmitted", "in_progress"] },
+        },
         data: expect.objectContaining({ status: "approved" }),
       }),
     );
@@ -133,7 +201,7 @@ describe("Didit Webhook POST", () => {
 
     // Should still return 200 despite email error
     expect(res.status).toBe(200);
-    expect(mockPrisma.kyc_verifications.update).toHaveBeenCalled();
+    expect(mockPrisma.kyc_verifications.updateMany).toHaveBeenCalled();
   });
 
   it("resolves user's account name from profile when kyc full_name is 'Didit User'", async () => {
@@ -245,10 +313,10 @@ describe("Didit Webhook POST", () => {
     expect(mockPrisma.kyc_verifications.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          OR: [
+          OR: expect.arrayContaining([
             { document_url: "uuid-123" },
             { document_url: { startsWith: "uuid-123:::" } },
-          ],
+          ]),
         }),
       }),
     );
@@ -305,7 +373,10 @@ describe("Didit Webhook POST", () => {
       }),
     );
 
-    expect(await res.json()).toEqual({ message: "Already processed" });
+    expect(await res.json()).toEqual({
+      success: true,
+      message: "Already processed",
+    });
     expect(mockPrisma.kyc_verifications.update).not.toHaveBeenCalled();
   });
 });

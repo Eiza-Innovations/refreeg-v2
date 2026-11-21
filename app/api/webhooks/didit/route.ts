@@ -1,57 +1,70 @@
 import { createHmac, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { extractCachedDecisionFields } from "@/lib/didit";
-import { issueReferralRewardOnKycApproval } from "@/actions/users/kyc-actions";
-import {
-  sendKycSubmittedEmail,
-  sendKycApprovedEmail,
-  sendKycRejectedEmail,
-  sendKycResubmittedEmail,
-  sendKycSubmissionAdminNotification,
-} from "@/services/mail";
+import { processDiditVerificationResult } from "@/services/didit-kyc";
+
+/**
+ * Verifies the HMAC-SHA256 signature from Didit's webhook.
+ * Didit sends the signature in the `X-Signature-V2` header.
+ * Returns true if the signature is valid, false otherwise.
+ *
+ * FAILS CLOSED in production if DIDIT_WEBHOOK_SECRET is not configured.
+ */
+function verifyDiditWebhookSignature(
+  rawBody: string,
+  signatureHeader: string | null,
+): boolean {
+  const webhookSecret = process.env.DIDIT_WEBHOOK_SECRET;
+
+  if (!webhookSecret) {
+    if (process.env.NODE_ENV === "production") {
+      console.error(
+        "[Didit Webhook] DIDIT_WEBHOOK_SECRET is not configured in production — rejecting request (fail-closed)",
+      );
+      return false;
+    }
+    console.warn(
+      "[Didit Webhook] DIDIT_WEBHOOK_SECRET not set — skipping signature verification in development/test",
+    );
+    return true;
+  }
+
+  if (!signatureHeader) {
+    console.error("[Didit Webhook] Missing X-Signature-V2 header");
+    return false;
+  }
+
+  const expectedSignature = createHmac("sha256", webhookSecret)
+    .update(rawBody, "utf-8")
+    .digest("hex");
+
+  // Constant-time comparison to prevent timing attacks
+  try {
+    return timingSafeEqual(
+      Buffer.from(signatureHeader, "hex"),
+      Buffer.from(expectedSignature, "hex"),
+    );
+  } catch {
+    // If the signature header is not valid hex or length mismatch, comparison fails
+    return false;
+  }
+}
 
 // This endpoint flips user.isVerified - the KYC gate for payouts and
 // referrals - so unsigned payloads must never reach the logic below. Didit
 // signs each delivery with HMAC-SHA256 over the raw body and the shared
-// webhook secret (X-Didit-Signature header).
+// webhook secret (X-Signature-V2 header).
 export async function POST(request: Request) {
   try {
+    // Read the raw body for signature verification
     const rawBody = await request.text();
-    const secret = process.env.DIDIT_WEBHOOK_SECRET;
+    const signatureHeader = request.headers.get("x-signature-v2");
 
-    if (secret) {
-      const provided = (request.headers.get("x-didit-signature") || "")
-        .replace(/^sha256=/i, "")
-        .trim();
-      const expected = createHmac("sha256", secret)
-        .update(rawBody)
-        .digest("hex");
-      const providedBuf = Buffer.from(provided, "utf8");
-      const expectedBuf = Buffer.from(expected, "utf8");
-      if (
-        !provided ||
-        providedBuf.length !== expectedBuf.length ||
-        !timingSafeEqual(providedBuf, expectedBuf)
-      ) {
-        console.warn("[Didit Webhook] Signature verification failed");
-        return NextResponse.json(
-          { error: "Invalid signature" },
-          { status: 401 },
-        );
-      }
-    } else if (process.env.NODE_ENV === "production") {
-      console.error(
-        "[Didit Webhook] DIDIT_WEBHOOK_SECRET is not configured; rejecting webhook",
-      );
+    // Verify HMAC signature
+    if (!verifyDiditWebhookSignature(rawBody, signatureHeader)) {
+      console.error("[Didit Webhook] Invalid signature — rejecting request");
       return NextResponse.json(
-        { error: "Webhook not configured" },
-        { status: 503 },
-      );
-    } else {
-      console.warn(
-        "[Didit Webhook] DIDIT_WEBHOOK_SECRET not set; skipping signature check outside production",
+        { error: "Invalid webhook signature" },
+        { status: 401 },
       );
     }
 
@@ -59,7 +72,10 @@ export async function POST(request: Request) {
     try {
       body = JSON.parse(rawBody);
     } catch {
-      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid JSON payload" },
+        { status: 400 },
+      );
     }
 
     if (body.webhook_type === "user.data.updated") {
@@ -73,294 +89,21 @@ export async function POST(request: Request) {
       body.status || body.data?.status || "",
     );
 
-    const sessionId =
-      body.session_id ||
-      body.id ||
-      body.session ||
-      (body.data && body.data.id) ||
-      (body.data && body.data.session_id);
-    const status = body.status || (body.data && body.data.status);
+    const result = await processDiditVerificationResult(body);
 
-    const vendorData =
-      body.vendor_data ||
-      body.vendorData ||
-      (body.data && body.data.vendor_data) ||
-      (body.data && body.data.vendorData);
-
-    if (!sessionId) {
-      console.error(
-        "[Didit Webhook] Missing session_id in payload with keys:",
-        Object.keys(body || {}).join(", "),
-      );
+    if (!result.success) {
       return NextResponse.json(
-        { error: "Missing session_id" },
-        { status: 400 },
+        { error: result.error || "Failed to process verification" },
+        { status: result.status || 400 },
       );
     }
 
-    // Session routes store document_url as "<sessionId>:::<url>"; webhook-created rows store the bare id.
-    let kyc = await prisma.kyc_verifications.findFirst({
-      where: {
-        document_type: "didit",
-        OR: [
-          { document_url: sessionId },
-          { document_url: { startsWith: `${sessionId}:::` } },
-        ],
-      },
-      orderBy: { created_at: "desc" },
+    return NextResponse.json({
+      success: true,
+      ...(result.message && { message: result.message }),
     });
-
-    if (!kyc && vendorData) {
-      kyc = await prisma.kyc_verifications.findFirst({
-        where: {
-          user_id: vendorData,
-          document_type: "didit",
-          status: { in: ["pending", "in_progress", "resubmitted"] },
-        },
-        orderBy: { created_at: "desc" },
-      });
-    }
-
-    let isNewRecord = false;
-    if (!kyc) {
-      if (vendorData) {
-        const user = await prisma.user.findUnique({
-          where: { id: vendorData },
-        });
-        if (user) {
-          isNewRecord = true;
-          const resolvedName =
-            user.fullName ||
-            (user.firstName && user.lastName
-              ? `${user.firstName} ${user.lastName}`
-              : user.firstName) ||
-            user.displayName ||
-            user.username ||
-            "Refreegerian";
-          kyc = await prisma.kyc_verifications.create({
-            data: {
-              user_id: user.id,
-              document_type: "didit",
-              document_url: sessionId,
-              status: "pending",
-              verification_notes:
-                "Automated verification processed via Didit webhook",
-              full_name: resolvedName,
-            },
-          });
-        }
-      }
-
-      if (!kyc) {
-        return NextResponse.json(
-          { error: "KYC record not found and could not be created" },
-          { status: 404 },
-        );
-      }
-    }
-
-    const lowerStatus = status?.toLowerCase() || "";
-    const isApproved = lowerStatus === "approved" || lowerStatus === "verified";
-
-    // A reviewer approving a declined session on Didit must override our rejection.
-    const isManualOverride = kyc.status === "rejected" && isApproved;
-    if (
-      kyc.status !== "pending" &&
-      kyc.status !== "in_progress" &&
-      kyc.status !== "resubmitted" &&
-      !isManualOverride &&
-      !isNewRecord
-    ) {
-      return NextResponse.json({ message: "Already processed" });
-    }
-
-    const isRejected = lowerStatus === "declined" || lowerStatus === "rejected";
-    const isResubmitted = lowerStatus === "resubmitted";
-    const isExpired = lowerStatus === "expired" || lowerStatus === "abandoned";
-    const isInProgress =
-      lowerStatus === "not started" ||
-      lowerStatus === "in progress" ||
-      lowerStatus === "in_progress";
-
-    if (
-      isExpired &&
-      (kyc.status === "pending" || kyc.status === "in_progress")
-    ) {
-      console.log(
-        `[Didit] Deleting expired/abandoned session for user ${kyc.user_id}`,
-      );
-      await prisma.kyc_verifications.delete({
-        where: { id: kyc.id },
-      });
-      return NextResponse.json({
-        success: true,
-        message: "Expired session cleared",
-      });
-    }
-
-    // Extract rejection reason if available
-    const rejectionReason =
-      body.decision_reason ||
-      body.reason ||
-      body.message ||
-      "Your document or selfie did not meet our verification requirements.";
-
-    // Default to in_progress if not started / in progress, or pending if awaiting manual review
-    let newStatus = "pending";
-    if (isInProgress) newStatus = "in_progress";
-    if (isApproved) newStatus = "approved";
-    if (isRejected) newStatus = "rejected";
-    if (isResubmitted) newStatus = "resubmitted";
-
-    // Only consider it manual review if status explicitly mentions review or pending
-    const requiresManualReview =
-      lowerStatus.includes("review") || lowerStatus === "pending";
-
-    // Extract additional KYC data if Didit provides it in the body or inside a nested data object
-    const webhookData = body.data || body;
-    const dob =
-      webhookData.date_of_birth ||
-      webhookData.dob ||
-      body.date_of_birth ||
-      body.dob;
-    const address = webhookData.address || body.address;
-    const city = webhookData.city || body.city;
-    const state =
-      webhookData.state || webhookData.region || body.state || body.region;
-    const country = webhookData.country || body.country;
-    const postal =
-      webhookData.postal_code ||
-      webhookData.zip ||
-      body.postal_code ||
-      body.zip;
-    const phone = webhookData.phone || body.phone;
-    const firstName = webhookData.first_name || body.first_name;
-    const lastName = webhookData.last_name || body.last_name;
-
-    let fullName = kyc.full_name;
-    if (firstName && lastName) {
-      fullName = `${firstName} ${lastName}`;
-    } else if (webhookData.full_name || body.full_name) {
-      fullName = webhookData.full_name || body.full_name;
-    }
-
-    // Cache decision-derived fields for the admin KYC queue.
-    const cached = extractCachedDecisionFields(webhookData);
-
-    // Update kyc record
-    await prisma.kyc_verifications.update({
-      where: { id: kyc.id },
-      data: {
-        status: newStatus,
-        verification_notes: `Automated Didit result: ${status}${isRejected || isResubmitted ? ` - ${rejectionReason}` : ""}`,
-        ...(cached.faceMatchScore != null && {
-          face_match_score: cached.faceMatchScore,
-        }),
-        ...(cached.idType && { id_type: cached.idType }),
-        ...(cached.idNumber && { id_number: cached.idNumber }),
-        ...(cached.checksTotal != null && { checks_total: cached.checksTotal }),
-        ...(cached.checksPassed != null && {
-          checks_passed: cached.checksPassed,
-        }),
-        ...(fullName && fullName !== "Didit User" && { full_name: fullName }),
-        ...(dob && { dob }),
-        ...(address && { address }),
-        ...(city && { city }),
-        ...(state && { state }),
-        ...(country && { country }),
-        ...(postal && { postal }),
-        ...(phone && { phone }),
-      },
-    });
-
-    await prisma.user.update({
-      where: { id: kyc.user_id },
-      data: { isVerified: isApproved },
-    });
-
-    const userProfile = await prisma.user.findUnique({
-      where: { id: kyc.user_id },
-      select: {
-        email: true,
-        fullName: true,
-        firstName: true,
-        lastName: true,
-        displayName: true,
-        username: true,
-      },
-    });
-    if (userProfile?.email) {
-      const isPlaceholder =
-        !kyc.full_name ||
-        kyc.full_name.trim().toLowerCase() === "didit user" ||
-        kyc.full_name.trim().toLowerCase() === "user" ||
-        kyc.full_name.trim().toLowerCase() === "refreegerian";
-
-      const userName =
-        (!isPlaceholder && kyc.full_name ? kyc.full_name.trim() : null) ||
-        userProfile.fullName ||
-        (userProfile.firstName && userProfile.lastName
-          ? `${userProfile.firstName} ${userProfile.lastName}`
-          : userProfile.firstName) ||
-        userProfile.displayName ||
-        userProfile.username ||
-        "Refreegerian";
-
-      try {
-        if (isApproved) {
-          await sendKycApprovedEmail(userProfile.email, userName);
-          try {
-            await issueReferralRewardOnKycApproval(kyc.user_id);
-          } catch (err) {
-            console.error("Referral reward error:", err);
-          }
-        } else if (isRejected) {
-          await sendKycRejectedEmail(
-            userProfile.email,
-            userName,
-            rejectionReason,
-          );
-          await sendKycSubmissionAdminNotification(
-            userProfile.email,
-            userName,
-            kyc.user_id,
-            "https://verification.didit.me/admin",
-            { isRejected: true, rejectionReason },
-          );
-        } else if (isResubmitted) {
-          await sendKycResubmittedEmail(
-            userProfile.email,
-            userName,
-            rejectionReason,
-          );
-        } else if (newStatus === "pending" && requiresManualReview) {
-          await sendKycSubmittedEmail(userProfile.email, userName);
-          await sendKycSubmissionAdminNotification(
-            userProfile.email,
-            userName,
-            kyc.user_id,
-            "https://verification.didit.me/admin",
-          );
-        }
-      } catch (emailError) {
-        console.error(
-          "Failed to send KYC emails, but DB was updated:",
-          emailError,
-        );
-      }
-    }
-
-    try {
-      revalidatePath("/", "layout");
-      revalidatePath("/dashboard", "layout");
-      revalidatePath("/dashboard/settings", "layout");
-    } catch (e) {
-      console.error("Failed to revalidate paths:", e);
-    }
-
-    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Didit webhook error:", error);
+    console.error("Didit webhook unhandled error:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

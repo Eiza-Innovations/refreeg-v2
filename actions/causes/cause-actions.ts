@@ -126,6 +126,7 @@ async function getCauseUncached(
               subAccountCode: true,
               profilePhoto: true,
               isVerified: true,
+              accountType: true,
             },
           },
           sections: {
@@ -149,6 +150,7 @@ async function getCauseUncached(
               subAccountCode: true,
               profilePhoto: true,
               isVerified: true,
+              accountType: true,
             },
           },
           sections: {
@@ -195,6 +197,7 @@ async function getCauseUncached(
       sub_account_code: data.user?.subAccountCode || "",
       profile_photo: data.user?.profilePhoto || null,
       is_verified: !!data.user?.isVerified,
+      account_type: data.user?.accountType || "individual",
     },
     sections: data.sections || [],
     multimedia: data.multimedia || [],
@@ -699,6 +702,12 @@ async function queryCauses(options: CauseFilterOptions = {}): Promise<Cause[]> {
             email: true,
             profilePhoto: true,
             isVerified: true,
+            accountType: true,
+          },
+        },
+        _count: {
+          select: {
+            donations: true,
           },
         },
       },
@@ -709,12 +718,14 @@ async function queryCauses(options: CauseFilterOptions = {}): Promise<Cause[]> {
 
     let causes = data.map((d: any) => ({
       ...mapPrismaToCause(d),
+      donors_count: d._count?.donations ?? 0,
       profiles: d.user
         ? {
             full_name: d.user.fullName,
             email: d.user.email,
             profile_photo: d.user.profilePhoto,
             is_verified: !!d.user.isVerified,
+            account_type: d.user.accountType || "individual",
           }
         : undefined,
     }));

@@ -4,7 +4,9 @@ import {
   NextResponse,
   type NextMiddleware,
 } from "next/server";
+import { getToken } from "next-auth/jwt";
 import { auth } from "@/lib/auth/auth";
+import { handleCorsPreflight } from "@/lib/api/response";
 import { publicFileManifest } from "@/lib/public-file-manifest";
 
 const PUBLIC_FILES = new Set<string>(publicFileManifest);
@@ -18,19 +20,28 @@ const APP_ICON_PATH =
   /^\/(?:favicon\.ico|(?:apple-)?icon\d*\.(?:ico|png|jpe?g|svg))$/i;
 
 const PUBLIC_API_PREFIXES = [
-  "/api/auth",
-  "/api/health",
-  "/api/error-report",
-  "/api/bot",
-  "/api/webhooks",
-  "/api/payments",
-  "/api/cron",
-  "/api/cities",
-  "/api/countries",
-  "/api/states",
-  "/api/mail",
-  "/api/s3",
-  "/api/leaderboard",
+  "/api/auth", // NextAuth routes
+  "/api/health", // Monitoring health checks
+  "/api/error-report", // Same-origin browser error intake (rate limited)
+  "/api/bot", // Developer API — authenticated via API keys
+  "/api/mobile", // Mobile API - authenticated via custom JWT
+  "/api/webhooks", // Incoming webhooks (Paystack, etc.)
+  "/api/payments", // Guest donation checkout + verification
+  "/api/cron", // Scheduled jobs (CRON_SECRET)
+  "/api/cities", // Public lookup data
+  "/api/countries", // Public lookup data
+  "/api/states", // Public lookup data
+  "/api/mail", // Donor-facing email endpoints (no auth required)
+  "/api/s3", // S3 image proxy (public images)
+  "/api/leaderboard", // Public leaderboard rankings
+];
+
+const AUTH_PAGES_WITH_OWN_SESSION_HANDLING = [
+  "/auth/callback",
+  "/auth/signin",
+  "/auth/signup",
+  "/auth/confirm-email-change",
+  "/auth/update-password",
 ];
 
 function absoluteUrl(path: string, req: Request): URL {
@@ -66,7 +77,16 @@ function needsSession(pathname: string) {
 
 const handleAuth = auth(async (req) => {
   const { pathname } = req.nextUrl;
-  const user = req.auth?.user;
+
+  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
+  const token = await getToken({ req, secret });
+  const user = token
+    ? {
+        id: (token.id || token.sub) as string,
+        role: token.role as string | undefined,
+        onboardingCompleted: token.onboardingCompleted as boolean | undefined,
+      }
+    : null;
 
   if (pathname.startsWith("/api")) {
     const isPublicApi = PUBLIC_API_PREFIXES.some((prefix) =>
@@ -99,13 +119,6 @@ const handleAuth = auth(async (req) => {
     }
   }
 
-  const AUTH_PAGES_WITH_OWN_SESSION_HANDLING = [
-    "/auth/callback",
-    "/auth/signin",
-    "/auth/signup",
-    "/auth/confirm-email-change",
-    "/auth/update-password",
-  ];
   if (
     user &&
     pathname.startsWith("/auth") &&
@@ -114,7 +127,7 @@ const handleAuth = auth(async (req) => {
     return NextResponse.redirect(absoluteUrl("/dashboard", req));
   }
 
-  const isOnboardingCompleted = (req.auth?.user as any)?.onboardingCompleted;
+  const isOnboardingCompleted = user?.onboardingCompleted;
 
   if (
     user &&
@@ -128,6 +141,10 @@ const handleAuth = auth(async (req) => {
 });
 
 export default function middleware(req: NextRequest, event: NextFetchEvent) {
+  if (req.method === "OPTIONS") {
+    return handleCorsPreflight();
+  }
+
   const { pathname } = req.nextUrl;
 
   // Scanners probe for source files (e.g. /api/auth/pre-signin-cleanup.js); without this they reach Auth.js and log UnknownAction.

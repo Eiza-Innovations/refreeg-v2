@@ -1,4 +1,4 @@
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import type { Adapter, AdapterUser } from "next-auth/adapters";
 import Credentials from "next-auth/providers/credentials";
@@ -12,11 +12,25 @@ import { createReferralRecord } from "@/lib/referrals/referral-utils";
 import { deriveFullNameFromEmail } from "@/lib/auth/registration";
 import { timingSafeEqual } from "crypto";
 
-const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
+export class UserNotFoundError extends CredentialsSignin {
+  code = "user_not_found";
+}
 
-const SESSION_UPDATE_AGE_SECONDS = 60 * 60 * 24;
+export class MissingPasswordError extends CredentialsSignin {
+  code = "missing_password";
+}
 
-const ABSOLUTE_SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 30;
+export class IncorrectPasswordError extends CredentialsSignin {
+  code = "incorrect_password";
+}
+
+// Idle timeout: session cookie/JWT expiry, renewed on activity (sliding window).
+const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 days
+// How often the sliding window is renewed while the user is active.
+const SESSION_UPDATE_AGE_SECONDS = 60 * 60 * 24; // 1 day
+// Absolute cap on a session's lifetime, regardless of activity, so a
+// continuously-active session cannot renew itself forever.
+const ABSOLUTE_SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 30; // 30 days
 
 const SESSIONS_INVALIDATED_AFTER_MS = process.env.SESSIONS_INVALIDATED_AFTER
   ? new Date(process.env.SESSIONS_INVALIDATED_AFTER).getTime()
@@ -175,18 +189,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
 
         try {
+          const normalizedEmail = (credentials.email as string)
+            .trim()
+            .toLowerCase();
           const user = await prisma.user.findUnique({
-            where: { email: credentials.email as string },
+            where: { email: normalizedEmail },
             include: { roles: { select: { role: true } } },
           });
 
           if (!user) {
-            console.info("[NextAuth] Sign-in attempt for unregistered email.");
-            return null;
+            console.error(
+              `[NextAuth] user not found for email: ${normalizedEmail}`,
+            );
+            throw new UserNotFoundError();
           }
           if (!user.password) {
-            console.info("[NextAuth] User has no password set.");
-            return null;
+            console.error(
+              `[NextAuth] user has no password for email: ${normalizedEmail}`,
+            );
+            throw new MissingPasswordError();
           }
 
           // Lock out repeated failures against one account so stolen or
@@ -220,7 +241,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 ...(lock ? { locked_until: lock } : {}),
               },
             });
-            return null;
+            throw new IncorrectPasswordError();
           }
 
           if (user.failed_login_attempts > 0 || user.locked_until) {
@@ -242,6 +263,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             tier: user.current_tier || "Explorer",
           };
         } catch (error) {
+          if (error instanceof CredentialsSignin) {
+            throw error;
+          }
           console.error("[NextAuth] ERROR in authorize:", error);
           return null;
         }
@@ -360,7 +384,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               where: { id: userId },
               select: { roles: { select: { role: true } }, current_tier: true },
             });
-            token.role = dbUser?.roles?.[0]?.role || "user";
+            token.role = (dbUser?.roles?.[0]?.role as UserRole) || "user";
             token.tier = dbUser?.current_tier || "Explorer";
           } catch (error) {
             console.error(

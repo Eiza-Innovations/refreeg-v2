@@ -50,7 +50,7 @@ model User {
   lastLoginUserAgent          String?                  @map("last_login_user_agent")
   interests                   String[]                 @default([])
   interest_location           String?
-  /// Per-user session-invalidation cutoff  any session issued (see
+  /// Per-user session-invalidation cutoff — any session issued (see
   /// session.user.loginTime, lib/auth/auth.ts) before this instant is
   /// rejected on its next request to a Node-runtime auth-guarded route (see
   /// lib/auth/session-guard.ts). Used to force a fresh sign-in for accounts
@@ -80,6 +80,9 @@ model User {
   ownedOrganization           Organization?            @relation("OrganizationOwner")
   organizationMemberships     OrganizationMember[]
   sentOrganizationInvitations OrganizationInvitation[] @relation("OrganizationInviter")
+  notifications               Notification[]
+  deviceTokens                DeviceToken[]
+  saved_cards                 user_saved_cards[]
 
   @@index([isBlocked], map: "idx_profiles_is_blocked")
   @@map("profiles")

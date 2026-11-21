@@ -48,6 +48,13 @@ import {
   SectionErrorRef,
   SectionResources,
 } from "@/components/docs/api/SectionResources";
+import {
+  SectionMobileKycOverview,
+  SectionMobileKycStart,
+  SectionMobileKycStatus,
+  SectionMobileKycSession,
+  SectionMobileKycLegacy,
+} from "@/components/docs/api/EndpointMobileKyc";
 
 import { Button } from "@/components/ui/button";
 export default function ApiDocsPage() {
@@ -98,6 +105,16 @@ export default function ApiDocsPage() {
       items: [
         { id: "Webhooks & Events", label: "Webhooks & Events" },
         { id: "Manage Webhooks", label: "Manage Webhooks" },
+      ],
+    },
+    {
+      title: "Mobile KYC API",
+      items: [
+        { id: "Mobile KYC Overview", label: "Overview & Flow" },
+        { id: "Start Mobile KYC", label: "Start Verification" },
+        { id: "Check Mobile KYC Status", label: "Check Status" },
+        { id: "Mobile KYC Session", label: "Session Decision" },
+        { id: "Legacy Mobile KYC", label: "Legacy KYC Data" },
       ],
     },
     {
@@ -212,6 +229,16 @@ export default function ApiDocsPage() {
       case "Webhooks & Events":
       case "Manage Webhooks":
         return <SectionWebhooks />;
+      case "Mobile KYC Overview":
+        return <SectionMobileKycOverview />;
+      case "Start Mobile KYC":
+        return <SectionMobileKycStart />;
+      case "Check Mobile KYC Status":
+        return <SectionMobileKycStatus />;
+      case "Mobile KYC Session":
+        return <SectionMobileKycSession />;
+      case "Legacy Mobile KYC":
+        return <SectionMobileKycLegacy />;
       case "Error Reference":
         return <SectionErrorRef />;
       case "SDKs & Libraries":

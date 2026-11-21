@@ -13,13 +13,18 @@ import { internalApiHeaders } from "@/lib/api/internal-api";
 import { sendDonationReceivedEmail } from "@/services/mail";
 import { syncMilestoneRequirements } from "@/lib/causes/proof-milestones";
 
-const mapPrismaToDonation = (d: any): Donation => ({
-  ...d,
-  amount: Number(d.amount),
-  tip_amount: d.tip_amount ? Number(d.tip_amount) : 0,
-  created_at:
-    d.createdAt instanceof Date ? d.createdAt.toISOString() : d.createdAt,
-});
+const mapPrismaToDonation = (d: any): Donation => {
+  const isAnon =
+    d.is_anonymous === true || String(d.is_anonymous).toLowerCase() === "true";
+  return {
+    ...d,
+    name: isAnon ? "Anonymous" : d.name || "Anonymous",
+    amount: Number(d.amount),
+    tip_amount: d.tip_amount ? Number(d.tip_amount) : 0,
+    created_at:
+      d.createdAt instanceof Date ? d.createdAt.toISOString() : d.createdAt,
+  };
+};
 
 export async function createDonation(
   causeId: string,
@@ -40,24 +45,23 @@ export async function createDonation(
 
   let data;
   try {
-    if (paystackReference) {
-      const existing = await prisma.donation.findFirst({
-        where: { paystack_reference: paystackReference },
-        select: { id: true },
-      });
+    const txResult = await prisma.$transaction(async (tx) => {
+      if (paystackReference) {
+        // Acquire a transaction-scoped PostgreSQL advisory lock on the reference hash
+        // so concurrent verification requests (e.g. mobile 2s poller + webhook + callback)
+        // cannot race and double-insert or double-increment cause.raised.
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${paystackReference}))`;
 
-      if (existing) {
-        const existingDonation = await prisma.donation.findUnique({
-          where: { id: existing.id },
+        const existing = await tx.donation.findFirst({
+          where: { paystack_reference: paystackReference },
         });
-        if (existingDonation) return mapPrismaToDonation(existingDonation);
+
+        if (existing) {
+          return { donation: existing, alreadyExisted: true };
+        }
       }
-    }
-    // Donation row and the campaign's raised total move together: a crash
-    // between the two writes used to leave raised out of sync with the
-    // donation ledger (SAW-013).
-    data = await prisma.$transaction(async (tx) => {
-      const donation = await tx.donation.create({
+
+      const created = await tx.donation.create({
         data: {
           causeId: causeId,
           ...(userId ? { userId: userId } : {}),
@@ -83,12 +87,44 @@ export async function createDonation(
         data: { raised: { increment: donationAmount } },
       });
 
-      return donation;
+      return { donation: created, alreadyExisted: false };
     });
+
+    if (txResult.alreadyExisted) {
+      return mapPrismaToDonation(txResult.donation);
+    }
+    data = txResult.donation;
     try {
       await syncMilestoneRequirements(causeId);
     } catch (e) {
       console.error("Error syncing proof milestones:", e);
+    }
+
+    try {
+      const cause = await prisma.cause.findUnique({
+        where: { id: causeId },
+        select: { userId: true, title: true },
+      });
+      if (cause?.userId) {
+        const { createNotification } =
+          await import("@/lib/notifications/notification-service");
+        const donorName = donationData.isAnonymous
+          ? "An anonymous supporter"
+          : donationData.name || "A supporter";
+        await createNotification({
+          userId: cause.userId,
+          title: "New donation received! 💰",
+          message: `${donorName} donated ₦${donationAmount.toLocaleString()} to "${cause.title}".`,
+          type: "donation_received",
+          data: {
+            causeId,
+            donationId: data.id,
+            amount: donationAmount,
+          },
+        });
+      }
+    } catch (notifErr) {
+      console.warn("Failed to create donation notification:", notifErr);
     }
   } catch (error) {
     console.error("Error creating donation:", error);
@@ -277,10 +313,25 @@ export async function listDonationsForCause(
   try {
     const data = await prisma.donation.findMany({
       where: { causeId: causeId },
+      include: {
+        user: {
+          select: {
+            fullName: true,
+          },
+        },
+      },
       orderBy: { createdAt: "desc" },
     });
 
-    return data.map(mapPrismaToDonation);
+    return data.map((d: any) => {
+      const isAnon =
+        d.is_anonymous === true ||
+        String(d.is_anonymous).toLowerCase() === "true";
+      return {
+        ...mapPrismaToDonation(d),
+        name: isAnon ? "Anonymous" : d.name || d.user?.fullName || "Anonymous",
+      };
+    });
   } catch (error) {
     console.error("Error listing donations:", error);
     throw error;

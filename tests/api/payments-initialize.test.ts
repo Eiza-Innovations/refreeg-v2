@@ -117,7 +117,7 @@ describe("POST /api/payments/initialize", () => {
 
   it("should NOT perform JIT creation if subaccount already provided", async () => {
     // The compliance gate (assertCauseAcceptingDonations) still looks up the
-    // cause on every request, regardless of the JIT path.
+    // cause on every request with a UUID causeId, regardless of the JIT path.
     (prisma.cause.findUnique as jest.Mock).mockResolvedValue({
       compliance_paused: false,
     });
@@ -125,7 +125,7 @@ describe("POST /api/payments/initialize", () => {
     const payload = {
       amount: 5000,
       email: "test@example.com",
-      causeId: "cause-123",
+      causeId: "12345678-1234-1234-1234-1234567890ab",
       paymentProvider: "flutterwave",
       subaccounts: [{ subaccount: "RS_existing123", share: 500000 }],
     };
@@ -141,6 +141,23 @@ describe("POST /api/payments/initialize", () => {
     expect(prisma.cause.findUnique).toHaveBeenCalledTimes(1);
     expect(prisma.user.findUnique).not.toHaveBeenCalled();
     expect(Flutterwave.createSubaccount).not.toHaveBeenCalled();
+  });
+
+  it("should reject donations greater than 10,000,000 NGN", async () => {
+    const payload = {
+      amount: 15000000,
+      email: "test@example.com",
+      causeId: "12345678-1234-1234-1234-1234567890ab",
+    };
+
+    const req = {
+      json: jest.fn().mockResolvedValue(payload),
+    } as any;
+
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain("Maximum donation amount is ₦10,000,000");
   });
 
   it("skips Flutterwave subaccount creation when the user already has an id", async () => {
