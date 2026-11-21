@@ -1,22 +1,24 @@
-import dynamic from "next/dynamic";
-import { Skeleton } from "@/components/ui/skeleton";
-import { auth } from "@/lib/auth/auth";
 import { redirect } from "next/navigation";
 import { isAdminOrManager } from "@/actions/admin/role-actions";
-
-const BroadcastPushForm = dynamic(
-  () => import("@/components/admin/BroadcastPushForm"),
-  {
-    loading: () => <Skeleton className="h-[600px] w-full rounded-2xl" />,
-  },
-);
+import {
+  AdminNotificationsTabs,
+  type NotificationChannel,
+} from "@/components/admin/notifications/AdminNotificationsTabs";
+import { Heading, P } from "@/components/marketing/Typography";
+import { Eyebrow } from "@/components/ui/eyebrow";
+import { auth } from "@/lib/auth/auth";
 
 export const metadata = {
-  title: "Push Notifications | Admin Dashboard",
-  description: "Send broadcast push notifications to RefreeG mobile app users.",
+  title: "Notifications | RefreeG Admin",
+  description:
+    "Send email announcements, manage event triggers, and broadcast mobile push notifications.",
 };
 
-export default async function AdminNotificationsPage() {
+export default async function AdminNotificationsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -28,9 +30,24 @@ export default async function AdminNotificationsPage() {
     redirect("/dashboard");
   }
 
+  const params = (await searchParams) ?? {};
+  const tabParam = Array.isArray(params.tab) ? params.tab[0] : params.tab;
+  const defaultChannel: NotificationChannel =
+    tabParam === "push" ? "push" : "email";
+
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8 max-w-7xl">
-      <BroadcastPushForm />
+    <div className="container mx-auto max-w-7xl space-y-6 p-4 md:p-6 lg:p-8">
+      <div className="space-y-1">
+        <Eyebrow>Notifications</Eyebrow>
+        <Heading as="h1" size="subsection">
+          Notifications
+        </Heading>
+        <P className="text-ink/60">
+          Send email announcements, manage event triggers, and broadcast mobile
+          push notifications.
+        </P>
+      </div>
+      <AdminNotificationsTabs defaultChannel={defaultChannel} />
     </div>
   );
 }
