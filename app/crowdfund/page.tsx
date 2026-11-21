@@ -17,6 +17,9 @@ export const metadata: Metadata = {
     "Crowdfund for healthcare, disaster relief, nonprofits, businesses and creators on Refreeg, with milestone releases and proof donors can check.",
 };
 
+// LiveCauses reads the database, which the build has no access to.
+export const dynamic = "force-dynamic";
+
 export default function CrowdfundPage() {
   return (
     <div className="flex flex-col bg-surface">
