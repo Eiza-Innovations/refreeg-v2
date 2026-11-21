@@ -2,12 +2,12 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { sendOtpEmail } from "@/services/mail";
+import { getClientIp } from "@/lib/api/client-ip";
 import {
   normalizeRegistrationInput,
   type RegistrationInput,
   validateRegistrationInput,
 } from "@/lib/auth/registration";
-import { getClientIp } from "@/lib/client-ip";
 
 export async function POST(req: Request) {
   try {
@@ -119,7 +119,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error("Register pending error:", error);
     return NextResponse.json(
-      { error: "An unexpected error occurred during registration." },
+      { error: "Something went wrong during registration. Please try again." },
       { status: 500 },
     );
   }

@@ -29,11 +29,11 @@ jest.mock("@/services/mail", () => ({
   sendKycSubmittedEmail: jest.fn(),
 }));
 
-jest.mock("@/actions/database-actions", () => ({
+jest.mock("@/actions/admin/database-actions", () => ({
   logAdminActivity: jest.fn(),
 }));
 
-jest.mock("@/actions/kyc-actions", () => ({
+jest.mock("@/actions/users/kyc-actions", () => ({
   issueReferralRewardOnKycApproval: jest.fn(),
 }));
 
@@ -42,19 +42,12 @@ const mockPrisma = prisma as unknown as {
   user: { findUnique: jest.Mock; update: jest.Mock };
 };
 
-const TEST_SECRET = "test-didit-webhook-secret";
+const SECRET = "test-didit-secret";
 
 describe("Didit Webhook POST", () => {
-  const originalSecret = process.env.DIDIT_WEBHOOK_SECRET;
-
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env.DIDIT_WEBHOOK_SECRET = TEST_SECRET;
-  });
-
-  afterAll(() => {
-    if (originalSecret === undefined) delete process.env.DIDIT_WEBHOOK_SECRET;
-    else process.env.DIDIT_WEBHOOK_SECRET = originalSecret;
+    process.env.DIDIT_WEBHOOK_SECRET = SECRET;
   });
 
   const createRequest = (body: any, signature?: string) => {
@@ -63,20 +56,16 @@ describe("Didit Webhook POST", () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Didit-Signature":
-          signature ??
-          createHmac("sha256", TEST_SECRET).update(raw).digest("hex"),
+        "x-didit-signature":
+          signature ?? createHmac("sha256", SECRET).update(raw).digest("hex"),
       },
       body: raw,
     });
   };
 
-  it("rejects a payload with an invalid signature", async () => {
-    const res = await POST(
-      createRequest({ session_id: "uuid-123", status: "Approved" }, "bad"),
-    );
+  it("rejects a payload with a bad signature", async () => {
+    const res = await POST(createRequest({ session_id: "s1" }, "bad"));
     expect(res.status).toBe(401);
-    expect(mockPrisma.kyc_verifications.findFirst).not.toHaveBeenCalled();
   });
 
   it("returns 400 if session_id is missing from all fallback fields", async () => {

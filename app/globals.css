@@ -97,7 +97,7 @@ select:focus {
     --announcement-status: 216 31% 18%;
     --announcement-border: 83 57% 46%;
 
-    /* Fintech surface system (see docs/DESIGN_GUIDE.md) — additive, opt-in
+    /* Fintech surface system (see docs/DESIGN_GUIDE.md): additive, opt-in
        tokens for new/rebuilt screens. Do not repoint --background/--primary
        at these; existing pages keep the navy/white theme until re-themed. */
 
@@ -272,7 +272,7 @@ select:focus {
 }
 
 /* Small-caps section labels used throughout the fintech surface system,
-   e.g. "STEP 1 OF 4", "WHAT LEVEL 2 UNLOCKS". See docs/DESIGN_GUIDE.md. */
+   e.g. "STEP 1 OF 4", "WHAT LEVEL 2 INCLUDES". See docs/DESIGN_GUIDE.md. */
 .label-eyebrow {
   @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground;
 }
@@ -411,11 +411,11 @@ select:focus {
 
 /* Flat, product-led styling for the cause creation workspace. */
 .cause-flow .premium-input {
-  @apply rounded-xl border-[#D8E0E8] bg-white shadow-none transition-colors duration-150 focus:border-[#235DA7] focus:ring-[#235DA7]/15;
+  @apply rounded-xl border-hairline bg-surface shadow-none transition-colors duration-150 focus:border-forest focus:ring-forest/15;
 }
 
 .cause-flow label {
-  color: #33445a;
+  @apply text-ink;
 }
 
 .stepper-line {

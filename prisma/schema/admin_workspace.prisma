@@ -1,0 +1,119 @@
+/// Tables created by migration 20261024120000_admin_workspace_backend. No app
+/// code reads them yet; the models keep the schema in step with migrations.
+
+model admin_audit_entries {
+  id         String   @id @db.Uuid
+  actor_id   String   @db.Uuid
+  action     String
+  kind       String
+  target_id  String   @db.Uuid
+  metadata   Json     @default("{}")
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([actor_id, created_at])
+  @@index([kind, target_id])
+}
+
+model admin_payment_attempts {
+  id           String    @id @db.Uuid
+  reference    String?   @unique
+  provider     String
+  cause_id     String    @db.Uuid
+  amount       Decimal   @db.Decimal(18, 2)
+  service_fee  Decimal   @db.Decimal(18, 2)
+  provider_fee Decimal   @db.Decimal(18, 2)
+  tip          Decimal   @default(0) @db.Decimal(18, 2)
+  status       String    @default("initializing")
+  donation_id  String?   @unique @db.Uuid
+  created_at   DateTime  @default(now()) @db.Timestamptz(6)
+  completed_at DateTime? @db.Timestamptz(6)
+
+  @@index([created_at, status])
+}
+
+model admin_support_tickets {
+  id                 String    @id @db.Uuid
+  subject            String
+  description        String
+  requester_name     String
+  topic              String
+  priority           String    @default("normal")
+  status             String    @default("open")
+  created_by         String    @db.Uuid
+  assignee_id        String?   @db.Uuid
+  first_responded_at DateTime? @db.Timestamptz(6)
+  resolved_at        DateTime? @db.Timestamptz(6)
+  version            Int       @default(0)
+  created_at         DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([assignee_id, status])
+  @@index([status, created_at])
+}
+
+model admin_work_assignments {
+  id          String   @id @db.Uuid
+  kind        String
+  target_id   String   @db.Uuid
+  assignee_id String   @db.Uuid
+  assigned_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([kind, target_id])
+  @@index([assignee_id])
+}
+
+model device_tokens {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String    @db.Uuid
+  token      String    @unique
+  platform   String    @default("android") @db.VarChar(20)
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([user_id], map: "idx_device_tokens_user")
+}
+
+model notifications {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String    @db.Uuid
+  title      String
+  message    String
+  type       String    @db.VarChar(50)
+  data       Json?
+  is_read    Boolean   @default(false)
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, created_at(sort: Desc)], map: "idx_notifications_user_created")
+  @@index([user_id, is_read], map: "idx_notifications_user_read")
+}
+
+model user_daily_activity {
+  user_id   String   @db.Uuid
+  day       DateTime @db.Date
+  last_seen DateTime @default(now()) @db.Timestamptz(6)
+
+  @@id([user_id, day])
+  @@index([day])
+}
+
+model user_saved_cards {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id            String   @db.Uuid
+  authorization_code String   @db.VarChar
+  card_type          String?  @db.VarChar
+  last4              String   @db.VarChar(4)
+  exp_month          String   @db.VarChar(2)
+  exp_year           String   @db.VarChar(4)
+  bin                String?  @db.VarChar(6)
+  bank               String?  @db.VarChar
+  brand              String?  @db.VarChar
+  signature          String?  @db.VarChar
+  email              String?  @db.VarChar
+  is_default         Boolean  @default(false)
+  created_at         DateTime @default(now()) @db.Timestamptz(6)
+  user               User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id], map: "idx_user_saved_cards_user_id")
+}

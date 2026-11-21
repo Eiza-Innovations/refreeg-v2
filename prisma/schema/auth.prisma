@@ -81,13 +81,15 @@ model User {
   organizationMemberships     OrganizationMember[]
   sentOrganizationInvitations OrganizationInvitation[] @relation("OrganizationInviter")
 
+  /// New Saved feature relations
+  savedLists       SavedList[]
+  bookmarks        Bookmark[]
+  alertPreferences UserAlertPrefs?
+  notifications    notifications[]
+  user_saved_cards user_saved_cards[]
+
   @@index([isBlocked], map: "idx_profiles_is_blocked")
   @@map("profiles")
-
-  /// New Saved feature relations
-  savedLists      SavedList[]
-  bookmarks       Bookmark[]
-  alertPreferences UserAlertPrefs?
 }
 
 model Account {
