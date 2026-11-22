@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAccountNumber } from "@/services/payment-provider";
 import { auth } from "@/lib/auth/auth";
-import { createRateLimiter } from "@/lib/api/rate-limit";
+import { checkRateLimit } from "@/lib/api/rate-limit";
 import type { PaymentProviderType } from "@/types";
-
-const limited = createRateLimiter({ max: 10, windowMs: 60_000 });
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -14,13 +12,19 @@ export async function POST(request: NextRequest) {
       { status: 401 },
     );
   }
-  if (limited(session.user.id)) {
+  const { limited, retryAfterSec } = checkRateLimit(request, {
+    namespace: "banks_verify",
+    limit: 10,
+    windowMs: 60_000,
+    identifier: session.user.id,
+  });
+  if (limited) {
     return NextResponse.json(
       {
         error: "Too many verification attempts. Try again shortly.",
         success: false,
       },
-      { status: 429 },
+      { status: 429, headers: { "Retry-After": String(retryAfterSec) } },
     );
   }
 
