@@ -8,6 +8,7 @@ const CREAM_ROUTES = [
   "/dashboard/donations",
   "/dashboard/admin/users/kyc",
   "/dashboard/admin/receipts",
+  "/dashboard/admin/bounties",
 ];
 
 export default function ClientLayoutWrapper({
@@ -16,7 +17,9 @@ export default function ClientLayoutWrapper({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const hideNav = pathname.startsWith("/dashboard/settings/kyc-setup");
+  const hideNav =
+    pathname.startsWith("/dashboard/settings/kyc-setup") ||
+    pathname.startsWith("/dashboard/admin/api-docs");
   const isCream =
     pathname === "/dashboard" ||
     CREAM_ROUTES.some((route) => pathname.startsWith(route));
