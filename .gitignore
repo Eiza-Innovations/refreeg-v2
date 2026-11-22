@@ -63,3 +63,6 @@ playwright/.auth/
 scripts/delete-user-by-email.ts
 /scripts/list-fks.ts
 /promote-admin.ts
+
+# Firebase credentials
+firebase-service-account*.json
