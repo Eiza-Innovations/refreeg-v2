@@ -1,4 +1,5 @@
-export type WorkspaceView = "analytics" | "ambassadors" | "users" | "eiza";
+export type WorkspaceView =
+  "analytics" | "ambassadors" | "users" | "eiza" | "community";
 export type Period = "day" | "month" | "year";
 export type Tone = "green" | "red" | "gold" | "blue" | "neutral";
 export type Metric = {
@@ -44,6 +45,11 @@ export type NavCounts = Partial<
   Record<"Campaigns" | "KYC" | "Petitions & bounties", number>
 >;
 
+export type CommunityData = {
+  metrics: Metric[];
+  referralImpact: { donations: Series; referrals: Series };
+};
+
 export type WorkspaceData = {
   period: Period;
   generatedAt: string;
@@ -68,5 +74,6 @@ export type WorkspaceData = {
     rows: { label: string; value: number; tone: Tone }[];
     top100Share: number;
   };
+  community: CommunityData;
   navCounts: NavCounts;
 };

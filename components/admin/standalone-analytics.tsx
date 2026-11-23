@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { AnalyticsContent } from "./workspace/analytics";
+import { CommunityContent } from "./workspace/community";
 import { DetailContent } from "./workspace/details";
 import { Chip, MetricCards } from "./workspace/primitives";
 import type {
@@ -37,7 +38,13 @@ export function StandaloneAnalytics({ data }: { data: WorkspaceData }) {
     ambassadors: "Ambassador performance",
     users: "User growth & retention",
     eiza: "EIZA coin distribution",
+    community: "Community analytics",
   }[view];
+  const hasPeriodControls = view === "analytics" || view === "community";
+  const subtitle =
+    view === "community"
+      ? "Referrals, bounties and sharing, and what each brings in."
+      : `${data.label} · all figures in naira`;
   const updated = new Date(data.generatedAt).toLocaleTimeString("en-NG", {
     hour: "2-digit",
     minute: "2-digit",
@@ -50,12 +57,14 @@ export function StandaloneAnalytics({ data }: { data: WorkspaceData }) {
   }
 
   function exportMetrics() {
+    const metrics =
+      view === "community" ? data.community.metrics : data.metrics;
     const rows = [
       ["Period", period],
       ["Range", data.label],
       ["Generated", data.generatedAt],
       ["Metric", "Value", "Change"],
-      ...data.metrics.map((metric) => [
+      ...metrics.map((metric) => [
         metric.label,
         metric.value,
         metric.change ?? "",
@@ -66,7 +75,7 @@ export function StandaloneAnalytics({ data }: { data: WorkspaceData }) {
     );
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = `refreeg-analytics-${period}-${data.generatedAt.slice(0, 10)}.csv`;
+    anchor.download = `refreeg-${view}-${period}-${data.generatedAt.slice(0, 10)}.csv`;
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
@@ -77,62 +86,66 @@ export function StandaloneAnalytics({ data }: { data: WorkspaceData }) {
     <div className="admin-workspace min-h-screen bg-cream text-ink lg:flex">
       <AnalyticsSidebar view={view} onView={setView} counts={data.navCounts} />
       <main className="mx-auto min-w-0 w-full max-w-[1440px] flex-1 space-y-6 px-4 py-8 sm:px-8">
-        <header className="flex flex-wrap items-center justify-between gap-4">
+        <header className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-ink/60">
               RefreeG · Admin
             </p>
             <h1 className="text-3xl font-semibold tracking-tight">{heading}</h1>
-            <p className="mt-2 text-sm text-ink/60">
-              {data.label} · all figures in naira
-            </p>
+            <p className="mt-2 text-sm text-ink/60">{subtitle}</p>
           </div>
-          <Chip tone="green">Live · updated {updated} WAT</Chip>
-        </header>
-        <div className="flex flex-wrap items-center gap-2">
-          {view === "analytics" ? (
-            <>
-              <div
-                role="group"
-                aria-label="Reporting period"
-                className="flex rounded-xl bg-surface p-1"
-              >
-                {(["day", "month", "year"] as const).map((value) => (
-                  <Button
-                    key={value}
-                    variant={period === value ? "ink" : "ghost"}
-                    className="rounded-lg capitalize"
-                    aria-pressed={period === value}
-                    disabled={pending}
-                    onClick={() => choosePeriod(value)}
+          <div className="flex flex-col items-end gap-3">
+            <Chip tone="green">Live · updated {updated} WAT</Chip>
+            <div className="flex flex-wrap items-center gap-2">
+              {hasPeriodControls ? (
+                <>
+                  <div
+                    role="group"
+                    aria-label="Reporting period"
+                    className="flex rounded-xl bg-surface p-1"
                   >
-                    {value}
+                    {(["day", "month", "year"] as const).map((value) => (
+                      <Button
+                        key={value}
+                        variant={period === value ? "ink" : "ghost"}
+                        className="rounded-lg capitalize"
+                        aria-pressed={period === value}
+                        disabled={pending}
+                        onClick={() => choosePeriod(value)}
+                      >
+                        {value}
+                      </Button>
+                    ))}
+                  </div>
+                  {period !== "day" && view !== "community" && (
+                    <Button
+                      variant={compare ? "ink" : "surface"}
+                      aria-pressed={compare}
+                      onClick={() => setCompare(!compare)}
+                    >
+                      Compare to last period
+                    </Button>
+                  )}
+                  <Button
+                    variant="ink"
+                    className="gap-2"
+                    onClick={exportMetrics}
+                  >
+                    <ArrowDownToLine className="h-4 w-4" /> Export metrics
                   </Button>
-                ))}
-              </div>
-              {period !== "day" && (
+                </>
+              ) : (
                 <Button
-                  variant={compare ? "ink" : "surface"}
-                  aria-pressed={compare}
-                  onClick={() => setCompare(!compare)}
+                  variant="surface"
+                  className="gap-2"
+                  onClick={() => setView("analytics")}
                 >
-                  Compare to last period
+                  <ArrowLeft className="h-4 w-4" /> Back to analytics
                 </Button>
               )}
-              <Button variant="ink" className="gap-2" onClick={exportMetrics}>
-                <ArrowDownToLine className="h-4 w-4" /> Export metrics
-              </Button>
-            </>
-          ) : (
-            <Button
-              variant="surface"
-              className="gap-2"
-              onClick={() => setView("analytics")}
-            >
-              <ArrowLeft className="h-4 w-4" /> Back to analytics
-            </Button>
-          )}
-        </div>
+            </div>
+          </div>
+        </header>
         <div
           aria-busy={pending}
           className={pending ? "pointer-events-none opacity-60" : undefined}
@@ -147,6 +160,13 @@ export function StandaloneAnalytics({ data }: { data: WorkspaceData }) {
                   onView={setView}
                   onSelect={setSelected}
                 />
+              </div>
+            </div>
+          ) : view === "community" ? (
+            <div className="space-y-6">
+              <MetricCards metrics={data.community.metrics} loading={pending} />
+              <div className="overflow-x-auto">
+                <CommunityContent data={data} />
               </div>
             </div>
           ) : (

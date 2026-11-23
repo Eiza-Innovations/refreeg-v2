@@ -15,6 +15,7 @@ export function LinePlot({
   values,
   previous,
   secondary,
+  secondaryIndependent = false,
   area = false,
   small = false,
   tone = "blue",
@@ -23,6 +24,9 @@ export function LinePlot({
   values: number[];
   previous?: number[];
   secondary?: number[];
+  /** Scale `secondary` to its own range instead of sharing `values`' scale —
+   * use when the two series are in different units (e.g. naira vs. a count). */
+  secondaryIndependent?: boolean;
   area?: boolean;
   small?: boolean;
   tone?: Tone;
@@ -30,13 +34,21 @@ export function LinePlot({
 }) {
   const chartId = useId();
   const max =
-    Math.max(...values, ...(previous ?? []), ...(secondary ?? []), 1) * 1.12;
+    Math.max(
+      ...values,
+      ...(previous ?? []),
+      ...(secondaryIndependent ? [] : (secondary ?? [])),
+      1,
+    ) * 1.12;
+  const secondaryMax = secondaryIndependent
+    ? Math.max(...(secondary ?? []), 1) * 1.12
+    : max;
   const height = small ? 32 : 210;
-  const points = (list: number[]) =>
+  const points = (list: number[], scaleMax = max) =>
     list
       .map(
         (v, i) =>
-          `${list.length === 1 ? 500 : (i / (list.length - 1)) * 1000},${height - (v / max) * (height - 12)}`,
+          `${list.length === 1 ? 500 : (i / (list.length - 1)) * 1000},${height - (v / scaleMax) * (height - 12)}`,
       )
       .join(" ");
   return (
@@ -79,7 +91,7 @@ export function LinePlot({
         )}
         {secondary && (
           <polyline
-            points={points(secondary)}
+            points={points(secondary, secondaryMax)}
             fill="none"
             className="stroke-forest"
             strokeWidth="2.5"

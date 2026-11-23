@@ -39,15 +39,17 @@ export function AnalyticsSidebar({
               const target: WorkspaceView | undefined =
                 item.label === "Analytics"
                   ? "analytics"
-                  : item.label === "Users & orgs" || item.label === "Community"
+                  : item.label === "Users & orgs"
                     ? "users"
-                    : item.label === "EIZA coins"
-                      ? "eiza"
-                      : undefined;
+                    : item.label === "Community"
+                      ? "community"
+                      : item.label === "EIZA coins"
+                        ? "eiza"
+                        : undefined;
               const active =
                 item.label === "Analytics"
                   ? view === "analytics" || view === "ambassadors"
-                  : target === view && item.label !== "Community";
+                  : target === view;
               const count = counts[item.label as keyof NavCounts];
               return (
                 <button

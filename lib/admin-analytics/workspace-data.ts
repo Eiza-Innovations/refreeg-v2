@@ -373,6 +373,59 @@ async function ambassadors(w: ReportingWindow) {
   return { team, allDriven };
 }
 
+/** Shares this window vs last, and users who joined via a referral this window. */
+async function communityMetrics(w: ReportingWindow) {
+  const [row] = await prisma.$queryRaw<
+    { shares: number; prev_shares: number; new_referred: number }[]
+  >`
+    SELECT s.total AS shares, s.prev_total AS prev_shares, nr.total AS new_referred
+    FROM
+      (SELECT
+        COUNT(*) FILTER (WHERE created_at >= ${w.from})::int AS total,
+        COUNT(*) FILTER (WHERE created_at < ${w.previousTo})::int AS prev_total
+       FROM cause_shares
+       WHERE created_at >= ${w.previousFrom} AND created_at < ${w.to}
+         AND (created_at >= ${w.from} OR created_at < ${w.previousTo})) s,
+      (SELECT COUNT(DISTINCT r.referee_id_v1)::int AS total
+       FROM referrals_v1 r
+       JOIN profiles p ON p.id = r.referee_id_v1
+       WHERE r.registered_v1 AND p.created_at >= ${w.from} AND p.created_at < ${w.to}) nr`;
+  return row;
+}
+
+/** Referral-attributed donation and successful-referral trend lines. */
+async function communitySeries(w: ReportingWindow) {
+  const scanFrom = w.period === "day" ? w.from : w.previousFrom;
+  const [donationRows, referralRows] = await Promise.all([
+    prisma.$queryRaw<Bucketed[]>`
+      SELECT date_trunc(${w.unit}, d.created_at AT TIME ZONE ${LAGOS}) AS bucket,
+        SUM(d.amount)::float8 AS total
+      FROM donor_referral_attributions a
+      JOIN donations d ON d.id = a.donation_id
+      WHERE a.status = 'confirmed' AND d.status = 'completed'
+        AND d.created_at >= ${scanFrom} AND d.created_at < ${w.to}
+        AND (d.created_at >= ${w.from} OR d.created_at < ${w.previousChartTo})
+      GROUP BY 1`,
+    prisma.$queryRaw<Bucketed[]>`
+      SELECT date_trunc(${w.unit}, created_at_v1 AT TIME ZONE ${LAGOS}) AS bucket,
+        COUNT(*) FILTER (WHERE registered_v1)::int AS total
+      FROM referrals_v1
+      WHERE created_at_v1 >= ${scanFrom} AND created_at_v1 < ${w.to}
+        AND (created_at_v1 >= ${w.from} OR created_at_v1 < ${w.previousChartTo})
+      GROUP BY 1`,
+  ]);
+  return {
+    donations: {
+      values: fill(donationRows, w.unit, w.buckets),
+      previous: fill(donationRows, w.unit, w.previousBuckets),
+    },
+    referrals: {
+      values: fill(referralRows, w.unit, w.buckets),
+      previous: fill(referralRows, w.unit, w.previousBuckets),
+    },
+  };
+}
+
 async function usersPanel() {
   const now = new Date();
   const d30 = new Date(now.getTime() - 30 * DAY_MS);
@@ -560,6 +613,8 @@ async function loadWorkspaceData(period: Period): Promise<WorkspaceData> {
     activity,
     retention,
     holderShare,
+    communityTotals,
+    communitySeriesData,
   ] = await Promise.all([
     giftTotals(w),
     giftSeries(w),
@@ -572,6 +627,8 @@ async function loadWorkspaceData(period: Period): Promise<WorkspaceData> {
     userActivity(w),
     cohorts(),
     holders(),
+    communityMetrics(w),
+    communitySeries(w),
   ]);
 
   const pledgeNow = count.pledges ? count.pledges_fulfilled / count.pledges : 0;
@@ -699,6 +756,46 @@ async function loadWorkspaceData(period: Period): Promise<WorkspaceData> {
     userActivity: activity,
     cohorts: retention,
     holders: holderShare,
+    community: {
+      metrics: [
+        {
+          label: "Referral-driven donations",
+          value: formatNaira(referral.allDriven),
+          change: `${
+            totals.total
+              ? formatPercent(referral.allDriven / totals.total)
+              : "0%"
+          } of total`,
+          tone: "blue",
+        },
+        {
+          label: "Bounty ROI",
+          value: "—",
+          change: "No bounty data yet",
+          tone: "neutral",
+        },
+        changeMetric(
+          "Social reach",
+          formatCount(communityTotals.shares),
+          communityTotals.shares,
+          communityTotals.prev_shares,
+        ),
+        {
+          label: "New members via referral",
+          value: formatCount(communityTotals.new_referred),
+          change: `${
+            count.new_users
+              ? formatPercent(communityTotals.new_referred / count.new_users)
+              : "0%"
+          } of new`,
+          tone: "blue",
+        },
+      ],
+      referralImpact: {
+        donations: { ...communitySeriesData.donations, labels: w.labels },
+        referrals: { ...communitySeriesData.referrals, labels: w.labels },
+      },
+    },
     navCounts: {
       Campaigns: count.pending_causes,
       KYC: count.pending_kyc,

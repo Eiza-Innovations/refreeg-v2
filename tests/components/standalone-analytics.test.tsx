@@ -95,6 +95,41 @@ function fixture(overrides: Partial<WorkspaceData> = {}): WorkspaceData {
       rows: [{ label: "Top 10 holders", value: 30, tone: "gold" }],
       top100Share: 62,
     },
+    community: {
+      metrics: [
+        {
+          label: "Referral-driven donations",
+          value: "₦2.8M",
+          change: "12% of total",
+          tone: "blue",
+        },
+        { label: "Bounty ROI", value: "—", change: "No bounty data yet" },
+        {
+          label: "Social reach",
+          value: "86,400",
+          change: "+14%",
+          tone: "green",
+        },
+        {
+          label: "New members via referral",
+          value: "4,812",
+          change: "69% of new",
+          tone: "blue",
+        },
+      ],
+      referralImpact: {
+        donations: {
+          values: [1, 2, 3],
+          previous: [1, 1, 2],
+          labels: ["1 Nov", "3 Nov"],
+        },
+        referrals: {
+          values: [4, 5, 6],
+          previous: [3, 4, 5],
+          labels: ["1 Nov", "3 Nov"],
+        },
+      },
+    },
     navCounts: { KYC: 9 },
     ...overrides,
   };
@@ -144,4 +179,24 @@ it("shows today's campaigns and an empty state on the day view", () => {
     <StandaloneAnalytics data={fixture({ period: "day", topCampaigns: [] })} />,
   );
   expect(screen.getByText("No donations yet today.")).toBeVisible();
+});
+
+it("shows community metrics and the referral/bounty/reach panels", async () => {
+  const user = userEvent.setup();
+  render(<StandaloneAnalytics data={fixture()} />);
+
+  await user.click(screen.getByRole("button", { name: "Community" }));
+  expect(
+    screen.getByRole("heading", { name: "Community analytics" }),
+  ).toBeVisible();
+  expect(screen.getByText("₦2.8M")).toBeVisible();
+  expect(
+    screen.getByText("No bounty data yet — bounties aren't live."),
+  ).toBeVisible();
+  expect(
+    screen.getByText("Platform-level share data isn't tracked yet."),
+  ).toBeVisible();
+
+  await user.click(screen.getByRole("button", { name: "day" }));
+  expect(push).toHaveBeenCalledWith("/admin-analytics?period=day");
 });

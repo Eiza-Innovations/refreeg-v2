@@ -16,16 +16,19 @@ visitors are sent to sign-in; other roles get a 404.
 
 ## Where the numbers come from
 
-| Panel                            | Source                                                                                                               |
-| -------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Donations, donors, average gift  | completed `donations` + `crypto_donations` (naira)                                                                   |
-| Pledge → donation                | `pledges` created in the window that are `fulfilled`                                                                 |
-| Campaign status                  | approved, unended `causes`; inactive = no gift for 21 days; paused = `paused` or `compliance_paused`                 |
-| EIZA issued                      | `reward_transactions` grouped by `transaction_type`                                                                  |
-| Who holds EIZA                   | `profiles.total_points`                                                                                              |
-| Ambassadors                      | `donor_referral_attributions` (donations driven), `referrals_v1` (referrals, sign-up rate), `referral_bonus` rewards |
-| Active users, retention, cohorts | `events` (logins, comments, shares, donations)                                                                       |
-| Sidebar counts                   | pending `causes`, `kyc_verifications`, `petitions`                                                                   |
+| Panel                                                           | Source                                                                                                               |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Donations, donors, average gift                                 | completed `donations` + `crypto_donations` (naira)                                                                   |
+| Pledge → donation                                               | `pledges` created in the window that are `fulfilled`                                                                 |
+| Campaign status                                                 | approved, unended `causes`; inactive = no gift for 21 days; paused = `paused` or `compliance_paused`                 |
+| EIZA issued                                                     | `reward_transactions` grouped by `transaction_type`                                                                  |
+| Who holds EIZA                                                  | `profiles.total_points`                                                                                              |
+| Ambassadors                                                     | `donor_referral_attributions` (donations driven), `referrals_v1` (referrals, sign-up rate), `referral_bonus` rewards |
+| Active users, retention, cohorts                                | `events` (logins, comments, shares, donations)                                                                       |
+| Sidebar counts                                                  | pending `causes`, `kyc_verifications`, `petitions`                                                                   |
+| Community · referral-driven donations, new members via referral | `donor_referral_attributions` (reused from Ambassadors), `referrals_v1` joined to `profiles`                         |
+| Community · social reach                                        | `cause_shares` (share event count, shown as "Social reach" — no platform/reach/click data exists yet)                |
+| Community · bounty ROI, reach by platform                       | not available — no bounty data model and no platform-level share tracking exist yet; panels render an empty state    |
 
 Windows: Day = today vs same time last week; Month = month to date vs the same span
 of last month; Year = year to date vs the same span last year.
