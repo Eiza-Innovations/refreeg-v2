@@ -4,6 +4,8 @@ import { enforceRateLimit } from "@/lib/api/rate-limit";
 import Paystack from "@/services/paystack";
 import { processSuccessfulCharge } from "@/lib/payments/paystack-charge-processing";
 import { prisma } from "@/lib/prisma";
+import { isUuid } from "@/lib/uuid";
+import { decodeStoreReviewDemoReference } from "@/lib/auth/store-review-demo";
 
 export async function OPTIONS() {
   return handleCorsPreflight();
@@ -15,6 +17,38 @@ async function handleVerification(reference: string | null) {
   }
 
   const trimmedReference = reference.trim();
+
+  const demoPayload = decodeStoreReviewDemoReference(trimmedReference);
+  if (demoPayload) {
+    const cause = isUuid(demoPayload.causeId)
+      ? await prisma.cause.findUnique({
+          where: { id: demoPayload.causeId },
+          select: { id: true, title: true, raised: true, goal: true },
+        })
+      : null;
+
+    return apiSuccess({
+      verified: true,
+      reference: trimmedReference,
+      isStoreReviewDemo: true,
+      donation: {
+        id: trimmedReference,
+        amount: demoPayload.amount,
+        tipAmount: demoPayload.tipAmount,
+        donorName: demoPayload.isAnonymous
+          ? "Anonymous"
+          : demoPayload.donorName,
+        message: demoPayload.message,
+        isAnonymous: demoPayload.isAnonymous,
+        createdAt: demoPayload.createdAt,
+        causeId: demoPayload.causeId,
+        causeTitle: cause?.title ?? "Demo Campaign",
+        causeRaised: Number(cause?.raised || 0),
+        causeGoal: Number(cause?.goal || 0),
+      },
+    });
+  }
+
   const isSuccessful = await Paystack.verifyTransaction(trimmedReference);
 
   if (!isSuccessful) {

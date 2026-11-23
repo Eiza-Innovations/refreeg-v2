@@ -20,6 +20,7 @@ import {
   CircleDollarSign,
   ClipboardCheckIcon,
   FileText,
+  Flag,
   HandHeart,
   HeartHandshake,
   HelpCircle,
@@ -185,6 +186,11 @@ const adminDashboardItems = [
     title: "Notifications",
     href: "/dashboard/admin/notifications",
     icon: Bell,
+  },
+  {
+    title: "Content Reports",
+    href: "/dashboard/admin/reports",
+    icon: Flag,
   },
   { title: "Logs", href: "/dashboard/admin/logs", icon: ClipboardCheckIcon },
 ];

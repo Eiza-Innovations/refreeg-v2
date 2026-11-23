@@ -8,6 +8,11 @@ import { isUuid } from "@/lib/uuid";
 import Paystack from "@/services/paystack";
 import { calculateServiceFee, calculateProviderFee } from "@/lib/utils";
 import { processSuccessfulCharge } from "@/lib/payments/paystack-charge-processing";
+import {
+  encodeStoreReviewDemoReference,
+  isStoreReviewDemoAccount,
+  STORE_REVIEW_DEMO_SAVED_CARD,
+} from "@/lib/auth/store-review-demo";
 
 export async function OPTIONS() {
   return handleCorsPreflight();
@@ -49,13 +54,21 @@ export async function POST(request: NextRequest) {
       return apiError("Missing required fields: cardId, causeId, amount", 400);
     }
 
-    if (!isUuid(cardId) || !isUuid(causeId)) {
+    const isDemoCard =
+      isStoreReviewDemoAccount(user.email) &&
+      cardId === STORE_REVIEW_DEMO_SAVED_CARD.id;
+
+    if ((!isDemoCard && !isUuid(cardId)) || !isUuid(causeId)) {
       return apiError("Invalid cardId or causeId format", 400);
     }
 
     const numAmount = Number(amount);
     if (!Number.isFinite(numAmount) || numAmount < 100) {
       return apiError("Minimum donation amount is ₦100", 400);
+    }
+
+    if (numAmount > 10_000_000) {
+      return apiError("Maximum donation amount is ₦10,000,000", 400);
     }
 
     const tip = Number(tipAmount ?? 0);
@@ -103,6 +116,36 @@ export async function POST(request: NextRequest) {
     const effectiveName = isAnonymous
       ? "Anonymous"
       : donorName?.trim() || user.fullName || "Supporter";
+
+    if (isDemoCard) {
+      const demoReference = encodeStoreReviewDemoReference({
+        causeId,
+        amount: numAmount,
+        tipAmount: tip,
+        donorName: effectiveName,
+        message: message || "",
+        isAnonymous: Boolean(isAnonymous),
+      });
+
+      return apiSuccess({
+        status: "success",
+        reference: demoReference,
+        amount: numAmount,
+        serviceFee,
+        providerFee,
+        tipAmount: tip,
+        totalCharged: numAmount + totalFees,
+        isStoreReviewDemo: true,
+        donation: {
+          id: demoReference,
+          amount: numAmount,
+          donorName: effectiveName,
+          causeTitle: cause.title,
+          reference: demoReference,
+          createdAt: new Date().toISOString(),
+        },
+      });
+    }
 
     // Fetch the saved card
     const card = await prisma.user_saved_cards.findFirst({

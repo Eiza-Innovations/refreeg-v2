@@ -6,6 +6,19 @@ import { prisma } from "@/lib/prisma";
 import { isUuid } from "@/lib/uuid";
 import Paystack from "@/services/paystack";
 import { calculateServiceFee, calculateProviderFee } from "@/lib/utils";
+import {
+  decodeStoreReviewDemoReference,
+  encodeStoreReviewDemoReference,
+  isStoreReviewDemoAccount,
+} from "@/lib/auth/store-review-demo";
+
+const MAX_DONATION_AMOUNT = 10_000_000;
+const SUPPORTED_CHARGE_CHANNELS = new Set([
+  "bank_transfer",
+  "ussd",
+  "card",
+  "opay",
+]);
 
 export async function OPTIONS() {
   return handleCorsPreflight();
@@ -36,8 +49,19 @@ export async function POST(request: NextRequest) {
       if (!data.pin || !data.reference) {
         return apiError("Missing PIN or payment reference", 400);
       }
+      const trimmedRef = String(data.reference).trim();
+      if (
+        isStoreReviewDemoAccount(authUser?.email) &&
+        decodeStoreReviewDemoReference(trimmedRef)
+      ) {
+        return apiSuccess({
+          status: "success",
+          reference: trimmedRef,
+          isStoreReviewDemo: true,
+        });
+      }
       try {
-        const res = await Paystack.submitPin(data.pin, data.reference);
+        const res = await Paystack.submitPin(data.pin, trimmedRef);
         return apiSuccess(res);
       } catch (e: any) {
         return apiError(e.message || "Failed to submit PIN", 400);
@@ -48,8 +72,19 @@ export async function POST(request: NextRequest) {
       if (!data.otp || !data.reference) {
         return apiError("Missing OTP or payment reference", 400);
       }
+      const trimmedRef = String(data.reference).trim();
+      if (
+        isStoreReviewDemoAccount(authUser?.email) &&
+        decodeStoreReviewDemoReference(trimmedRef)
+      ) {
+        return apiSuccess({
+          status: "success",
+          reference: trimmedRef,
+          isStoreReviewDemo: true,
+        });
+      }
       try {
-        const res = await Paystack.submitOtp(data.otp, data.reference);
+        const res = await Paystack.submitOtp(data.otp, trimmedRef);
         return apiSuccess(res);
       } catch (e: any) {
         return apiError(e.message || "Failed to submit OTP", 400);
@@ -60,8 +95,19 @@ export async function POST(request: NextRequest) {
       if (!data.phone || !data.reference) {
         return apiError("Missing phone or payment reference", 400);
       }
+      const trimmedRef = String(data.reference).trim();
+      if (
+        isStoreReviewDemoAccount(authUser?.email) &&
+        decodeStoreReviewDemoReference(trimmedRef)
+      ) {
+        return apiSuccess({
+          status: "success",
+          reference: trimmedRef,
+          isStoreReviewDemo: true,
+        });
+      }
       try {
-        const res = await Paystack.submitPhone(data.phone, data.reference);
+        const res = await Paystack.submitPhone(data.phone, trimmedRef);
         return apiSuccess(res);
       } catch (e: any) {
         return apiError(e.message || "Failed to submit phone", 400);
@@ -86,6 +132,12 @@ export async function POST(request: NextRequest) {
     if (isCardSetup && numAmount !== 50) {
       return apiError(
         "Card setup verification charge must be exactly ₦50",
+        400,
+      );
+    }
+    if (!isCardSetup && numAmount > MAX_DONATION_AMOUNT) {
+      return apiError(
+        `Maximum donation amount is ₦${MAX_DONATION_AMOUNT.toLocaleString()}`,
         400,
       );
     }
@@ -123,17 +175,84 @@ export async function POST(request: NextRequest) {
     const totalAmount = numAmount + serviceFee + providerFee + tipAmount;
     const totalKobo = Math.round(totalAmount * 100);
     const channel = data.channel || "bank_transfer";
+    if (!SUPPORTED_CHARGE_CHANNELS.has(channel)) {
+      return apiError("Unsupported payment channel", 400);
+    }
+
+    const normalizedEmail = String(data.email).trim().toLowerCase();
 
     const effectiveDonorName = data.isAnonymous
       ? "Anonymous"
       : data.donorName || authUser?.fullName || "Supporter";
+
+    if (isStoreReviewDemoAccount(authUser?.email)) {
+      const demoRef = encodeStoreReviewDemoReference({
+        causeId: data.causeId,
+        amount: numAmount,
+        tipAmount,
+        donorName: effectiveDonorName,
+        message: data.message || "",
+        isAnonymous: Boolean(data.isAnonymous),
+      });
+
+      if (isCardSetup || channel === "card") {
+        return apiSuccess({
+          status: "success",
+          reference: demoRef,
+          display_text: isCardSetup
+            ? "Demo verification card authorized."
+            : "Demo card charge completed.",
+          totalAmount,
+          isStoreReviewDemo: true,
+        });
+      }
+
+      if (channel === "bank_transfer") {
+        return apiSuccess({
+          status: "send_address",
+          reference: demoRef,
+          display_text: `Please transfer ₦${totalAmount.toLocaleString()} to the demo account below.`,
+          account_number: "9912345678",
+          account_name: "RefreeG / Store Review Demo",
+          bank_name: "Wema Bank",
+          expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+          totalAmount,
+          isStoreReviewDemo: true,
+        });
+      }
+
+      if (channel === "ussd") {
+        const bankCode = data.ussdBank || "737";
+        return apiSuccess({
+          status: "send_ussd",
+          reference: demoRef,
+          display_text: `Dial *${bankCode}*000*1234# on your phone`,
+          ussd_code: `*${bankCode}*000*1234#`,
+          totalAmount,
+          isStoreReviewDemo: true,
+        });
+      }
+
+      if (channel === "opay") {
+        return apiSuccess({
+          status: "pay_offline",
+          reference: demoRef,
+          display_text:
+            "Please authorize the payment prompt sent to your OPay app.",
+          totalAmount,
+          isStoreReviewDemo: true,
+        });
+      }
+
+      return apiError("Unsupported payment channel", 400);
+    }
 
     const metadata = {
       amount: numAmount,
       tip_amount: tipAmount,
       customer_name: effectiveDonorName,
       cause_id: data.causeId,
-      email: data.email,
+      email: normalizedEmail,
       message: data.message || "",
       is_anonymous: Boolean(data.isAnonymous),
       channel,
@@ -142,7 +261,7 @@ export async function POST(request: NextRequest) {
     };
 
     const chargePayload: Record<string, any> = {
-      email: data.email,
+      email: normalizedEmail,
       amount: totalKobo,
       metadata,
     };

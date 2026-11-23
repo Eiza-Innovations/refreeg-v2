@@ -4,6 +4,11 @@ import { enforceRateLimit } from "@/lib/api/rate-limit";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
 import { prisma } from "@/lib/prisma";
 import Paystack from "@/services/paystack";
+import {
+  decodeStoreReviewDemoReference,
+  isStoreReviewDemoAccount,
+  STORE_REVIEW_DEMO_SAVED_CARD,
+} from "@/lib/auth/store-review-demo";
 
 export async function OPTIONS() {
   return handleCorsPreflight();
@@ -45,6 +50,10 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    if (cards.length === 0 && isStoreReviewDemoAccount(user.email)) {
+      return apiSuccess({ cards: [STORE_REVIEW_DEMO_SAVED_CARD] });
+    }
+
     return apiSuccess({ cards });
   } catch (error: any) {
     console.error("Error fetching user saved cards:", error);
@@ -75,13 +84,31 @@ export async function POST(request: NextRequest) {
     if (rateLimited) return rateLimited;
 
     const body = await request.json();
-    const { reference } = body;
+    const { reference, refundSetupCharge = false } = body;
 
     if (!reference || typeof reference !== "string" || !reference.trim()) {
       return apiError("Missing transaction reference", 400);
     }
 
-    const tx = (await Paystack.verifyTransactionFull(reference)) as {
+    const trimmedReference = reference.trim();
+
+    if (
+      isStoreReviewDemoAccount(user.email) &&
+      decodeStoreReviewDemoReference(trimmedReference)
+    ) {
+      return apiSuccess(
+        {
+          card: STORE_REVIEW_DEMO_SAVED_CARD,
+          refundInitiated: Boolean(refundSetupCharge),
+          message: refundSetupCharge
+            ? "Card saved and ₦50 verification charge refunded"
+            : "Card saved successfully",
+        },
+        201,
+      );
+    }
+
+    const tx = (await Paystack.verifyTransactionFull(trimmedReference)) as {
       status?: string;
       amount?: number;
       metadata?: {
