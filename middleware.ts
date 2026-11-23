@@ -19,6 +19,7 @@ const APP_ICON_PATH =
 
 const PUBLIC_API_PREFIXES = [
   "/api/auth",
+  "/api/mobile",
   "/api/health",
   "/api/error-report",
   "/api/bot",

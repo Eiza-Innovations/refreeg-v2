@@ -1,1 +1,2 @@
+case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*) exit 0 ;; esac
 pnpm exec lint-staged

@@ -3,8 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { hashApiKey } from "@/utils/api-bot/api-keys";
 import type { Database } from "@/types/database-types";
 import { errorResponse, ApiErrorCode } from "@/utils/api-bot/response-utils";
-import { getClientIp } from "@/lib/api/client-ip";
-import { createRateLimiter } from "@/lib/api/rate-limit";
+import { checkRateLimit } from "@/lib/api/rate-limit";
 import { CORS_HEADERS } from "@/utils/api-bot/cors";
 
 export async function validateApiKey(request: NextRequest) {
@@ -75,7 +74,6 @@ export async function validateApiKey(request: NextRequest) {
 
 const DEFAULT_WINDOW_MS = 60 * 1000;
 const DEFAULT_MAX_REQUESTS = 60;
-const limiters = new Map<string, ReturnType<typeof createRateLimiter>>();
 
 export function rateLimit(
   request: NextRequest,
@@ -83,16 +81,14 @@ export function rateLimit(
   window = DEFAULT_WINDOW_MS,
 ) {
   // Keyed by client address only: the Authorization header is attacker-chosen
-  // and rotating it must not reset the limit. The key set is bounded.
-  const ip = getClientIp(request.headers) || "unknown";
-  const limiterId = `${max}:${window}`;
-  let limited = limiters.get(limiterId);
-  if (!limited) {
-    limited = createRateLimiter({ max, windowMs: window });
-    limiters.set(limiterId, limited);
-  }
+  // and rotating it must not reset the limit. The key set is bounded per namespace.
+  const { limited } = checkRateLimit(request, {
+    namespace: `api_bot:${max}:${window}`,
+    limit: max,
+    windowMs: window,
+  });
 
-  if (limited(ip)) {
+  if (limited) {
     return {
       errorResponse: errorResponse(
         "Rate limit exceeded. Try again in a minute.",

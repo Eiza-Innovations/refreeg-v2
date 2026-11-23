@@ -86,7 +86,12 @@ model User {
   bookmarks        Bookmark[]
   alertPreferences UserAlertPrefs?
   notifications    notifications[]
-  user_saved_cards user_saved_cards[]
+  user_saved_cards        user_saved_cards[]
+  submittedContentReports content_reports[]  @relation("ContentReportsSubmitted")
+  reportedContentReports  content_reports[]  @relation("ContentReportsAgainst")
+  reviewedContentReports  content_reports[]  @relation("ContentReportsReviewed")
+  initiatedUserBlocks     user_blocks[]      @relation("UserBlocksInitiated")
+  receivedUserBlocks      user_blocks[]      @relation("UserBlocksReceived")
 
   @@index([isBlocked], map: "idx_profiles_is_blocked")
   @@map("profiles")
