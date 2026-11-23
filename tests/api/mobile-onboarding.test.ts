@@ -20,9 +20,13 @@ jest.mock("@/actions/users/profile-actions", () => ({
   checkUsernameAvailability: jest.fn(),
 }));
 
-jest.mock("@/lib/users/profile-core", () => ({
-  createOnboardingProfileCore: jest.fn(),
-}));
+jest.mock("@/lib/users/profile-core", () => {
+  const actual = jest.requireActual("@/lib/users/profile-core");
+  return {
+    ...actual,
+    createOnboardingProfileCore: jest.fn(),
+  };
+});
 
 jest.mock("@/lib/prisma", () => ({
   prisma: {
@@ -50,7 +54,10 @@ import {
   getCurrentOnboardingStep,
   checkUsernameAvailability,
 } from "@/actions/users/profile-actions";
-import { createOnboardingProfileCore } from "@/lib/users/profile-core";
+import {
+  createOnboardingProfileCore,
+  OnboardingValidationError,
+} from "@/lib/users/profile-core";
 import { prisma } from "@/lib/prisma";
 
 function makeRequest(body: Record<string, unknown> = {}): NextRequest {
@@ -72,25 +79,24 @@ describe("Mobile Onboarding API Routes", () => {
   });
 
   describe("GET /api/mobile/onboarding", () => {
-    it("returns onboarding data including fullName, displayName, and accountType", async () => {
+    it("returns onboarding data including bio, displayName, and accountType", async () => {
       (getOnboardingData as jest.Mock).mockResolvedValue({
         accountType: "individual",
-        firstName: "Amina",
-        lastName: "Bello",
+        gender: "female",
+        profile: {
+          firstName: "Amina",
+          lastName: "Bello",
+          displayName: "Amina",
+          username: "aminabello123",
+          bio: "Community volunteer in Lagos",
+          location: "Lekki, Lagos",
+          phone: "",
+          email: "amina@refreeg.com",
+        },
       });
       (getCurrentOnboardingStep as jest.Mock).mockResolvedValue(2);
       (prisma.user.findUnique as jest.Mock).mockResolvedValue({
         accountType: "individual",
-        gender: "female",
-        firstName: "Amina",
-        lastName: "Bello",
-        fullName: "Amina Bello",
-        displayName: "Amina",
-        username: "aminabello123",
-        location: "Lekki, Lagos",
-        phone: "",
-        email: "amina@refreeg.com",
-        profilePhoto: null,
         interests: ["education"],
         onboarding_completed: false,
       });
@@ -103,16 +109,16 @@ describe("Mobile Onboarding API Routes", () => {
       expect(body.success).toBe(true);
       expect(body.data.accountType).toBe("individual");
       expect(body.data.currentStep).toBe(2);
-      expect(prisma.user.findUnique).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: "user-1" },
-          select: expect.objectContaining({
-            fullName: true,
-            displayName: true,
-            accountType: true,
-          }),
-        }),
-      );
+      expect(body.data.data.profile.bio).toBe("Community volunteer in Lagos");
+      expect(body.data.data.profile.displayName).toBe("Amina");
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({
+        where: { id: "user-1" },
+        select: {
+          accountType: true,
+          interests: true,
+          onboarding_completed: true,
+        },
+      });
     });
   });
 
@@ -201,6 +207,150 @@ describe("Mobile Onboarding API Routes", () => {
         }),
         null,
       );
+    });
+
+    it("forwards valid profilePhoto S3 key, bio, and displayName without overwriting via oauthAvatarUrl", async () => {
+      (checkUsernameAvailability as jest.Mock).mockResolvedValue(true);
+      (createOnboardingProfileCore as jest.Mock).mockResolvedValue({
+        id: "user-1",
+        bio: "Helping local clinics.",
+        displayName: "Amina B.",
+        profilePhoto: "uploads/profiles/user-1/images/avatar.jpg",
+      });
+
+      const req = makeRequest({
+        profileData: {
+          firstName: "Amina",
+          lastName: "Bello",
+          displayName: " Amina B. ",
+          bio: " Helping local clinics. ",
+          accountType: "individual",
+          profilePhoto: "uploads/profiles/user-1/images/avatar.jpg",
+        },
+        oauthAvatarUrl: "https://lh3.googleusercontent.com/google-avatar",
+      });
+      const res = await POST(req);
+
+      expect(res.status).toBe(200);
+      expect(createOnboardingProfileCore).toHaveBeenCalledWith(
+        "user-1",
+        expect.objectContaining({
+          displayName: "Amina B.",
+          bio: "Helping local clinics.",
+          profilePhoto: "uploads/profiles/user-1/images/avatar.jpg",
+        }),
+        "https://lh3.googleusercontent.com/google-avatar",
+      );
+    });
+
+    it("rejects a foreign profilePhoto S3 key with 400", async () => {
+      const req = makeRequest({
+        profileData: {
+          firstName: "Amina",
+          lastName: "Bello",
+          accountType: "individual",
+          profilePhoto: "uploads/profiles/other-user/images/avatar.jpg",
+        },
+      });
+      const res = await POST(req);
+      const body = await res.json();
+
+      expect(res.status).toBe(400);
+      expect(body.error).toBe("Invalid profile photo upload key");
+      expect(createOnboardingProfileCore).not.toHaveBeenCalled();
+    });
+
+    it("rejects non-string or oversized bio and displayName with 400", async () => {
+      const badBioTypeRes = await POST(
+        makeRequest({
+          profileData: { firstName: "Amina", bio: 123 },
+        }),
+      );
+      expect(badBioTypeRes.status).toBe(400);
+
+      const longBioRes = await POST(
+        makeRequest({
+          profileData: { firstName: "Amina", bio: "a".repeat(501) },
+        }),
+      );
+      expect(longBioRes.status).toBe(400);
+
+      const longDisplayNameRes = await POST(
+        makeRequest({
+          profileData: { firstName: "Amina", displayName: "a".repeat(101) },
+        }),
+      );
+      expect(longDisplayNameRes.status).toBe(400);
+
+      const nonStringFirstNameRes = await POST(
+        makeRequest({
+          profileData: { firstName: 123 },
+        }),
+      );
+      expect(nonStringFirstNameRes.status).toBe(400);
+
+      const malformedJsonReq = {
+        json: jest.fn().mockRejectedValue(new SyntaxError("Unexpected token")),
+        headers: { get: () => null },
+      } as unknown as NextRequest;
+      const malformedRes = await POST(malformedJsonReq);
+      expect(malformedRes.status).toBe(400);
+      expect(createOnboardingProfileCore).not.toHaveBeenCalled();
+    });
+
+    it("rejects untrusted oauthAvatarUrl hosts like sites.googleusercontent.com with 400", async () => {
+      const res = await POST(
+        makeRequest({
+          profileData: { firstName: "Amina", lastName: "Bello" },
+          oauthAvatarUrl: "https://sites.googleusercontent.com/avatar.png",
+        }),
+      );
+      const body = await res.json();
+
+      expect(res.status).toBe(400);
+      expect(body.error).toBe("Invalid OAuth avatar URL");
+      expect(createOnboardingProfileCore).not.toHaveBeenCalled();
+    });
+
+    it("returns 409 on username conflict and avoids leaking raw Prisma error messages on 500", async () => {
+      (checkUsernameAvailability as jest.Mock).mockResolvedValueOnce(false);
+      const conflictCheckRes = await POST(
+        makeRequest({
+          profileData: { username: "Amina_Bello" },
+        }),
+      );
+      expect(conflictCheckRes.status).toBe(409);
+
+      (checkUsernameAvailability as jest.Mock).mockResolvedValueOnce(true);
+      (createOnboardingProfileCore as jest.Mock).mockRejectedValueOnce(
+        new OnboardingValidationError(
+          "This username is already taken. Please choose another.",
+          409,
+        ),
+      );
+      const conflictCoreRes = await POST(
+        makeRequest({
+          profileData: { username: "amina_bello" },
+        }),
+      );
+      expect(conflictCoreRes.status).toBe(409);
+
+      const consoleSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => undefined);
+      (createOnboardingProfileCore as jest.Mock).mockRejectedValueOnce(
+        new Error("Prisma secret connection string error"),
+      );
+      const unexpectedRes = await POST(
+        makeRequest({
+          profileData: { firstName: "Amina" },
+        }),
+      );
+      const unexpectedBody = await unexpectedRes.json();
+
+      expect(unexpectedRes.status).toBe(500);
+      expect(unexpectedBody.error).toBe("Internal server error");
+      consoleSpy.mockRestore();
     });
   });
 
