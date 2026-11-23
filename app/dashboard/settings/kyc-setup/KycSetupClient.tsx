@@ -1,14 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import NavigationLoader from "@/components/NavigationLoader";
+import NavigationLoader from "@/components/layout/NavigationLoader";
 import type { KycVerification } from "@/types/kyc-types";
 
 const DiditKycForm = dynamic(() => import("./DiditKycForm"), {
-  loading: () => {
-    console.log("[KYC Setup] Loading client form...");
-    return <NavigationLoader />;
-  },
+  loading: () => <NavigationLoader />,
   ssr: false,
 });
 
@@ -43,8 +40,6 @@ export default function KycSetupClient(props: KycSetupClientProps) {
       return () => clearInterval(interval);
     }
   }, [props.currentKyc?.status, router]);
-
-  console.log("[KYC Setup] Client wrapper received props:", props);
 
   if (props.currentKyc?.status === "pending") {
     return (

@@ -5,9 +5,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { listCauses } from "@/actions";
-import { listBookmarkedIds } from "@/actions/saved-actions";
+import { listBookmarkedIds } from "@/actions/users/saved-actions";
 import { sortCausesByFunding } from "@/lib/causes/funding-rank";
 import { causePublicPath } from "@/lib/causes/slug";
+import { formatNaira } from "@/components/giving/format";
 import { BookmarkButton } from "@/components/saved/BookmarkButton";
 import { useGsap } from "@/hooks/use-gsap";
 import {
@@ -151,32 +152,23 @@ export default function LiveCampaigns() {
     });
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-NG", {
-      style: "currency",
-      currency: "NGN",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
-
   if (loading) {
     return (
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-surface">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-end mb-8">
             <div>
-              <div className="h-4 w-24 bg-gray-200 rounded animate-pulse mb-3"></div>
-              <div className="h-12 w-96 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-4 w-24 bg-cream-muted rounded animate-pulse mb-3"></div>
+              <div className="h-12 w-96 bg-cream-muted rounded animate-pulse"></div>
             </div>
-            <div className="h-10 w-24 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-10 w-24 bg-cream-muted rounded animate-pulse"></div>
           </div>
-          <div className="h-6 w-64 bg-gray-200 rounded animate-pulse mb-8"></div>
+          <div className="h-6 w-64 bg-cream-muted rounded animate-pulse mb-8"></div>
           <div className="flex gap-6 overflow-hidden">
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
-                className="min-w-[280px] md:min-w-[320px] bg-gray-100 rounded-2xl h-96 animate-pulse flex-shrink-0"
+                className="min-w-[280px] md:min-w-[320px] bg-bone rounded-2xl h-96 animate-pulse flex-shrink-0"
               ></div>
             ))}
           </div>
@@ -188,48 +180,48 @@ export default function LiveCampaigns() {
   if (campaigns.length === 0) return null;
 
   return (
-    <section ref={sectionRef} className="py-16 bg-white">
+    <section ref={sectionRef} className="py-16 bg-surface">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div ref={headerRef} className="flex justify-between items-end mb-8">
           <div>
-            <p className="text-[11px] font-medium tracking-[0.16em] uppercase text-[#1C3CD5] mb-3">
+            <p className="text-[11px] font-medium tracking-[0.16em] uppercase text-brand-blue mb-3">
               LIVE ON REFREEG
             </p>
-            <h2 className="font-serif font-normal text-[#0D0D0D] text-4xl md:text-5xl lg:text-6xl leading-[1.08]">
+            <h2 className="font-serif font-normal text-near-black text-4xl md:text-5xl lg:text-6xl leading-[1.08]">
               Real causes. Real receipts.
             </h2>
           </div>
           <Link
             href="/causes"
-            className="hidden md:flex items-center gap-2 text-[#1C3CD5] font-medium text-sm hover:opacity-80 transition-opacity whitespace-nowrap"
+            className="hidden md:flex items-center gap-2 text-brand-blue font-medium text-sm hover:opacity-80 transition-opacity whitespace-nowrap"
           >
             View all
             <ChevronRight size={16} />
           </Link>
         </div>
 
-        <p className="text-gray-600 max-w-2xl text-base mb-8">
+        <p className="text-ink/70 max-w-2xl text-base mb-8">
           A glimpse of what&apos;s funding right now. Each campaign is verified,
           every naira tracked from contribution to impact.
         </p>
 
         {showScrollHint && (
           <div className="flex items-center justify-center gap-2 sm:gap-3 mb-6 animate-pulse">
-            <ChevronsLeft size={14} className="text-[#1C3CD5] sm:hidden" />
+            <ChevronsLeft size={14} className="text-brand-blue sm:hidden" />
             <ChevronsLeft
               size={16}
-              className="text-[#1C3CD5] hidden sm:block"
+              className="text-brand-blue hidden sm:block"
             />
-            <span className="text-xs sm:text-sm font-medium text-gray-500 tracking-wide text-center">
+            <span className="text-xs sm:text-sm font-medium text-ink/60 tracking-wide text-center">
               <span className="sm:hidden">← Swipe to explore →</span>
               <span className="hidden sm:inline">
                 Swipe to explore more campaigns
               </span>
             </span>
-            <ChevronsRight size={14} className="text-[#1C3CD5] sm:hidden" />
+            <ChevronsRight size={14} className="text-brand-blue sm:hidden" />
             <ChevronsRight
               size={16}
-              className="text-[#1C3CD5] hidden sm:block"
+              className="text-brand-blue hidden sm:block"
             />
           </div>
         )}
@@ -238,14 +230,11 @@ export default function LiveCampaigns() {
           {canScrollLeft && (
             <button
               onClick={() => scroll("left")}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white shadow-lg rounded-full p-1.5 sm:p-2 border border-gray-200 transition-all duration-200 -ml-2 sm:-ml-4 flex items-center justify-center"
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-surface/90 hover:bg-surface shadow-lg rounded-full p-1.5 sm:p-2 border border-hairline transition-all duration-200 -ml-2 sm:-ml-4 flex items-center justify-center"
               aria-label="Scroll left"
             >
-              <ChevronLeft size={16} className="text-gray-700 sm:hidden" />
-              <ChevronLeft
-                size={20}
-                className="text-gray-700 hidden sm:block"
-              />
+              <ChevronLeft size={16} className="text-ink/80 sm:hidden" />
+              <ChevronLeft size={20} className="text-ink/80 hidden sm:block" />
             </button>
           )}
 
@@ -274,11 +263,12 @@ export default function LiveCampaigns() {
                     }}
                     className="group cursor-pointer flex-shrink-0 w-[280px] md:w-[320px]"
                   >
-                    <div className="bg-white rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 relative">
-                      <div className="aspect-[4/3] w-full overflow-hidden relative bg-gray-100">
+                    <div className="bg-surface rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 relative">
+                      <div className="aspect-[4/3] w-full overflow-hidden relative bg-bone">
                         <Image
                           src={
-                            getMediaUrl(campaign.image) || "/placeholder.svg"
+                            getMediaUrl(campaign.image) ||
+                            "/icons/placeholder.svg"
                           }
                           alt={campaign.title}
                           fill
@@ -299,33 +289,33 @@ export default function LiveCampaigns() {
                       </div>
 
                       <div className="absolute top-3 left-3 z-10">
-                        <span className="bg-[#CEF037] text-[#0D0D0D] text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full">
+                        <span className="bg-lime text-lime-foreground text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full">
                           LIVE
                         </span>
                       </div>
 
                       <div className="p-5">
-                        <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                        <div className="text-xs font-medium text-ink/60 uppercase tracking-wide mb-2">
                           {campaign.category}
                           {campaign.location ? ` · ${campaign.location}` : ""}
                         </div>
 
-                        <h3 className="font-semibold text-gray-900 text-base leading-tight mb-4 line-clamp-2">
+                        <h3 className="font-semibold text-ink text-base leading-tight mb-4 line-clamp-2">
                           {campaign.title}
                         </h3>
 
                         <div className="flex items-baseline gap-2 mb-3">
                           <span className="text-2xl font-bold text-gray-900">
-                            {formatCurrency(campaign.raised)} raised
+                            {formatNaira(campaign.raised)} raised
                           </span>
                           <span className="text-sm text-gray-500">
-                            of {formatCurrency(campaign.goal)}
+                            of {formatNaira(campaign.goal)}
                           </span>
                         </div>
 
-                        <div className="w-full bg-gray-200 rounded-full h-1">
+                        <div className="w-full bg-cream-muted rounded-full h-1">
                           <div
-                            className="bg-[#1C3CD5] h-1 rounded-full transition-all duration-300"
+                            className="bg-brand-blue h-1 rounded-full transition-all duration-300"
                             style={{
                               width: `${Math.min(percentRaised, 100)}%`,
                             }}
@@ -342,14 +332,11 @@ export default function LiveCampaigns() {
           {canScrollRight && (
             <button
               onClick={() => scroll("right")}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white shadow-lg rounded-full p-1.5 sm:p-2 border border-gray-200 transition-all duration-200 -mr-2 sm:-mr-4 flex items-center justify-center"
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-surface/90 hover:bg-surface shadow-lg rounded-full p-1.5 sm:p-2 border border-hairline transition-all duration-200 -mr-2 sm:-mr-4 flex items-center justify-center"
               aria-label="Scroll right"
             >
-              <ChevronRight size={16} className="text-gray-700 sm:hidden" />
-              <ChevronRight
-                size={20}
-                className="text-gray-700 hidden sm:block"
-              />
+              <ChevronRight size={16} className="text-ink/80 sm:hidden" />
+              <ChevronRight size={20} className="text-ink/80 hidden sm:block" />
             </button>
           )}
         </div>
@@ -357,7 +344,7 @@ export default function LiveCampaigns() {
         <div className="mt-6 text-center md:hidden">
           <Link
             href="/causes"
-            className="inline-flex items-center gap-2 text-[#1C3CD5] font-medium text-sm hover:opacity-80 transition-opacity"
+            className="inline-flex items-center gap-2 text-brand-blue font-medium text-sm hover:opacity-80 transition-opacity"
           >
             View all campaigns
             <ChevronRight size={16} />

@@ -1,7 +1,9 @@
+import { createHmac, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { issueReferralRewardOnKycApproval } from "@/actions/kyc-actions";
+import { extractCachedDecisionFields } from "@/lib/didit";
+import { issueReferralRewardOnKycApproval } from "@/actions/users/kyc-actions";
 import {
   sendKycSubmittedEmail,
   sendKycApprovedEmail,
@@ -10,15 +12,66 @@ import {
   sendKycSubmissionAdminNotification,
 } from "@/services/mail";
 
+// This endpoint flips user.isVerified - the KYC gate for payouts and
+// referrals - so unsigned payloads must never reach the logic below. Didit
+// signs each delivery with HMAC-SHA256 over the raw body and the shared
+// webhook secret (X-Didit-Signature header).
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const rawBody = await request.text();
+    const secret = process.env.DIDIT_WEBHOOK_SECRET;
+
+    if (secret) {
+      const provided = (request.headers.get("x-didit-signature") || "")
+        .replace(/^sha256=/i, "")
+        .trim();
+      const expected = createHmac("sha256", secret)
+        .update(rawBody)
+        .digest("hex");
+      const providedBuf = Buffer.from(provided, "utf8");
+      const expectedBuf = Buffer.from(expected, "utf8");
+      if (
+        !provided ||
+        providedBuf.length !== expectedBuf.length ||
+        !timingSafeEqual(providedBuf, expectedBuf)
+      ) {
+        console.warn("[Didit Webhook] Signature verification failed");
+        return NextResponse.json(
+          { error: "Invalid signature" },
+          { status: 401 },
+        );
+      }
+    } else if (process.env.NODE_ENV === "production") {
+      console.error(
+        "[Didit Webhook] DIDIT_WEBHOOK_SECRET is not configured; rejecting webhook",
+      );
+      return NextResponse.json(
+        { error: "Webhook not configured" },
+        { status: 503 },
+      );
+    } else {
+      console.warn(
+        "[Didit Webhook] DIDIT_WEBHOOK_SECRET not set; skipping signature check outside production",
+      );
+    }
+
+    let body: any;
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    }
 
     if (body.webhook_type === "user.data.updated") {
       return NextResponse.json({ received: true });
     }
 
-    console.log("Didit webhook received:", body);
+    // Log only event metadata - full payloads carry names, DOB, addresses.
+    console.log(
+      "[Didit Webhook] Event received:",
+      body.webhook_type || "untyped",
+      body.status || body.data?.status || "",
+    );
 
     const sessionId =
       body.session_id ||
@@ -35,7 +88,10 @@ export async function POST(request: Request) {
       (body.data && body.data.vendorData);
 
     if (!sessionId) {
-      console.error("[Didit Webhook] Missing session_id in payload:", body);
+      console.error(
+        "[Didit Webhook] Missing session_id in payload with keys:",
+        Object.keys(body || {}).join(", "),
+      );
       return NextResponse.json(
         { error: "Missing session_id" },
         { status: 400 },
@@ -188,12 +244,24 @@ export async function POST(request: Request) {
       fullName = webhookData.full_name || body.full_name;
     }
 
+    // Cache decision-derived fields for the admin KYC queue.
+    const cached = extractCachedDecisionFields(webhookData);
+
     // Update kyc record
     await prisma.kyc_verifications.update({
       where: { id: kyc.id },
       data: {
         status: newStatus,
         verification_notes: `Automated Didit result: ${status}${isRejected || isResubmitted ? ` - ${rejectionReason}` : ""}`,
+        ...(cached.faceMatchScore != null && {
+          face_match_score: cached.faceMatchScore,
+        }),
+        ...(cached.idType && { id_type: cached.idType }),
+        ...(cached.idNumber && { id_number: cached.idNumber }),
+        ...(cached.checksTotal != null && { checks_total: cached.checksTotal }),
+        ...(cached.checksPassed != null && {
+          checks_passed: cached.checksPassed,
+        }),
         ...(fullName && fullName !== "Didit User" && { full_name: fullName }),
         ...(dob && { dob }),
         ...(address && { address }),

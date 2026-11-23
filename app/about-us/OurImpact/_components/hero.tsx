@@ -2,6 +2,7 @@ import React from "react";
 import { FaArrowRight } from "react-icons/fa6";
 import Image from "next/image";
 
+import { Button } from "@/components/ui/button";
 export default function Hero() {
   return (
     <div className="px-10 w-full flex flex-col-reverse md:flex md:flex-row justify-between">
@@ -14,13 +15,17 @@ export default function Hero() {
             At RefreeG, we are redefining crowdfunding in Africa by ensuring
             transparency, accountability, and real, measurable change. Every
             donation made on our platform contributes to building stronger
-            communities, supporting urgent causes, and empowering individuals to
+            communities, supporting urgent causes, and helping individuals
             create a better future.
           </div>
         </div>
-        <button className=" text-xs md:text-base flex items-center gap-x-2 text-white p-2 bg-[#0070E0] rounded">
+        <Button
+          variant="bare"
+          size="bare"
+          className=" text-xs md:text-base flex items-center gap-x-2 text-white p-2 bg-primaryShades-700 rounded"
+        >
           Crowdfund on Refreeg <FaArrowRight />
-        </button>
+        </Button>
       </div>
       <div className="hidden lg:block w-full md:w-4/12">
         <Image

@@ -5,11 +5,11 @@ import Image from "next/image";
 import { Flag, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { cn } from "@/lib/utils";
+import { cn, getInitials } from "@/lib/utils";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
-import { formatNairaShort } from "@/lib/discover-summary";
+import { formatNairaShort } from "@/lib/causes/discover-summary";
 import { BookmarkButton } from "@/components/saved/BookmarkButton";
-import type { DiscoverItem } from "@/actions/discover-actions";
+import type { DiscoverItem } from "@/actions/causes/discover-actions";
 
 type CardProps = {
   item: DiscoverItem;
@@ -30,13 +30,7 @@ const AVATAR_TONES = [
 ];
 
 function OrgAvatar({ name }: { name: string }) {
-  const initials =
-    name
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((w) => w[0]?.toUpperCase())
-      .join("") || "RG";
+  const initials = getInitials(name, "RG");
   const tone =
     AVATAR_TONES[
       [...name].reduce((sum, ch) => sum + ch.charCodeAt(0), 0) %
@@ -173,7 +167,7 @@ function PetitionGridCard({ item, onSignClick, initialBookmarked }: CardProps) {
 
 function CampaignGridCard(props: CardProps) {
   const { item, initialBookmarked } = props;
-  const imageUrl = getMediaUrl(item.image) || "/placeholder.svg";
+  const imageUrl = getMediaUrl(item.image) || "/icons/placeholder.svg";
   const chip = statusChip(item, "solid");
 
   return (
@@ -239,7 +233,7 @@ function CampaignGridCard(props: CardProps) {
 
 function ListRow(props: CardProps) {
   const { item, initialBookmarked } = props;
-  const imageUrl = getMediaUrl(item.image) || "/placeholder.svg";
+  const imageUrl = getMediaUrl(item.image) || "/icons/placeholder.svg";
   const chip = statusChip(item, "soft");
   const isCampaign = item.type === "campaign";
   const toGo = Math.max(item.goal - item.raised, 0);

@@ -1,11 +1,11 @@
 import { ICreateSubaccount, TransactionData } from "@/types";
-import axios from "axios";
+import axios, { type AxiosInstance } from "axios";
 import { getBaseURL } from "@/lib/utils";
 import {
   checkCircuit,
   recordFailure,
   recordSuccess,
-} from "@/lib/circuit-breaker";
+} from "@/lib/api/circuit-breaker";
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 
@@ -15,10 +15,40 @@ if (!PAYSTACK_SECRET_KEY) {
   );
 }
 
+export interface PaystackChargeResponse {
+  status: string;
+  reference: string;
+  display_text?: string;
+  account_number?: string;
+  account_name?: string;
+  bank?: any;
+  ussd_code?: string;
+  expires_at?: string;
+  url?: string;
+  [key: string]: unknown;
+}
+
+async function postWithCircuit<T = Record<string, unknown>>(
+  api: AxiosInstance,
+  path: string,
+  body: Record<string, unknown>,
+  fallbackError: string,
+): Promise<T> {
+  checkCircuit("paystack");
+  try {
+    const response = await api.post(path, body);
+    recordSuccess("paystack");
+    return response.data.data as T;
+  } catch (error: any) {
+    recordFailure("paystack");
+    throw new Error(error.response?.data?.message || fallbackError);
+  }
+}
+
 const Paystack = {
   api: axios.create({
     baseURL: "https://api.paystack.co",
-    timeout: 5000, 
+    timeout: 5000,
     headers: {
       Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
       "Content-Type": "application/json",
@@ -59,14 +89,15 @@ const Paystack = {
             }
           : {}),
         ...(data.plan ? { plan: data.plan } : {}),
+        ...(data.channels?.length ? { channels: data.channels } : {}),
         metadata: {
           amount: data.amount,
           tip_amount: data.tipAmount || 0,
           customer_name: data.full_name,
           cause_id: data.causeId,
           email: data.email,
-          message: data.message,
-          is_anonymous: data.isAnonymous,
+          message: data.message ?? "",
+          is_anonymous: Boolean(data.isAnonymous),
           ...(data.referrer_code ? { ref_v1: data.referrer_code } : {}),
           ...(data.id ? { user_id: data.id } : {}),
           ...(data.plan ? { plan: data.plan } : {}),
@@ -144,6 +175,7 @@ const Paystack = {
     reference: string;
     causeId: string;
     subaccount?: string;
+    bearer?: "account" | "subaccount";
     metadata: Record<string, string | number | boolean | undefined>;
   }) {
     checkCircuit("paystack");
@@ -165,7 +197,7 @@ const Paystack = {
 
       if (primarySubaccount) {
         body.subaccount = primarySubaccount;
-        body.bearer = "subaccount";
+        body.bearer = params.bearer ?? "subaccount";
         body.transaction_charge = feeKobo;
       }
 
@@ -240,6 +272,59 @@ const Paystack = {
         error.response?.data?.message || "Failed to verify account number",
       );
     }
+  },
+
+  charge: async function (
+    payload: Record<string, any>,
+  ): Promise<PaystackChargeResponse> {
+    return postWithCircuit<PaystackChargeResponse>(
+      this.api,
+      "/charge",
+      payload,
+      "Failed to initiate Paystack charge",
+    );
+  },
+
+  submitPin: async function (pin: string, reference: string) {
+    return postWithCircuit(
+      this.api,
+      "/charge/submit_pin",
+      { pin, reference },
+      "Failed to submit card PIN",
+    );
+  },
+
+  submitOtp: async function (otp: string, reference: string) {
+    return postWithCircuit(
+      this.api,
+      "/charge/submit_otp",
+      { otp, reference },
+      "Failed to submit OTP",
+    );
+  },
+
+  submitPhone: async function (phone: string, reference: string) {
+    return postWithCircuit(
+      this.api,
+      "/charge/submit_phone",
+      { phone, reference },
+      "Failed to submit phone verification",
+    );
+  },
+
+  refundTransaction: async function (
+    transactionReference: string,
+    amountKobo?: number,
+  ) {
+    return postWithCircuit(
+      this.api,
+      "/refund",
+      {
+        transaction: transactionReference,
+        ...(amountKobo ? { amount: amountKobo } : {}),
+      },
+      "Failed to refund transaction",
+    );
   },
 };
 

@@ -1,24 +1,64 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { assertCronAuthorized } from "@/lib/api/cron-auth";
 import {
   sendProofCausePausedEmail,
+  sendProofUpdateRejectedEmail,
   sendProofUpdateReminderEmail,
 } from "@/services/mail";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const authHeader = req.headers.get("authorization");
-  if (
-    process.env.CRON_SECRET &&
-    authHeader !== `Bearer ${process.env.CRON_SECRET}`
-  ) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const denied = assertCronAuthorized(req);
+  if (denied) return denied;
 
   const now = new Date();
   let pausedCount = 0;
   let remindedCount = 0;
+
+  // 0. EXPIRE: receipts sent back for info with no reply by the deadline are rejected.
+  const expiredReceipts = await prisma.campaign_proof_updates.findMany({
+    where: { status: "need_info", info_reply_by: { lt: now } },
+    select: {
+      id: true,
+      cause: {
+        select: {
+          title: true,
+          user: { select: { email: true, fullName: true } },
+        },
+      },
+    },
+  });
+  const expiredReason =
+    "No reply to our information request by the deadline, so the funds stay in escrow.";
+  for (const receipt of expiredReceipts) {
+    await prisma.$transaction([
+      prisma.campaign_proof_updates.update({
+        where: { id: receipt.id },
+        data: {
+          status: "rejected",
+          rejection_reason: expiredReason,
+          reviewed_at: now,
+        },
+      }),
+      prisma.campaign_proof_requirements.updateMany({
+        where: { submitted_update_id: receipt.id, status: "submitted" },
+        data: { status: "pending", submitted_update_id: null },
+      }),
+    ]);
+    if (!receipt.cause.user?.email) continue;
+    try {
+      await sendProofUpdateRejectedEmail({
+        to: receipt.cause.user.email,
+        userName: receipt.cause.user.fullName || "there",
+        causeTitle: receipt.cause.title,
+        rejectionReason: expiredReason,
+      });
+    } catch (e) {
+      console.error("Expired receipt email failed:", e);
+    }
+  }
 
   // 1. PAUSE: Find pending requirements past their 7-day deadline
   const overdueReqs = await prisma.campaign_proof_requirements.findMany({
@@ -106,6 +146,7 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     success: true,
+    expiredReceipts: expiredReceipts.length,
     paused: pausedCount,
     reminded: remindedCount,
   });

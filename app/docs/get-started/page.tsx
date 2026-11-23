@@ -112,13 +112,13 @@ export default function GetStartedPage() {
 
               <p className="mt-3 text-[16px] text-gray-700 leading-7">
                 We believe crowdfunding should be more than just raising money:
-                it should be about building trust, empowering change, and
+                it should be about building trust, supporting change, and
                 creating sustainable impact.
               </p>
 
               <a
                 href="#"
-                className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-[#0A2A5C] group"
+                className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-navy-royal group"
               >
                 <span className="transition-all duration-300 group-hover:translate-x-1">
                   Start your campaign

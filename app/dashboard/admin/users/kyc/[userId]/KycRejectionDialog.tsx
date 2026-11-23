@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "nextjs-toploader/app";
+import { XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,60 +14,81 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { FieldError } from "@/components/ui/field-error";
 import { Textarea } from "@/components/ui/textarea";
-import { XCircle } from "lucide-react";
-import { updateVerificationStatus } from "@/actions/kyc-actions";
-import { useRouter } from "nextjs-toploader/app";
+import { useValidator } from "@/hooks/use-validator";
+import { rejectKycSchema } from "@/lib/schemas/kyc-review.schema";
+import { updateVerificationStatus } from "@/actions/users/kyc-actions";
 
 interface KycRejectionDialogProps {
   kycId: string;
+  applicantFirstName?: string | null;
 }
 
-export default function KycRejectionDialog({ kycId }: KycRejectionDialogProps) {
+export default function KycRejectionDialog({
+  kycId,
+  applicantFirstName,
+}: KycRejectionDialogProps) {
   const [open, setOpen] = useState(false);
-  const [reason, setReason] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [form, setForm] = useState({ verificationId: kycId, reason: "" });
+
+  const setFormFields = <K extends keyof typeof form>(
+    key: K,
+    value: (typeof form)[K],
+  ) => setForm((current) => ({ ...current, [key]: value }));
+
+  const { errors, validate } = useValidator({
+    store: form,
+    schema: rejectKycSchema,
+  });
+
   const router = useRouter();
 
-  const handleReject = async () => {
-    if (!reason.trim()) {
-      alert("Please provide a rejection reason.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const { error } = await updateVerificationStatus(
-        kycId,
+  const rejectMutation = useMutation({
+    mutationFn: () =>
+      updateVerificationStatus(
+        form.verificationId,
         "rejected",
-        reason.trim(),
-      );
+        form.reason.trim(),
+      ),
+    onSuccess: ({ error }) => {
       if (error) {
-        console.error("Error rejecting KYC:", error);
-        alert("Failed to reject KYC. Please try again.");
+        setSubmitError(error);
         return;
       }
-
       setOpen(false);
-      setReason("");
-      router.push("/dashboard/admin/users?kyc_alert=rejected");
-    } catch (error) {
-      console.error("Error in handleReject:", error);
-      alert("An error occurred. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
+      setFormFields("reason", "");
+      router.push(
+        `/dashboard/admin/users/kyc?flash=rejected&name=${encodeURIComponent(
+          applicantFirstName || "The applicant",
+        )}`,
+      );
+    },
+    onError: (mutationError) => {
+      setSubmitError(mutationError.message);
+    },
+  });
+
+  const handleSubmit = () => {
+    setSubmitError(null);
+    if (!validate() || rejectMutation.isPending) return;
+    rejectMutation.mutate();
   };
 
+  const isSubmitting = rejectMutation.isPending;
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) setSubmitError(null);
+      }}
+    >
       <DialogTrigger asChild>
-        <Button
-          variant="destructive"
-          disabled={isSubmitting}
-          className="px-8 py-3"
-        >
-          <XCircle className="h-4 w-4 mr-2" />
+        <Button variant="rust" disabled={isSubmitting}>
+          <XCircle className="mr-2 h-4 w-4" />
           Reject KYC
         </Button>
       </DialogTrigger>
@@ -84,11 +108,13 @@ export default function KycRejectionDialog({ kycId }: KycRejectionDialogProps) {
             <Textarea
               id="reason"
               placeholder="Enter the reason for rejection..."
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
+              value={form.reason}
+              onChange={(e) => setFormFields("reason", e.target.value)}
               className="min-h-[100px]"
               disabled={isSubmitting}
             />
+            <FieldError message={errors.reason} />
+            {submitError && <FieldError message={submitError} />}
           </div>
         </div>
         <DialogFooter>
@@ -99,11 +125,7 @@ export default function KycRejectionDialog({ kycId }: KycRejectionDialogProps) {
           >
             Cancel
           </Button>
-          <Button
-            variant="destructive"
-            onClick={handleReject}
-            disabled={!reason.trim() || isSubmitting}
-          >
+          <Button variant="rust" onClick={handleSubmit} disabled={isSubmitting}>
             {isSubmitting ? "Rejecting..." : "Reject KYC"}
           </Button>
         </DialogFooter>

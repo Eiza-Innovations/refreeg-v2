@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { listCauses } from "@/actions";
-import { listBookmarkedIds } from "@/actions/saved-actions";
+import { listBookmarkedIds } from "@/actions/users/saved-actions";
 import { sortCausesByFunding } from "@/lib/causes/funding-rank";
 import { causePublicPath } from "@/lib/causes/slug";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
@@ -12,6 +12,8 @@ import { Eyebrow } from "@/components/ui/eyebrow";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BookmarkButton } from "@/components/saved/BookmarkButton";
+import { formatNaira } from "@/components/giving/format";
+import { Heading } from "@/components/marketing/Typography";
 
 type Spotlight = {
   id: string;
@@ -25,13 +27,6 @@ type Spotlight = {
 };
 
 const FALLBACK_IMAGE = "/live-donations.png";
-
-const formatNaira = (amount: number) =>
-  new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-    maximumFractionDigits: 0,
-  }).format(amount);
 
 export function LiveSpotlight() {
   const [cause, setCause] = useState<Spotlight | null>(null);
@@ -75,9 +70,9 @@ export function LiveSpotlight() {
       <div className="mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 md:grid-cols-[1.4fr_1fr] md:gap-x-12 md:gap-y-10 lg:px-8">
         <div>
           <Eyebrow className="mb-3 block">Live on RefreeG</Eyebrow>
-          <h2 className="font-fraunces text-4xl font-normal leading-[1.05] text-ink md:text-5xl">
+          <Heading>
             Real causes. Real <em className="font-medium">receipts.</em>
-          </h2>
+          </Heading>
         </div>
 
         <p className="max-w-sm text-sm leading-relaxed text-ink md:pt-6">

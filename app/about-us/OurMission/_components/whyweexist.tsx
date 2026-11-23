@@ -15,7 +15,7 @@ export const FeatureCard: FC<FeatureCardProps> = ({
   description,
 }) => (
   <div className="w-full">
-    <div className="p-3 bg-[#FAFAFA] rounded-full mb-4 inline-flex">
+    <div className="p-3 bg-palette-baseWhite rounded-full mb-4 inline-flex">
       <Icon className="text-blue-600" />
     </div>
     <div className="w-10/12 flex items-center space-x-4">
@@ -41,7 +41,7 @@ export default function Whyweexist() {
       Icon: HandshakeIcon,
       title: "Limited Access",
       description:
-        "Refreeg is dedicated to making a real grassroots impact. Unlike many other crowdfunding sites that overlook local initiatives, we prioritize empowering communities and amplifying their voices.",
+        "Refreeg is dedicated to making a real grassroots impact. Unlike many other crowdfunding sites that overlook local initiatives, we put communities first and amplify their voices.",
     },
     {
       Icon: MegaphoneIcon,

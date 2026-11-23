@@ -6,7 +6,7 @@ jest.mock("@/lib/prisma", () => ({
     user: { findUnique: jest.fn(), update: jest.fn() },
     kyc_verifications: { findFirst: jest.fn() },
     rewardTransaction: { findMany: jest.fn() },
-    bookmarks: { findMany: jest.fn() },
+    bookmark: { findMany: jest.fn() },
     cause: { findMany: jest.fn() },
   },
 }));
@@ -17,7 +17,7 @@ import { getSessionUser } from "@/lib/auth/session-user";
 import {
   getNotifications,
   markAllNotificationsRead,
-} from "@/actions/notification-actions";
+} from "@/actions/users/notification-actions";
 
 const db = prisma as any;
 const NOW = new Date("2026-10-05T12:00:00Z");
@@ -33,7 +33,7 @@ function seed({
   db.user.findUnique.mockResolvedValue({ notifications_read_at: readAt });
   db.kyc_verifications.findFirst.mockResolvedValue(kyc);
   db.rewardTransaction.findMany.mockResolvedValue(rewards);
-  db.bookmarks.findMany.mockResolvedValue(bookmarks);
+  db.bookmark.findMany.mockResolvedValue(bookmarks);
   db.cause.findMany.mockResolvedValue(closing);
 }
 

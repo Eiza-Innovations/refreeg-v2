@@ -48,7 +48,7 @@ export default function LifeMatters() {
         variants={item}
       >
         <motion.p
-          className="text-xs p-2 border rounded-full bg-[#FAFAFA]"
+          className="text-xs p-2 border rounded-full bg-palette-baseWhite"
           variants={item}
         >
           Powered by vetted, audited smart contracts. Withdraw anytime. Your
@@ -65,7 +65,7 @@ export default function LifeMatters() {
           </span>
         </motion.div>
 
-        <Link href="/cause/create">
+        <Link href="/dashboard/causes/create">
           <motion.p className="text-lg text-gray-600" variants={item}>
             Don’t wait. Start your cause today and turn support into real
             impact.
@@ -73,7 +73,7 @@ export default function LifeMatters() {
         </Link>
 
         <motion.div variants={item}>
-          <Button className="bg-[#FAFAFA] hover:bg-[#8C1823] hover:text-white border text-black px-10 py-4 flex items-center gap-2 rounded-full">
+          <Button className="bg-palette-baseWhite hover:bg-wine hover:text-white border text-black px-10 py-4 flex items-center gap-2 rounded-full">
             Get Started
             <ArrowRight size={16} />
           </Button>

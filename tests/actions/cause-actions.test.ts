@@ -27,11 +27,15 @@ jest.mock("@/lib/prisma", () => ({
   },
 }));
 
-jest.mock("@/actions/auth-actions", () => ({
+jest.mock("@/actions/users/auth-actions", () => ({
   getCurrentUser: jest.fn(),
 }));
 
-jest.mock("@/actions/role-actions", () => ({
+jest.mock("@/lib/auth/auth", () => ({
+  auth: jest.fn(),
+}));
+
+jest.mock("@/actions/admin/role-actions", () => ({
   isAdminOrManager: jest.fn(),
 }));
 
@@ -63,8 +67,9 @@ jest.mock("@/lib/locations/campaign-location", () => ({
 }));
 
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/actions/auth-actions";
-import { isAdminOrManager } from "@/actions/role-actions";
+import { auth } from "@/lib/auth/auth";
+import { getCurrentUser } from "@/actions/users/auth-actions";
+import { isAdminOrManager } from "@/actions/admin/role-actions";
 import { sendCauseRejectedEmailForUser } from "@/services/mail";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -80,7 +85,7 @@ import {
   getUserCauses,
   deleteCause,
   updateCauseTrustMetrics,
-} from "@/actions/cause-actions";
+} from "@/actions/causes/cause-actions";
 import { resolveDeviceCampaignLocation } from "@/lib/locations/campaign-location";
 
 const VALID_UUID = "550e8400-e29b-41d4-a716-446655440000";
@@ -331,6 +336,26 @@ describe("cause-actions", () => {
   });
 
   describe("updateCause", () => {
+    beforeEach(() => {
+      // updateCause enforces session + ownership before creating an edit.
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "owner-1" } });
+      mockPrisma.cause.findUnique.mockResolvedValue({
+        id: VALID_UUID,
+        userId: "owner-1",
+      });
+    });
+
+    it("throws when the caller does not own the cause", async () => {
+      mockPrisma.cause.findUnique.mockResolvedValue({
+        id: VALID_UUID,
+        userId: "someone-else",
+      });
+
+      await expect(
+        updateCause(VALID_UUID, "owner-1", { title: "Updated" } as any),
+      ).rejects.toThrow("campaigns you own");
+    });
+
     it("throws when a pending edit already exists", async () => {
       mockPrisma.cause_edits.findFirst.mockResolvedValue({ id: "edit-1" });
 
