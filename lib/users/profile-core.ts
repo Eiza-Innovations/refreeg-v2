@@ -409,36 +409,29 @@ export async function createOnboardingProfileCore(
   }
 }
 
+export type Step1Meta = {
+  organizationPurpose?: string;
+};
+
 export async function saveStep1ProgressCore(
   userId: string,
   accountType: string,
+  meta?: Step1Meta,
 ): Promise<void> {
   try {
-    const existing = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { accountType: true },
-    });
-
-    if (
-      existing?.accountType === "individual" &&
-      accountType === "organization"
-    ) {
-      throw new Error(
-        "Individual accounts cannot be converted to organization accounts.",
-      );
-    }
-
+    // Switching between individual and organisation is a normal wizard
+    // choice now that both paths run through the same onboarding flow.
     await prisma.user.update({
       where: { id: userId },
       data: {
-        accountType:
-          existing?.accountType === "organization"
-            ? "organization"
-            : accountType,
+        accountType,
+        ...(meta?.organizationPurpose !== undefined && {
+          organizationPurpose: meta.organizationPurpose,
+        }),
       },
     });
   } catch (error) {
-    console.error("Error in saveStep1Progress:", error);
+    console.error("Error in saveStep1ProgressCore:", error);
     throw error;
   }
 }

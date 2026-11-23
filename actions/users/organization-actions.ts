@@ -9,7 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { sendOrganizationInvitationEmail } from "@/services/mail";
 
 const MANAGER_ROLES = new Set(["owner", "admin"]);
-const INVITATION_ROLES = new Set(["admin", "member"]);
+const INVITATION_ROLES = new Set(["admin", "member", "approver", "viewer"]);
 
 type OrganizationPreferences = {
   donationNotifications: boolean;
@@ -235,8 +235,8 @@ export async function getOrganizationPublicProfile(ownerId: string) {
 
 /**
  * Search organizations by name for the Discover ⌘K overlay. Verified status
- * is derived from the owning user's account verification: there's no
- * org-level verified field.
+ * comes from the organisation's own verification (registration documents
+ * reviewed by admins), not the owner's personal KYC.
  */
 export async function searchOrganizations(query: string, limit = 4) {
   const trimmed = query.trim();
@@ -250,7 +250,8 @@ export async function searchOrganizations(query: string, limit = 4) {
         id: true,
         name: true,
         logoUrl: true,
-        owner: { select: { username: true, isVerified: true } },
+        verificationStatus: true,
+        owner: { select: { username: true } },
       },
     });
 
@@ -259,7 +260,7 @@ export async function searchOrganizations(query: string, limit = 4) {
       name: org.name,
       logoUrl: org.logoUrl || null,
       username: org.owner?.username || null,
-      isVerified: !!org.owner?.isVerified,
+      isVerified: org.verificationStatus === "approved",
     }));
   } catch (error) {
     console.error("Unable to search organizations:", error);
@@ -279,9 +280,15 @@ function createOrganizationSlug(name: string) {
   return `${base || "organization"}-${crypto.randomUUID().slice(0, 8)}`;
 }
 
-export async function updateOrganization(input: {
+export type SaveOrganizationDetailsInput = {
   name: string;
   adminEmail: string;
+  organisationType?: string;
+  registrationNumber?: string;
+  country?: string;
+  purpose?: string;
+  contactName?: string;
+  contactRole?: string;
   phone?: string;
   address?: string;
   industry?: string;
@@ -292,8 +299,37 @@ export async function updateOrganization(input: {
   tiktokUrl?: string;
   facebookUrl?: string;
   whatsappNumber?: string;
-  preferences: OrganizationPreferences;
-}) {
+  username?: string;
+  preferences?: OrganizationPreferences;
+};
+
+const ORGANIZATION_PURPOSES = new Set(["fundraising", "csr", "both"]);
+
+// Username pattern lives in profile-core (3-30 chars, letters, numbers and
+// underscores); derive one from the organisation name for owners who never
+// go through a profile step.
+async function generateOwnerUsername(organizationName: string) {
+  const base =
+    organizationName
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "")
+      .slice(0, 20) || "org";
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const candidate = `${base}_${crypto.randomUUID().slice(0, 6)}`;
+    const taken = await prisma.user.findUnique({
+      where: { username: candidate },
+      select: { id: true },
+    });
+    if (!taken) return candidate;
+  }
+  return `${base}_${Date.now().toString(36)}`;
+}
+
+export async function updateOrganization(input: SaveOrganizationDetailsInput) {
   try {
     const session = await auth();
     if (!session?.user?.id) throw new Error("You must be signed in.");
@@ -325,6 +361,17 @@ export async function updateOrganization(input: {
     if (!/^\S+@\S+\.\S+$/.test(adminEmail)) {
       throw new Error("Enter a valid admin email address.");
     }
+    if (
+      input.purpose !== undefined &&
+      input.purpose !== "" &&
+      !ORGANIZATION_PURPOSES.has(input.purpose)
+    ) {
+      throw new Error("Invalid organisation purpose.");
+    }
+    const registrationNumber = input.registrationNumber?.trim() || null;
+    if (registrationNumber && registrationNumber.length > 60) {
+      throw new Error("Registration number must be 60 characters or fewer.");
+    }
     const bio = input.bio === undefined ? undefined : input.bio.trim() || null;
     if (bio && bio.length > 600) {
       throw new Error("Organization bio must be 600 characters or fewer.");
@@ -354,6 +401,24 @@ export async function updateOrganization(input: {
         ? undefined
         : normalizeOptionalWhatsAppNumber(input.whatsappNumber);
 
+    // Optional public handle for the owner's /[username] profile. Empty or
+    // missing falls back to the generated owner username below.
+    const desiredUsername = input.username?.trim().toLowerCase() || null;
+    if (desiredUsername && !/^[a-z0-9_]{3,30}$/.test(desiredUsername)) {
+      throw new Error(
+        "Usernames use 3-30 lowercase letters, numbers or underscores.",
+      );
+    }
+    if (desiredUsername) {
+      const taken = await prisma.user.findUnique({
+        where: { username: desiredUsername },
+        select: { id: true },
+      });
+      if (taken && taken.id !== session.user.id) {
+        throw new Error("That username is already taken.");
+      }
+    }
+
     if (!organization) {
       // First-time setup during onboarding: create the organization and assign ownership
       organization = await prisma.organization.create({
@@ -364,6 +429,11 @@ export async function updateOrganization(input: {
           phone: input.phone?.trim() || null,
           address: input.address?.trim() || null,
           industry: input.industry?.trim() || null,
+          organisationType: input.organisationType?.trim() || null,
+          registrationNumber,
+          country: input.country?.trim() || null,
+          purpose: input.purpose || null,
+          contactRole: input.contactRole?.trim() || null,
           bio: bio ?? null,
           websiteUrl: websiteUrl ?? null,
           instagramUrl: instagramUrl ?? null,
@@ -383,11 +453,6 @@ export async function updateOrganization(input: {
           role: "owner",
         },
       });
-
-      await prisma.user.update({
-        where: { id: session.user.id },
-        data: { accountType: "organization" },
-      });
     } else {
       await prisma.organization.update({
         where: { id: organization.id },
@@ -397,6 +462,15 @@ export async function updateOrganization(input: {
           phone: input.phone?.trim() || null,
           address: input.address?.trim() || null,
           industry: input.industry?.trim() || null,
+          organisationType: input.organisationType?.trim() || null,
+          registrationNumber,
+          country: input.country?.trim() || null,
+          ...(input.purpose !== undefined
+            ? { purpose: input.purpose || null }
+            : {}),
+          ...(input.contactRole !== undefined
+            ? { contactRole: input.contactRole.trim() || null }
+            : {}),
           ...(bio !== undefined ? { bio } : {}),
           ...(websiteUrl !== undefined ? { websiteUrl } : {}),
           ...(instagramUrl !== undefined ? { instagramUrl } : {}),
@@ -404,16 +478,63 @@ export async function updateOrganization(input: {
           ...(tiktokUrl !== undefined ? { tiktokUrl } : {}),
           ...(facebookUrl !== undefined ? { facebookUrl } : {}),
           ...(whatsappNumber !== undefined ? { whatsappNumber } : {}),
-          preferences: mapPreferences(input.preferences),
+          ...(input.preferences !== undefined
+            ? { preferences: mapPreferences(input.preferences) }
+            : {}),
         },
+      });
+    }
+
+    // The org wizard has no separate profile step, so keep the owner's
+    // profile in sync: contact name here, and fill username, location and
+    // phone when still empty so onboarding can complete.
+    const owner = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { username: true, location: true, phone: true },
+    });
+
+    let finalUsername: string | null = owner?.username || null;
+
+    if (owner) {
+      const ownerData: Prisma.UserUpdateInput = { accountType: "organization" };
+
+      if (input.contactName !== undefined) {
+        const contactName = input.contactName.trim();
+        if (contactName.length < 2) {
+          throw new Error("Enter your name.");
+        }
+        const [firstName, ...rest] = contactName.split(" ");
+        ownerData.fullName = contactName;
+        ownerData.firstName = firstName;
+        ownerData.lastName = rest.join(" ") || null;
+      }
+      if (desiredUsername) {
+        ownerData.username = desiredUsername;
+        finalUsername = desiredUsername;
+      } else if (!owner.username) {
+        const generated = await generateOwnerUsername(name);
+        ownerData.username = generated;
+        finalUsername = generated;
+      }
+      if (!owner.location && input.country?.trim()) {
+        ownerData.location = input.country.trim();
+      }
+      if (!owner.phone && input.phone?.trim()) {
+        ownerData.phone = input.phone.trim();
+      }
+
+      await prisma.user.update({
+        where: { id: session.user.id },
+        data: ownerData,
       });
     }
 
     revalidatePath("/dashboard/settings");
     revalidatePath("/dashboard/settings/organization");
     revalidatePath("/dashboard");
+    revalidatePath("/onboarding");
     revalidatePath("/[username]", "page");
-    return { success: true as const };
+    return { success: true as const, username: finalUsername };
   } catch (error) {
     const isDatabaseError =
       error instanceof Prisma.PrismaClientKnownRequestError ||
@@ -468,7 +589,7 @@ export async function inviteOrganizationMember(input: {
       throw new Error("Enter a valid email address.");
     }
     if (!INVITATION_ROLES.has(role)) {
-      throw new Error("Choose either the admin or member role.");
+      throw new Error("Choose a valid role for this invitation.");
     }
 
     const existingUser = await prisma.user.findFirst({
@@ -671,6 +792,197 @@ export async function acceptOrganizationInvitation(token: string) {
       success: false as const,
       error:
         error instanceof Error ? error.message : "Unable to accept invitation.",
+    };
+  }
+}
+
+export async function saveCsrSetup(input: {
+  csrBudget: number;
+  csrFinancialYearStart: string;
+  csrFocusCauses: string[];
+  csrMatchEmployeeDonations: boolean;
+  csrMatchCap?: number;
+  csrPublicReport: boolean;
+}) {
+  try {
+    const { organization } = await requireOrganizationAccess(true);
+
+    if (!(Number.isFinite(input.csrBudget) && input.csrBudget > 0)) {
+      throw new Error("Enter an annual giving budget.");
+    }
+    if (!input.csrFinancialYearStart) {
+      throw new Error("Choose the month your financial year starts.");
+    }
+    if (!input.csrFocusCauses.length) {
+      throw new Error("Pick at least one focus cause.");
+    }
+    if (
+      input.csrMatchEmployeeDonations &&
+      !(Number.isFinite(input.csrMatchCap) && (input.csrMatchCap ?? 0) > 0)
+    ) {
+      throw new Error("Set the matching cap per employee.");
+    }
+
+    await prisma.organization.update({
+      where: { id: organization.id },
+      data: {
+        csrBudget: input.csrBudget,
+        csrFinancialYearStart: input.csrFinancialYearStart,
+        csrFocusCauses: input.csrFocusCauses,
+        csrMatchEmployeeDonations: input.csrMatchEmployeeDonations,
+        csrMatchCap: input.csrMatchEmployeeDonations
+          ? (input.csrMatchCap ?? null)
+          : null,
+        csrPublicReport: input.csrPublicReport,
+      },
+    });
+
+    revalidatePath("/onboarding");
+    revalidatePath("/dashboard");
+    return { success: true as const };
+  } catch (error) {
+    return {
+      success: false as const,
+      error:
+        error instanceof Error ? error.message : "Unable to save CSR setup.",
+    };
+  }
+}
+
+export async function createOrganizationVerification(input: {
+  registrationDocKey: string;
+  directorIdKeys: string[];
+}) {
+  try {
+    const { user, organization } = await requireOrganizationAccess(true);
+
+    if (organization.verificationStatus === "approved") {
+      throw new Error("This organisation is already verified.");
+    }
+    if (!input.registrationDocKey) {
+      throw new Error("Upload the CAC registration document.");
+    }
+    if (!input.directorIdKeys.length) {
+      throw new Error("Upload at least one director ID.");
+    }
+    for (const key of [input.registrationDocKey, ...input.directorIdKeys]) {
+      if (!isOwnUploadKey(key, "organizations", user.id)) {
+        throw new Error("Invalid document upload.");
+      }
+    }
+
+    const latest = await prisma.organizationVerification.findFirst({
+      where: { organizationId: organization.id },
+      orderBy: { createdAt: "desc" },
+    });
+    if (latest?.status === "pending") {
+      throw new Error("A verification is already under review.");
+    }
+
+    await prisma.$transaction([
+      prisma.organizationVerification.create({
+        data: {
+          organizationId: organization.id,
+          registrationDocKey: input.registrationDocKey,
+          directorIdKeys: input.directorIdKeys,
+        },
+      }),
+      prisma.organization.update({
+        where: { id: organization.id },
+        data: { verificationStatus: "pending" },
+      }),
+    ]);
+
+    revalidatePath("/organization/verification");
+    revalidatePath("/onboarding");
+    return { success: true as const };
+  } catch (error) {
+    return {
+      success: false as const,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Unable to submit verification.",
+    };
+  }
+}
+
+export async function getOrganizationVerification() {
+  try {
+    const { organization } = await requireOrganizationAccess();
+    const latest = await prisma.organizationVerification.findFirst({
+      where: { organizationId: organization.id },
+      orderBy: { createdAt: "desc" },
+      select: { status: true, note: true, createdAt: true },
+    });
+
+    return {
+      success: true as const,
+      verificationStatus: organization.verificationStatus,
+      submission: latest
+        ? {
+            status: latest.status,
+            note: latest.note,
+            submittedAt: latest.createdAt.toISOString(),
+          }
+        : null,
+    };
+  } catch (error) {
+    return {
+      success: false as const,
+      verificationStatus: null,
+      submission: null,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Unable to load verification status.",
+    };
+  }
+}
+
+export async function getOrganizationOnboardingSummary() {
+  try {
+    const { organization } = await requireOrganizationAccess();
+    const [inviteCount, latestVerification, owner] = await Promise.all([
+      prisma.organizationInvitation.count({
+        where: { organizationId: organization.id },
+      }),
+      prisma.organizationVerification.findFirst({
+        where: { organizationId: organization.id },
+        orderBy: { createdAt: "desc" },
+        select: { status: true, createdAt: true },
+      }),
+      prisma.user.findUnique({
+        where: { id: organization.ownerId },
+        select: { username: true },
+      }),
+    ]);
+
+    return {
+      success: true as const,
+      summary: {
+        name: organization.name,
+        registrationNumber: organization.registrationNumber || "",
+        purpose: organization.purpose || "both",
+        csrBudget: organization.csrBudget
+          ? Number(organization.csrBudget)
+          : null,
+        inviteCount,
+        verificationStatus: organization.verificationStatus,
+        verificationSubmittedAt: latestVerification
+          ? latestVerification.createdAt.toISOString()
+          : null,
+        ownerHandle: owner?.username || "",
+      },
+    };
+  } catch (error) {
+    return {
+      success: false as const,
+      summary: null,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Unable to load organisation summary.",
     };
   }
 }

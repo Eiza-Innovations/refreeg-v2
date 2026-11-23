@@ -19,6 +19,11 @@ const transporter = nodemailer.createTransport({
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASSWORD,
   },
+  // Bound every phase of the SMTP conversation so a stalled mail server
+  // can never wedge a request (or a post-response send) indefinitely.
+  connectionTimeout: 10_000,
+  greetingTimeout: 10_000,
+  socketTimeout: 20_000,
 });
 
 const TEMPLATE_DIR = path.join(process.cwd(), "services", "templates");
