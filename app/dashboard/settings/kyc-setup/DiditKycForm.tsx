@@ -40,8 +40,12 @@ export default function DiditKycForm({ userId }: DiditKycFormProps) {
           url: data.url,
         });
 
-        DiditSdk.shared.onComplete = () => {
-          window.location.reload();
+        DiditSdk.shared.onComplete = (result) => {
+          if (result.type === "completed") {
+            window.location.assign("/dashboard");
+          } else {
+            window.location.reload();
+          }
         };
       } else {
         throw new Error("SDK not loaded properly or URL is missing");
