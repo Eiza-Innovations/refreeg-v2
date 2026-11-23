@@ -7,6 +7,7 @@ import {
 } from "@/lib/api/response";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
 import { listCauses, countCauses } from "@/actions/causes/cause-actions";
+import { getBlockedUserIds } from "@/lib/moderation/moderation-service";
 import {
   hasBankDetails,
   isProfileComplete,
@@ -72,7 +73,27 @@ export async function GET(request: NextRequest) {
       Promise.all([listCauses(options), countCauses(options)]),
     );
 
-    return apiPaginated(causes.map(stripCreatorSecrets), total, limit, offset);
+    let blockedUserIds: string[] = [];
+    if (request.headers.get("authorization")) {
+      const authResult = await authenticateMobileRequest(request);
+      if (authResult.user?.id) {
+        blockedUserIds = await getBlockedUserIds(authResult.user.id);
+      }
+    }
+
+    const visibleCauses =
+      blockedUserIds.length > 0
+        ? causes.filter(
+            (c: any) => !blockedUserIds.includes(c.userId ?? c.user_id),
+          )
+        : causes;
+
+    return apiPaginated(
+      visibleCauses.map(stripCreatorSecrets),
+      total,
+      limit,
+      offset,
+    );
   } catch (error: any) {
     console.error("Mobile API Get Causes Error:", error);
     return apiError("Internal server error", 500);

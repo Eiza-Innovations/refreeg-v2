@@ -7,10 +7,6 @@ jest.mock("@/lib/prisma", () => ({
     user: {
       update: jest.fn(),
       findUnique: jest.fn(),
-      delete: jest.fn(),
-    },
-    kyc_verifications: {
-      deleteMany: jest.fn(),
     },
   },
 }));
@@ -23,11 +19,16 @@ jest.mock("@/actions/admin/database-actions", () => ({
   logAdminActivity: jest.fn(),
 }));
 
+jest.mock("@/lib/auth/account-deletion", () => ({
+  executeUserAccountDeletion: jest.fn(),
+}));
+
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth/auth";
 import { prisma } from "@/lib/prisma";
 import { getUserRole } from "@/actions/admin/role-actions";
 import { logAdminActivity } from "@/actions/admin/database-actions";
+import { executeUserAccountDeletion } from "@/lib/auth/account-deletion";
 import {
   blockUser,
   unblockUser,
@@ -39,34 +40,38 @@ import {
 const mockAuth = auth as jest.Mock;
 const mockGetUserRole = getUserRole as jest.Mock;
 const mockLogAdminActivity = logAdminActivity as jest.Mock;
+const mockExecuteDeletion = executeUserAccountDeletion as jest.Mock;
 const mockPrisma = prisma as unknown as {
   user: {
     update: jest.Mock;
     findUnique: jest.Mock;
-    delete: jest.Mock;
   };
-  kyc_verifications: { deleteMany: jest.Mock };
 };
 
 describe("user-actions", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockAuth.mockResolvedValue({ user: { id: "admin-1" } });
-    mockGetUserRole.mockResolvedValue("admin");
+    mockGetUserRole.mockImplementation(async (id: string) =>
+      id === "admin-1" ? "admin" : "user",
+    );
     mockPrisma.user.update.mockResolvedValue({});
-    mockPrisma.kyc_verifications.deleteMany.mockResolvedValue({ count: 0 });
-    mockPrisma.user.delete.mockResolvedValue({});
     mockLogAdminActivity.mockResolvedValue(undefined);
+    mockExecuteDeletion.mockResolvedValue({ success: true, statusCode: 200 });
   });
 
   describe("blockUser", () => {
-    it("blocks a user when caller is admin", async () => {
+    it("blocks a user, invalidates active sessions, and logs action when caller is admin", async () => {
       const result = await blockUser("user-2");
 
       expect(result).toBe(true);
       expect(mockPrisma.user.update).toHaveBeenCalledWith({
         where: { id: "user-2" },
-        data: { isBlocked: true, updatedAt: expect.any(Date) },
+        data: {
+          isBlocked: true,
+          sessions_invalidated_after: expect.any(Date),
+          updatedAt: expect.any(Date),
+        },
       });
       expect(mockLogAdminActivity).toHaveBeenCalledWith(
         "block-user",
@@ -79,6 +84,20 @@ describe("user-actions", () => {
       mockAuth.mockResolvedValue(null);
 
       expect(await blockUser("user-2")).toBe(false);
+      expect(mockPrisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it("returns false when caller attempts to block themselves", async () => {
+      expect(await blockUser("admin-1")).toBe(false);
+      expect(mockPrisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it("returns false when manager attempts to block an admin", async () => {
+      mockGetUserRole.mockImplementation(async (id: string) =>
+        id === "admin-1" ? "manager" : "admin",
+      );
+
+      expect(await blockUser("other-admin")).toBe(false);
       expect(mockPrisma.user.update).not.toHaveBeenCalled();
     });
 
@@ -127,12 +146,7 @@ describe("user-actions", () => {
       const result = await deleteUserAccount("admin-1");
 
       expect(result).toEqual({ error: null });
-      expect(mockPrisma.kyc_verifications.deleteMany).toHaveBeenCalledWith({
-        where: { user_id: "admin-1" },
-      });
-      expect(mockPrisma.user.delete).toHaveBeenCalledWith({
-        where: { id: "admin-1" },
-      });
+      expect(mockExecuteDeletion).toHaveBeenCalledWith("admin-1");
       expect(revalidatePath).toHaveBeenCalledWith("/dashboard/settings");
     });
 
@@ -142,7 +156,7 @@ describe("user-actions", () => {
       expect(result).toEqual({
         error: "You can only delete your own account",
       });
-      expect(mockPrisma.user.delete).not.toHaveBeenCalled();
+      expect(mockExecuteDeletion).not.toHaveBeenCalled();
     });
 
     it("returns error when not authenticated", async () => {
@@ -166,6 +180,26 @@ describe("user-actions", () => {
       expect(revalidatePath).toHaveBeenCalledWith("/dashboard/admin/users");
     });
 
+    it("returns error when caller attempts to delete themselves", async () => {
+      const result = await deleteUserAsAdmin("admin-1");
+
+      expect(result.error).toContain("cannot delete your own account");
+      expect(mockExecuteDeletion).not.toHaveBeenCalled();
+    });
+
+    it("returns error when manager attempts to delete an admin", async () => {
+      mockGetUserRole.mockImplementation(async (id: string) =>
+        id === "admin-1" ? "manager" : "admin",
+      );
+
+      const result = await deleteUserAsAdmin("other-admin");
+
+      expect(result).toEqual({
+        error: "Unauthorized: Managers cannot delete admin accounts",
+      });
+      expect(mockExecuteDeletion).not.toHaveBeenCalled();
+    });
+
     it("returns error when caller is not admin or manager", async () => {
       mockGetUserRole.mockResolvedValue("user");
 
@@ -174,7 +208,7 @@ describe("user-actions", () => {
       expect(result).toEqual({
         error: "Unauthorized: Only admins and managers can delete users",
       });
-      expect(mockPrisma.user.delete).not.toHaveBeenCalled();
+      expect(mockExecuteDeletion).not.toHaveBeenCalled();
     });
   });
 });

@@ -145,7 +145,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             where: { email },
           });
 
-          if (!user) return null;
+          if (!user || user.isBlocked) return null;
 
           return {
             id: user.id,
@@ -180,8 +180,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             include: { roles: { select: { role: true } } },
           });
 
-          if (!user) {
-            console.info("[NextAuth] Sign-in attempt for unregistered email.");
+          if (!user || user.isBlocked) {
+            console.info(
+              "[NextAuth] Sign-in attempt for unregistered or blocked account.",
+            );
             return null;
           }
           if (!user.password) {
@@ -304,6 +306,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
   callbacks: {
+    async signIn({ user }) {
+      try {
+        const lookup = user?.id
+          ? { id: user.id }
+          : user?.email
+            ? { email: user.email }
+            : null;
+        if (lookup) {
+          const dbUser = await prisma.user.findUnique({
+            where: lookup,
+            select: { isBlocked: true },
+          });
+          if (dbUser?.isBlocked) {
+            return false;
+          }
+        }
+      } catch (error) {
+        console.error("[NextAuth] signIn block check failed:", error);
+      }
+      return true;
+    },
     async jwt({ token, user, trigger, session }) {
       if (
         !user &&
@@ -330,9 +353,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         try {
           const dbUser = await prisma.user.findUnique({
             where: { id: token.id as string },
-            select: { sessions_invalidated_after: true },
+            select: {
+              sessions_invalidated_after: true,
+              isBlocked: true,
+            },
           });
-          const revokedAfter = dbUser?.sessions_invalidated_after;
+          if (!dbUser || dbUser.isBlocked) {
+            return null;
+          }
+          const revokedAfter = dbUser.sessions_invalidated_after;
           if (
             revokedAfter &&
             typeof token.loginTime === "number" &&

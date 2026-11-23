@@ -6,6 +6,10 @@ import Paystack from "@/services/paystack";
 import { prisma } from "@/lib/prisma";
 import { isUuid } from "@/lib/uuid";
 import { calculateServiceFee, calculateProviderFee } from "@/lib/utils";
+import {
+  encodeStoreReviewDemoReference,
+  isStoreReviewDemoAccount,
+} from "@/lib/auth/store-review-demo";
 
 const MIN_DONATION_AMOUNT = 100;
 const MAX_DONATION_AMOUNT = 10_000_000;
@@ -90,7 +94,25 @@ export async function POST(request: NextRequest) {
     }
 
     // Set callback URL for mobile deep link if not provided
-    const callbackUrl = data.callback_url || "refreeg://payment/verify";
+    const rawCallbackUrl =
+      typeof data.callback_url === "string" && data.callback_url.trim()
+        ? data.callback_url.trim()
+        : "refreeg://payment/verify";
+    let parsedCallbackUrl: URL;
+    try {
+      parsedCallbackUrl = new URL(rawCallbackUrl);
+    } catch {
+      return apiError("Invalid callback_url format", 400);
+    }
+    const allowedProtocols =
+      process.env.NODE_ENV === "production"
+        ? new Set(["refreeg:", "https:"])
+        : new Set(["refreeg:", "https:", "http:"]);
+    if (!allowedProtocols.has(parsedCallbackUrl.protocol)) {
+      return apiError("Unsupported callback_url protocol", 400);
+    }
+    const callbackUrl = parsedCallbackUrl.toString();
+    const normalizedEmail = String(data.email).trim().toLowerCase();
 
     // Recalculate fees on the server to prevent spoofing
     const serviceFee = calculateServiceFee(numAmount);
@@ -103,6 +125,34 @@ export async function POST(request: NextRequest) {
         data.full_name ||
         authUser?.fullName ||
         "Supporter";
+
+    if (isStoreReviewDemoAccount(authUser?.email)) {
+      const demoReference = encodeStoreReviewDemoReference({
+        causeId: data.causeId,
+        amount: numAmount,
+        tipAmount,
+        donorName: effectiveDonorName,
+        message: data.message || "",
+        isAnonymous: Boolean(data.isAnonymous),
+      });
+
+      const demoRedirectUrl = new URL(callbackUrl);
+      demoRedirectUrl.searchParams.set("reference", demoReference);
+
+      return apiSuccess({
+        authorization_url: demoRedirectUrl.toString(),
+        access_code: "store_review_demo_code",
+        reference: demoReference,
+        isStoreReviewDemo: true,
+        breakdown: {
+          amount: numAmount,
+          serviceFee,
+          providerFee,
+          tipAmount,
+          total: numAmount + serviceFee + providerFee + tipAmount,
+        },
+      });
+    }
 
     const subaccounts = cause.user?.subAccountCode
       ? [{ subaccount: cause.user.subAccountCode, share: numAmount * 100 }]
@@ -124,7 +174,7 @@ export async function POST(request: NextRequest) {
 
     const response = await Paystack.initializeTransaction({
       amount: numAmount,
-      email: data.email,
+      email: normalizedEmail,
       causeId: data.causeId,
       full_name: effectiveDonorName,
       serviceFee,

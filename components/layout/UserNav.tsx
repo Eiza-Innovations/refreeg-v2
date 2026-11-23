@@ -201,6 +201,9 @@ export function UserNav() {
               <MenuLink href="/dashboard/admin/receipts">
                 Receipt reviews
               </MenuLink>
+              <MenuLink href="/dashboard/admin/reports">
+                Content reports
+              </MenuLink>
               <MenuLink href="/dashboard/admin/api-reports">
                 API reports
               </MenuLink>
