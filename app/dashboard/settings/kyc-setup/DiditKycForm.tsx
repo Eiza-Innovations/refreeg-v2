@@ -42,7 +42,7 @@ export default function DiditKycForm({ userId }: DiditKycFormProps) {
 
         DiditSdk.shared.onComplete = (result) => {
           if (result.type === "completed") {
-            window.location.assign("/dashboard");
+            window.location.assign("/dashboard/settings/kyc-setup");
           } else {
             window.location.reload();
           }

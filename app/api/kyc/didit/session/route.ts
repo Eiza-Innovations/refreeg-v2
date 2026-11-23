@@ -59,7 +59,7 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify({
         workflow_id: process.env.DIDIT_WORKFLOW_ID || "",
-        callback: `${origin}/dashboard`,
+        callback: `${origin}/dashboard/settings/kyc-setup`,
         vendor_data: user.id, // Pass user id to didit
       }),
     });

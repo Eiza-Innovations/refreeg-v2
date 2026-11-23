@@ -3,22 +3,11 @@ import { getCurrentUser } from "@/actions/users/auth-actions";
 import { getVerificationStatus } from "@/actions/users/kyc-actions";
 import KycSetupClient from "./KycSetupClient";
 
-type KycSetupPageProps = {
-  searchParams: Promise<{ verificationSessionId?: string }>;
-};
-
-export default async function KycSetupPage({
-  searchParams,
-}: KycSetupPageProps) {
+export default async function KycSetupPage() {
   const user = await getCurrentUser();
 
   if (!user) {
     redirect("/auth/signin");
-  }
-
-  // Resumed sessions still carry the old Didit callback to this page.
-  if ((await searchParams).verificationSessionId) {
-    redirect("/dashboard");
   }
 
   const { status, error: kycError } = await getVerificationStatus(user.id);
