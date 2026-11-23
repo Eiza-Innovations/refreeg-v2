@@ -287,3 +287,18 @@ export async function getUserStatsCore(userId: string): Promise<UserStreak> {
     throw error;
   }
 }
+
+export async function trackLoginCore(userId: string): Promise<void> {
+  try {
+    await recordEventCore({
+      type: "login",
+      userId,
+      metadata: {
+        timestamp: new Date().toISOString(),
+      },
+    });
+    await updateUserStreaksCore(userId);
+  } catch (error) {
+    console.error("Error tracking mobile login:", error);
+  }
+}

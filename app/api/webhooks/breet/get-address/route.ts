@@ -13,11 +13,9 @@ import {
 } from "@/lib/payments/breet";
 
 import { getClientIp } from "@/lib/api/client-ip";
-import { createRateLimiter } from "@/lib/api/rate-limit";
+import { checkRateLimit } from "@/lib/api/rate-limit";
 
 export const dynamic = "force-dynamic";
-
-const limited = createRateLimiter({ max: 10, windowMs: 60_000 });
 
 // Breet's production note: test asset identifiers don't exist in production,
 // so the USDT-on-Solana deposit asset is resolved from GET /trades/assets at
@@ -54,8 +52,17 @@ export async function POST(req: Request) {
     const verifiedDonorId = sessionUserId || "guest";
 
     const ip = getClientIp(req.headers) || "unknown";
-    if (limited(`${ip}:${verifiedDonorId}`)) {
-      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    const { limited, retryAfterSec } = checkRateLimit(req, {
+      namespace: "breet_get_address",
+      limit: 10,
+      windowMs: 60_000,
+      identifier: `${ip}:${verifiedDonorId}`,
+    });
+    if (limited) {
+      return NextResponse.json(
+        { error: "Too many requests" },
+        { status: 429, headers: { "Retry-After": String(retryAfterSec) } },
+      );
     }
 
     const causeDetails = await prisma.cause.findUnique({

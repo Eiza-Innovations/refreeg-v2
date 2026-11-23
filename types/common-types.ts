@@ -74,12 +74,13 @@ export interface TransactionData extends Partial<
   providerFee?: number;
   tipAmount?: number;
   causeId: string;
-  message: string;
-  isAnonymous: boolean;
+  message?: string;
+  isAnonymous?: boolean;
   paymentProvider?: PaymentProviderType;
   plan?: string;
   callbackUrl?: string;
-  subaccounts: {
+  channels?: string[];
+  subaccounts?: {
     subaccount: string;
     share: number;
   }[];
