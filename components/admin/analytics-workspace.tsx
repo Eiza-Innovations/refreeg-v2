@@ -1,36 +1,39 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { parseAsString, useQueryState } from "nuqs";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ArrowDownToLine, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { AnalyticsContent } from "./workspace/analytics";
+import { CampaignDialog } from "./workspace/campaign-dialog";
 import { DetailContent } from "./workspace/details";
-import { Chip, MetricCards } from "./workspace/primitives";
-import type {
-  Period,
-  WorkItem,
-  WorkspaceData,
-  WorkspaceView,
-} from "./workspace/types";
+import { Chip } from "./workspace/chip";
+import { MetricCards } from "./workspace/metric-cards";
+import { PageHeading } from "./workspace/page-heading";
+import type { Period, WorkspaceData, WorkspaceView } from "./workspace/types";
 import { downloadCsv } from "@/lib/admin-workspace";
 import "./workspace/workspace.css";
+
+const VIEWS: WorkspaceView[] = ["analytics", "ambassadors", "users", "eiza"];
+const campaignPanel = (id: string) => `campaign:${id}`;
 
 export function AnalyticsWorkspace({ data }: { data: WorkspaceData }) {
   const router = useRouter();
   const pathname = usePathname();
   const [pending, startTransition] = useTransition();
   const [compare, setCompare] = useState(true);
-  const [view, setView] = useState<WorkspaceView>("analytics");
-  const [selected, setSelected] = useState<WorkItem | null>(null);
+  // One shareable param: a view name, or "campaign:<id>" for the open campaign
+  // dialog (only reachable from the analytics view, so the two never overlap).
+  const [panel, setPanel] = useQueryState(
+    "view",
+    parseAsString.withDefault("analytics"),
+  );
+  const view = VIEWS.find((value) => value === panel) ?? "analytics";
+  const selected =
+    data.topCampaigns.find((row) => campaignPanel(row.item.id) === panel)
+      ?.item ?? null;
   const period = data.period;
   const heading = {
     analytics: "Analytics",
@@ -71,12 +74,10 @@ export function AnalyticsWorkspace({ data }: { data: WorkspaceData }) {
     <div className="admin-workspace text-ink">
       <main className="mx-auto min-w-0 w-full max-w-[1440px] space-y-6 px-4 py-8 sm:px-8">
         <header className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="font-fraunces text-3xl tracking-tight">{heading}</h1>
-            <p className="mt-2 text-sm text-ink/60">
-              {data.label} · all figures in naira
-            </p>
-          </div>
+          <PageHeading
+            title={heading}
+            subtitle={`${data.label} · all figures in naira`}
+          />
           <Chip tone="neutral">Updated {updated} WAT</Chip>
         </header>
         <div className="flex flex-wrap items-center gap-2">
@@ -122,7 +123,7 @@ export function AnalyticsWorkspace({ data }: { data: WorkspaceData }) {
             <Button
               variant="surface"
               className="gap-2"
-              onClick={() => setView("analytics")}
+              onClick={() => setPanel("analytics")}
             >
               <ArrowLeft className="h-4 w-4" /> Back to analytics
             </Button>
@@ -139,8 +140,8 @@ export function AnalyticsWorkspace({ data }: { data: WorkspaceData }) {
                 <AnalyticsContent
                   data={data}
                   compare={compare}
-                  onView={setView}
-                  onSelect={setSelected}
+                  onView={setPanel}
+                  onSelect={(item) => setPanel(campaignPanel(item.id))}
                 />
               </div>
             </div>
@@ -149,30 +150,10 @@ export function AnalyticsWorkspace({ data }: { data: WorkspaceData }) {
           )}
         </div>
       </main>
-      <Dialog
-        open={!!selected}
-        onOpenChange={(open) => {
-          if (!open) setSelected(null);
-        }}
-      >
-        <DialogContent className="bg-surface text-ink">
-          <DialogHeader>
-            <DialogTitle>{selected?.name}</DialogTitle>
-            <DialogDescription>Created by {selected?.detail}</DialogDescription>
-          </DialogHeader>
-          <p className="text-sm capitalize">Status: {selected?.status}</p>
-          {selected?.href && (
-            <a
-              href={selected.href}
-              target="_blank"
-              rel="noreferrer"
-              className="text-sm font-semibold underline"
-            >
-              Open campaign page
-            </a>
-          )}
-        </DialogContent>
-      </Dialog>
+      <CampaignDialog
+        campaign={selected}
+        onClose={() => setPanel("analytics")}
+      />
     </div>
   );
 }

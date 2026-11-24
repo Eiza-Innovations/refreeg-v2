@@ -69,3 +69,17 @@ export function initials(name: string) {
   if (!parts.length) return "?";
   return (parts[0][0] + (parts[1]?.[0] ?? parts[0][1] ?? "")).toUpperCase();
 }
+
+/** Browser download of rows as a UTF-8 CSV (Excel-safe BOM, formula-escaped). */
+export function downloadCsv(rows: (string | number)[][], filename: string) {
+  const url = URL.createObjectURL(
+    new Blob(["\uFEFF", csvText(rows)], { type: "text/csv;charset=utf-8" }),
+  );
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}

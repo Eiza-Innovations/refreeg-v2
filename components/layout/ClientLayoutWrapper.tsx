@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const CREAM_ROUTES = [
   "/dashboard/settings",
   "/dashboard/donations",
+  "/dashboard/admin/analytics",
   "/dashboard/admin/users/kyc",
   "/dashboard/admin/receipts",
 ];
@@ -19,6 +20,7 @@ export default function ClientLayoutWrapper({
   const hideNav = pathname.startsWith("/dashboard/settings/kyc-setup");
   const isCream =
     pathname === "/dashboard" ||
+    pathname === "/dashboard/admin" ||
     CREAM_ROUTES.some((route) => pathname.startsWith(route));
 
   if (hideNav) {

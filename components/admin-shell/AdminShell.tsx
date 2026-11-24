@@ -10,10 +10,7 @@ import { AdminShellHeader } from "./AdminShellHeader";
 
 function AdminBrand() {
   return (
-    <Link
-      href="/dashboard/admin/analytics"
-      className="mb-6 flex items-center gap-2 px-3"
-    >
+    <Link href="/dashboard/admin" className="mb-6 flex items-center gap-2 px-3">
       <Logo />
       <Badge variant="live" className="rounded-sm px-1.5 text-[10px]">
         ADMIN

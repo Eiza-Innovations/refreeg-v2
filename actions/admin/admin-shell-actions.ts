@@ -3,6 +3,7 @@
 import { auth } from "@/lib/auth/auth";
 import { prisma } from "@/lib/prisma";
 import { isAdminOrManager } from "@/actions/admin/role-actions";
+import { reviewQueueWhere } from "@/lib/admin/review-queues";
 import { runHealthChecks } from "@/lib/health/checks";
 
 /** Sidebar badges and the top bar's system status for the admin shell. */
@@ -14,12 +15,10 @@ export async function getAdminShellSummary() {
   }
 
   const [campaigns, kyc, receipts, petitions, health] = await Promise.all([
-    prisma.cause.count({ where: { status: "pending" } }),
-    prisma.kyc_verifications.count({
-      where: { status: { in: ["pending", "in_progress"] } },
-    }),
-    prisma.campaign_proof_updates.count({ where: { status: "pending" } }),
-    prisma.petitions.count({ where: { status: "pending" } }),
+    prisma.cause.count({ where: reviewQueueWhere.campaigns }),
+    prisma.kyc_verifications.count({ where: reviewQueueWhere.kyc }),
+    prisma.campaign_proof_updates.count({ where: reviewQueueWhere.receipts }),
+    prisma.petitions.count({ where: reviewQueueWhere.petitions }),
     runHealthChecks(),
   ]);
 

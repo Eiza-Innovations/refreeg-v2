@@ -45,7 +45,7 @@ function gifts(from: Date, to: Date) {
     WHERE status = 'completed' AND created_at >= ${from} AND created_at < ${to}`;
 }
 
-const displayName = Prisma.sql`COALESCE(
+export const displayName = Prisma.sql`COALESCE(
   NULLIF(trim(p.display_name), ''),
   NULLIF(trim(p.full_name), ''),
   NULLIF(trim(concat(p.first_name, ' ', p.last_name)), ''),
@@ -62,7 +62,7 @@ function fill(rows: Bucketed[], unit: BucketUnit, keys: string[]): number[] {
 }
 
 /** Current and previous totals from a single scan of both windows. */
-async function giftTotals(w: ReportingWindow) {
+export async function giftTotals(w: ReportingWindow) {
   const [row] = await prisma.$queryRaw<
     {
       total: number;
@@ -84,7 +84,7 @@ async function giftTotals(w: ReportingWindow) {
 }
 
 /** Current and comparison chart buckets from a single scan. */
-async function giftSeries(w: ReportingWindow) {
+export async function giftSeries(w: ReportingWindow) {
   // The day view has no comparison line, so skip last week's buckets.
   const scanFrom = w.period === "day" ? w.from : w.previousFrom;
   const rows = await prisma.$queryRaw<Bucketed[]>`
@@ -114,18 +114,12 @@ async function counts(w: ReportingWindow) {
       due_paid: number;
       funded: number;
       approved: number;
-      pending_causes: number;
-      pending_kyc: number;
-      pending_petitions: number;
     }[]
   >`
     SELECT
       u.new_users, u.prev_new_users,
       pl.pledges, pl.pledges_fulfilled, pl.prev_pledges, pl.prev_pledges_fulfilled,
-      d.due, d.due_paid, c.funded, c.approved,
-      (SELECT COUNT(*) FROM causes WHERE status = 'pending')::int AS pending_causes,
-      (SELECT COUNT(*) FROM kyc_verifications WHERE status = 'pending')::int AS pending_kyc,
-      (SELECT COUNT(*) FROM petitions WHERE status = 'pending')::int AS pending_petitions
+      d.due, d.due_paid, c.funded, c.approved
     FROM
       (SELECT
         COUNT(*) FILTER (WHERE created_at >= ${w.from})::int AS new_users,
@@ -150,7 +144,7 @@ async function counts(w: ReportingWindow) {
   return row;
 }
 
-async function campaignStatus() {
+export async function campaignStatus() {
   const since = new Date(Date.now() - 21 * DAY_MS);
   // EXISTS probes the (cause_id, created_at) indexes per live cause instead of
   // aggregating the whole donations history.
@@ -699,11 +693,6 @@ async function loadWorkspaceData(period: Period): Promise<WorkspaceData> {
     userActivity: activity,
     cohorts: retention,
     holders: holderShare,
-    navCounts: {
-      Campaigns: count.pending_causes,
-      KYC: count.pending_kyc,
-      "Petitions & bounties": count.pending_petitions,
-    },
   };
 }
 
