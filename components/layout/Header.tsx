@@ -131,7 +131,7 @@ const publicNavItems: NavItem[] = [
     ],
   },
   {
-    title: "How Refreeg works",
+    title: "FAQs",
     href: "/faq",
     type: "link",
     // header: "Everything you need to launch, manage, and grow a campaign.",
@@ -441,15 +441,6 @@ export function Header() {
               </div>
 
               <div className="hidden lg:flex lg:items-center lg:gap-6">
-                {user && !isDashboardRoute ? (
-                  <Link
-                    href="/dashboard"
-                    className="whitespace-nowrap text-sm text-ink transition-colors hover:text-ink/70"
-                  >
-                    Dashboard
-                  </Link>
-                ) : null}
-
                 {!isLoading && !user ? (
                   <>
                     <Link
