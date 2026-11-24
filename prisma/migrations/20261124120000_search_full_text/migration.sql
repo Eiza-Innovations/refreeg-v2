@@ -1,9 +1,12 @@
 -- Search: full-text + trigram indexes (see lib/causes/search-fts.ts).
 --
--- These are pure-SQL expression indexes; the Prisma schema does not model
--- them, so this repo's hand-written migrations workflow (migrate deploy)
--- must apply this file directly — `migrate dev` diffing would want to drop
--- them. The app degrades to plain ILIKE contains if they are missing.
+-- The three trigram column indexes are declared in prisma/schema
+-- (@@index … type: Gin, ops: raw("gin_trgm_ops"), same map: names), so the
+-- CI drift check (migrate diff --from-url vs prisma/schema) and migrate dev
+-- both stay clean. The two FTS expression indexes are pure SQL Prisma
+-- cannot model; introspection skips unmodelable expression indexes, so they
+-- produce no drift. The app degrades to plain ILIKE contains if any of
+-- these are missing.
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 -- Full-text: word matching over title + description ('simple' config
