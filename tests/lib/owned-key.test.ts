@@ -38,6 +38,24 @@ describe("isOwnUploadKey", () => {
     expect(
       isOwnUploadKey("uploads/profiles/u1/../u2/a.jpg", "profiles", "u1"),
     ).toBe(false);
+    expect(
+      isOwnUploadKey("uploads/profiles/u1/%2e%2e/u2/a.jpg", "profiles", "u1"),
+    ).toBe(false);
+    expect(
+      isOwnUploadKey("uploads/profiles/u1/./a.jpg", "profiles", "u1"),
+    ).toBe(false);
+    expect(isOwnUploadKey("uploads/profiles/u1\\a.jpg", "profiles", "u1")).toBe(
+      false,
+    );
+    expect(
+      isOwnUploadKey("uploads/profiles/u1/a.jpg?x=1", "profiles", "u1"),
+    ).toBe(false);
+    expect(
+      isOwnUploadKey("uploads/profiles/u1/a.jpg#frag", "profiles", "u1"),
+    ).toBe(false);
+    expect(isOwnUploadKey("uploads/profiles/u1/", "profiles", "u1")).toBe(
+      false,
+    );
     expect(isOwnUploadKey(undefined, "profiles", "u1")).toBe(false);
     expect(isOwnUploadKey({}, "profiles", "u1")).toBe(false);
   });

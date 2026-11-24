@@ -35,6 +35,7 @@ import {
   isProfileComplete,
   hasCompletedOnboarding,
   getCurrentOnboardingStep,
+  getOnboardingData,
 } from "@/actions/users/profile-actions";
 
 const mockPrisma = prisma as unknown as {
@@ -303,6 +304,59 @@ describe("profile-actions", () => {
       const result = await getCurrentOnboardingStep("user-1");
 
       expect(result).toBe(4);
+    });
+  });
+
+  describe("getOnboardingData", () => {
+    it("selects and returns bio and displayName alongside other profile fields", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({
+        accountType: "individual",
+        gender: "female",
+        firstName: "Amina",
+        lastName: "Bello",
+        displayName: "Amina B.",
+        username: "aminabello",
+        bio: "Medical outreach volunteer.",
+        location: "Lagos",
+        phone: "08012345678",
+        email: "amina@refreeg.com",
+        profilePhoto: "uploads/profiles/user-1/images/avatar.jpg",
+      });
+
+      const result = await getOnboardingData("user-1");
+
+      expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
+        where: { id: "user-1" },
+        select: expect.objectContaining({
+          bio: true,
+          displayName: true,
+        }),
+      });
+      expect(result).toEqual({
+        accountType: "individual",
+        organizationPurpose: "",
+        gender: "female",
+        profile: {
+          firstName: "Amina",
+          lastName: "Bello",
+          displayName: "Amina B.",
+          username: "aminabello",
+          bio: "Medical outreach volunteer.",
+          location: "Lagos",
+          phone: "08012345678",
+          email: "amina@refreeg.com",
+          profilePhoto: "uploads/profiles/user-1/images/avatar.jpg",
+        },
+      });
+    });
+
+    it("defaults bio and displayName to empty strings when missing", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+
+      const result = await getOnboardingData("user-1");
+
+      expect(result.profile.bio).toBe("");
+      expect(result.profile.displayName).toBe("");
     });
   });
 });

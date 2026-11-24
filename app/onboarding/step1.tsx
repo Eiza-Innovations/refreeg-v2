@@ -1,108 +1,167 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
-import { Button } from "@/components/ui/button";
+import { Building2, Heart, Info } from "lucide-react";
 import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { organizationPurposeOptions } from "@/lib/options/organization.options";
 
 interface Step1Props {
   user: any;
-  onNext: (accountType: string) => void;
+  onNext: (
+    accountType: "individual" | "organization",
+    meta?: { organizationPurpose?: string },
+  ) => void;
   onboardingData: any;
-  updateOnboardingData: (key: string, value: any) => void;
 }
 
 const accountOptions = [
-  { id: "individual", label: "I’m an individual" },
-  { id: "creator", label: "I’m a creator" },
-  { id: "community", label: "I’m a community member" },
-  { id: "developer", label: "I’m a developer" },
-];
+  {
+    key: "individual",
+    accountType: "individual",
+    label: "Individual",
+    description: "Create causes, give to causes, sign petitions and earn EIZA.",
+    icon: Heart,
+  },
+  {
+    key: "organization",
+    accountType: "organization",
+    label: "Organisation",
+    description: "An NGO, company or foundation giving or raising as a team.",
+    icon: Building2,
+  },
+] as const;
 
-export default function Step1({
-  user,
-  onNext,
-  onboardingData,
-  updateOnboardingData,
-}: Step1Props) {
-  const [selectedType, setSelectedType] = useState<string | null>(
-    onboardingData.accountType || null,
+type SelectedKey = "individual" | "organization";
+
+export default function Step1({ onNext, onboardingData }: Step1Props) {
+  const [selected, setSelected] = useState<SelectedKey>(
+    onboardingData.accountType === "organization"
+      ? "organization"
+      : "individual",
+  );
+  const [purpose, setPurpose] = useState<string>(
+    onboardingData.organizationPurpose || "",
   );
 
   const handleNext = () => {
-    if (!selectedType) return;
-    updateOnboardingData("accountType", selectedType);
-    onNext(selectedType);
+    if (selected === "organization") {
+      if (!purpose) return;
+      onNext("organization", { organizationPurpose: purpose });
+      return;
+    }
+    onNext("individual");
   };
 
   return (
-    <div className="flex flex-col items-center justify-center py-8">
-      {}
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.4 }}
-        className="mb-6"
-      >
-        <Image
-          src="/onboarding1.png"
-          alt="Illustration"
-          width={128}
-          height={128}
-        />
-      </motion.div>
-
-      {}
-      <h2 className="text-center text-2xl font-semibold text-gray-900">
-        What kind of account best fits you?
-      </h2>
-
-      {}
-      <div className="mt-8 w-full max-w-md space-y-3">
-        {accountOptions.map((opt) => {
-          const isSelected = selectedType === opt.id;
-
-          return (
-            <motion.button
-              key={opt.id}
-              onClick={() => setSelectedType(opt.id)}
-              whileTap={{ scale: 0.97 }}
-              className={`w-full flex items-center justify-center gap-4 rounded-full border px-5 py-4 text-base font-medium transition-all relative
-    ${
-      isSelected
-        ? "bg-blue-50 border-blue-600 text-blue-700"
-        : "border-gray-200 hover:bg-gray-50"
-    }`}
-            >
-              {/* Circle absolute left */}
-              <div
-                className={`flex items-center justify-center h-5 w-5 rounded-full border absolute left-5
-      ${isSelected ? "border-blue-600" : "border-gray-400"}`}
-              >
-                {isSelected && (
-                  <motion.div
-                    layoutId="innerCircle"
-                    className="h-3 w-3 rounded-full bg-blue-600"
-                  />
-                )}
-              </div>
-
-              {/* Centered label */}
-              <span className="mx-auto text-center">{opt.label}</span>
-            </motion.button>
-          );
-        })}
+    <div className="grid w-full gap-10 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-16">
+      <div className="flex flex-col">
+        <h1 className="font-fraunces text-4xl font-medium text-ink sm:text-5xl">
+          How will you use RefreeG?
+        </h1>
+        <p className="mt-4 text-base leading-7 text-ink/70">
+          {selected === "organization"
+            ? "Organisations get a shared account, team seats and a separate verification."
+            : "Pick the one that fits best. It decides what we ask next and what your dashboard shows."}
+        </p>
+        {selected === "organization" ? (
+          <div className="mt-6 flex items-start gap-3 rounded-xl border border-blue-accent/30 bg-blue-accent/10 p-4 text-sm leading-6 text-blue-accent">
+            <Info className="mt-0.5 h-4 w-4 shrink-0" />
+            <p>
+              Organisation accounts are verified with registration documents
+              before any payout or CSR giving.
+            </p>
+          </div>
+        ) : null}
+        <div className="mt-8 flex gap-3 lg:mt-auto lg:pt-8">
+          <Button
+            type="button"
+            onClick={handleNext}
+            disabled={selected === "organization" && !purpose}
+            className="h-12 bg-ink px-10 text-ink-foreground hover:bg-ink/90"
+          >
+            Continue
+          </Button>
+        </div>
       </div>
 
-      {/* Proceed Button */}
-      <div className="mt-8 w-full max-w-md">
-        <Button
-          onClick={handleNext}
-          disabled={!selectedType}
-          className="w-full bg-blue-600 py-6 text-white hover:bg-blue-700"
-        >
-          Proceed →
-        </Button>
+      <div className="space-y-6">
+        <div className="space-y-3">
+          {accountOptions.map((option) => {
+            const Icon = option.icon;
+            const active = selected === option.key;
+
+            return (
+              <motion.button
+                key={option.key}
+                type="button"
+                onClick={() => setSelected(option.key)}
+                whileTap={{ scale: 0.99 }}
+                aria-pressed={active}
+                className={cn(
+                  "flex w-full items-center gap-4 rounded-xl border bg-surface px-4 py-4 text-left transition-colors",
+                  active
+                    ? "border-blue-accent bg-blue-accent/10"
+                    : "border-hairline hover:border-ink/40",
+                )}
+              >
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-cream-muted">
+                  <Icon className="h-5 w-5 text-ink" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-base font-semibold text-ink">
+                    {option.label}
+                  </span>
+                  <span className="block text-sm text-ink/60">
+                    {option.description}
+                  </span>
+                </span>
+                <span
+                  className={cn(
+                    "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border",
+                    active ? "border-blue-accent" : "border-ink/30",
+                  )}
+                >
+                  {active ? (
+                    <span className="h-2.5 w-2.5 rounded-full bg-blue-accent" />
+                  ) : null}
+                </span>
+              </motion.button>
+            );
+          })}
+        </div>
+
+        {selected === "organization" ? (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+            className="rounded-xl border border-hairline bg-surface p-5"
+          >
+            <p className="text-sm font-semibold text-ink">
+              What brings your organisation here?
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {organizationPurposeOptions.map((item) => (
+                <button
+                  key={item.value}
+                  type="button"
+                  onClick={() => setPurpose(item.value)}
+                  aria-pressed={purpose === item.value}
+                  className={cn(
+                    "rounded-full px-4 py-2 text-sm font-semibold transition-colors",
+                    purpose === item.value
+                      ? "bg-ink text-ink-foreground"
+                      : "bg-cream-muted text-ink hover:bg-warm-neutral",
+                  )}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        ) : null}
       </div>
     </div>
   );

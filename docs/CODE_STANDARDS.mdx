@@ -118,7 +118,7 @@ Keep the submit order: validate, then guard against double submit, then call the
 
 Each dialog (create, edit, delete, confirm) gets its own file named for what it does, such as `create-pledge-dialog.tsx`, exported by name with its own imports. The page or section file only imports dialogs and decides which is open. Share constants through a helper, never by copy.
 
-Existing `ConfirmationModal` covers plain confirm and delete cases; use it before writing a new one.
+Use the existing `AlertDialog` (`components/ui/alert-dialog.tsx`) or `Dialog` for plain confirm and delete cases before building a custom modal.
 
 ## 7. Option lists go in options files
 
@@ -142,7 +142,7 @@ When the same expression, lookup or type-based branch appears twice in a file, c
 
 ## 9. Use what exists
 
-Before writing raw HTML, check `components/ui/` and the shared components. Look for existing pieces first: `EmptyState`, `CalloutBanner`, `Eyebrow`, `Card`, `Button`, `Badge`, `ConfirmationModal`.
+Before writing raw HTML, check `components/ui/` and the shared components. Look for existing pieces first: `EmptyState`, `CalloutBanner`, `Eyebrow`, `Card`, `Button`, `Badge`, `AlertDialog`.
 
 - Empty list: render the one list component and vary its empty message by state. Do not wrap it in a ternary with a second empty component.
 - Banner, status chip, stepper: use the shared component, not a one-off.
@@ -174,17 +174,17 @@ const columns = useMemo(() => kycQueueColumns(tab), [tab]);
 
 ## 12. Dialog and form submits run through useMutation
 
-A dialog that calls a server action wraps the call in `useMutation` from `@tanstack/react-query`, validates with `useValidator` first (rule 5), guards against double submit with `isPending`, and handles the result in `onSuccess`: show `result.error` via `FieldError` (rule 3), then close and navigate. No hand-rolled `isSubmitting`/`submitError` state around a plain async handler.
+A dialog that calls a server action wraps the call in `useMutation` from `@tanstack/react-query`, validates with `useValidator` first (rule 5), guards against double submit with `isPending`, and handles the result in `onSuccess`: show `result.error` via `FieldError` (rule 3) and return early; otherwise close and navigate. No hand-rolled `isSubmitting`/`submitError` state around a plain async handler.
 
 ## Review procedure
 
 When asked to review or rate changes against the standard:
 
 1. List changed and untracked files.
-2. Check each file against rules 1 to 10 and `DESIGN_GUIDE.md`.
+2. Check each file against rules 1 to 12 and `DESIGN_GUIDE.md`.
 3. Report violations as `file:line`, the rule number, and the fix.
 4. Fix them when asked, then review again until clean. Also run `pnpm lint` and `pnpm tsc --noEmit`.
 
 ## Recording corrections
 
-When a reviewer or the team corrects a pattern, add it here as a rule with a short example, and mirror it in `.agents/skills/refreeg-code-standards/SKILL.md`. One source of truth for the reason; the skill holds the checklist.
+When a reviewer or the team corrects a pattern, add it here as a rule with a short example, and mirror it in `.agents/skills/refreeg-code-standards/SKILL.md` and `AGENTS.md`. One source of truth for the reason; the skill holds the checklist.

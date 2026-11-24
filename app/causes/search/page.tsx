@@ -8,7 +8,7 @@ import { DiscoverSearchResults } from "@/components/discover/discover-search-res
 
 export default function DiscoverSearchPage() {
   const router = useRouter();
-  const search = useDiscoverSearch({ active: true });
+  const search = useDiscoverSearch();
 
   return (
     <div className="flex min-h-screen flex-col bg-cream">

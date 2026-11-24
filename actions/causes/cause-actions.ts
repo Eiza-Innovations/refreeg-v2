@@ -8,6 +8,7 @@ import {
   DISCOVER_CACHE_TAG,
   DISCOVER_CACHE_SECONDS,
 } from "@/lib/causes/discover-constants";
+import { ftsCauseIds } from "@/lib/causes/search-fts";
 import type {
   Cause,
   CauseWithUser,
@@ -623,12 +624,14 @@ async function queryCauses(options: CauseFilterOptions = {}): Promise<Cause[]> {
     whereClause.paused = false;
   }
 
-  // Search filter
   if (options.search && options.search.trim()) {
-    whereClause.title = {
-      contains: options.search.trim(),
-      mode: "insensitive",
-    };
+    const needle = options.search.trim();
+    const ftsIds = await ftsCauseIds(needle);
+    whereClause.OR = [
+      { title: { contains: needle, mode: "insensitive" } },
+      { description: { contains: needle, mode: "insensitive" } },
+      ...(ftsIds ? [{ id: { in: ftsIds } }] : []),
+    ];
   }
 
   // Location filter: Cause.location is free text, so this is a
@@ -766,7 +769,7 @@ export const listCauses = cache(async (options: CauseFilterOptions = {}) => {
 /**
  * Count causes with filtering options
  */
-function buildCauseCountWhere(options: CauseFilterOptions) {
+async function buildCauseCountWhere(options: CauseFilterOptions) {
   let whereClause: any = {};
 
   if (!options.userId) {
@@ -796,10 +799,13 @@ function buildCauseCountWhere(options: CauseFilterOptions) {
   }
 
   if (options.search && options.search.trim()) {
-    whereClause.title = {
-      contains: options.search.trim(),
-      mode: "insensitive",
-    };
+    const needle = options.search.trim();
+    const ftsIds = await ftsCauseIds(needle);
+    whereClause.OR = [
+      { title: { contains: needle, mode: "insensitive" } },
+      { description: { contains: needle, mode: "insensitive" } },
+      ...(ftsIds ? [{ id: { in: ftsIds } }] : []),
+    ];
   }
 
   if (options.location && options.location.trim()) {
@@ -848,7 +854,7 @@ function withinAmountRange(
 export async function countCauses(
   options: CauseFilterOptions = {},
 ): Promise<number> {
-  const whereClause = buildCauseCountWhere(options);
+  const whereClause = await buildCauseCountWhere(options);
 
   try {
     if (hasAmountRangeFilter(options)) {
@@ -873,7 +879,7 @@ export async function countCauses(
 export async function countCausesByCategory(
   options: CauseFilterOptions = {},
 ): Promise<Record<string, number>> {
-  const whereClause = buildCauseCountWhere(options);
+  const whereClause = await buildCauseCountWhere(options);
   const counts: Record<string, number> = {};
 
   try {
