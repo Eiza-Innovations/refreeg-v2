@@ -40,10 +40,6 @@ export type Ambassador = {
   trend: number[];
 };
 
-export type NavCounts = Partial<
-  Record<"Campaigns" | "KYC" | "Petitions & bounties", number>
->;
-
 export type WorkspaceData = {
   period: Period;
   generatedAt: string;
@@ -68,5 +64,38 @@ export type WorkspaceData = {
     rows: { label: string; value: number; tone: Tone }[];
     top100Share: number;
   };
-  navCounts: NavCounts;
+};
+
+export type OverviewRole = "admin" | "manager";
+export type OverviewQueue = {
+  label: string;
+  href: string;
+  count: number;
+  note: string;
+  tone: Tone;
+};
+export type OverviewItem = Omit<WorkItem, "href"> & {
+  href: string;
+  type: string;
+  owner: string;
+  waiting: string;
+  tone: Tone;
+};
+export type OverviewData = {
+  role: OverviewRole;
+  generatedAt: string;
+  label: string;
+  metrics: Metric[];
+  donations: Series | null;
+  donationsTotal: string;
+  queues: OverviewQueue[];
+  waiting: OverviewItem[];
+  totalWaiting: number;
+};
+
+export type AnalyticsViewProps = {
+  data: WorkspaceData;
+  compare: boolean;
+  onView: (view: WorkspaceView) => void;
+  onSelect: (item: WorkItem) => void;
 };

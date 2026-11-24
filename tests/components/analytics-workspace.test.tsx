@@ -4,6 +4,13 @@ import { AnalyticsWorkspace } from "@/components/admin/analytics-workspace";
 import type { WorkspaceData } from "@/components/admin/workspace/types";
 
 const push = jest.fn();
+// nuqs is ESM-only, so stand in a plain useState keyed off a starting "?view=".
+let mockPanel: string | null = null;
+jest.mock("nuqs", () => ({
+  parseAsString: { withDefault: (fallback: string) => fallback },
+  useQueryState: (_key: string, fallback: string) =>
+    jest.requireActual("react").useState(mockPanel ?? fallback),
+}));
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ push }),
   usePathname: () => "/dashboard/admin/analytics",
@@ -95,21 +102,26 @@ function fixture(overrides: Partial<WorkspaceData> = {}): WorkspaceData {
       rows: [{ label: "Top 10 holders", value: 30, tone: "gold" }],
       top100Share: 62,
     },
-    navCounts: { KYC: 9 },
     ...overrides,
   };
 }
 
-beforeEach(() => push.mockClear());
+beforeEach(() => {
+  push.mockClear();
+  mockPanel = null;
+});
+
+const startAt = (panel: string) => {
+  mockPanel = panel;
+};
 
 it("renders live metrics and navigates between views", async () => {
   const user = userEvent.setup();
   render(<AnalyticsWorkspace data={fixture()} />);
 
   expect(screen.getByText("₦4.2M")).toBeVisible();
-  expect(screen.getByText(/Live · updated/)).toBeVisible();
+  expect(screen.getByText(/Updated/)).toBeVisible();
   expect(screen.getByText("8,420")).toBeVisible();
-  expect(screen.getByText("9")).toBeVisible();
 
   await user.click(
     screen.getByRole("button", { name: "Compare to last period" }),
@@ -143,5 +155,30 @@ it("shows today's campaigns and an empty state on the day view", () => {
   rerender(
     <AnalyticsWorkspace data={fixture({ period: "day", topCampaigns: [] })} />,
   );
-  expect(screen.getByText("No donations yet today.")).toBeVisible();
+  expect(screen.getByText("No donations yet today")).toBeVisible();
+});
+
+it("opens a view straight from the shared view param", () => {
+  startAt("ambassadors");
+  render(<AnalyticsWorkspace data={fixture()} />);
+  expect(
+    screen.getByRole("heading", { name: "Ambassador performance" }),
+  ).toBeVisible();
+});
+
+it("opens a campaign dialog from the same param", () => {
+  startAt("campaign:c1");
+  render(<AnalyticsWorkspace data={fixture({ period: "day" })} />);
+  expect(screen.getByRole("dialog")).toHaveTextContent(
+    "School roofs in Ilorin",
+  );
+  expect(
+    screen.getByRole("heading", { name: "Analytics", hidden: true }),
+  ).toBeVisible();
+});
+
+it("ignores an unknown view value", () => {
+  startAt("nope");
+  render(<AnalyticsWorkspace data={fixture()} />);
+  expect(screen.getByRole("heading", { name: "Analytics" })).toBeVisible();
 });

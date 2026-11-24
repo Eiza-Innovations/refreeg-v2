@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Activity,
+  BarChart3,
   Building2,
   Contact,
   Database,
@@ -34,8 +35,13 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     items: [
       {
         title: "Overview",
-        href: "/dashboard/admin/analytics",
+        href: "/dashboard/admin",
         icon: LayoutGrid,
+      },
+      {
+        title: "Analytics",
+        href: "/dashboard/admin/analytics",
+        icon: BarChart3,
       },
       {
         title: "API monitoring",
