@@ -210,6 +210,7 @@ model Organization {
   invitations    OrganizationInvitation[]
   verifications  OrganizationVerification[]
 
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "idx_organizations_name_trgm")
   @@map("organizations")
 }
 

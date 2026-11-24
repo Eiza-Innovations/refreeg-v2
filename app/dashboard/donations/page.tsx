@@ -9,8 +9,7 @@ import {
   type GivingFilter,
   type GivingPeriod,
 } from "@/actions/donations/giving-actions";
-import { FilterPills } from "@/components/giving/filter-pills";
-import { GiftRow } from "@/components/giving/gift-row";
+import { GiftsPanel } from "@/components/giving/gifts-panel";
 import { PeriodSelect } from "@/components/giving/period-select";
 import {
   GivenByCauseCard,
@@ -125,19 +124,6 @@ export default async function MyGivingPage({
     );
   }
 
-  const hrefWith = (changes: Record<string, string | null>) => {
-    const next = new URLSearchParams();
-    const merged = { period, filter, q, ...changes };
-    if (merged.period && merged.period !== "all")
-      next.set("period", merged.period);
-    if (merged.filter && merged.filter !== "all")
-      next.set("filter", merged.filter);
-    if (merged.q) next.set("q", merged.q);
-    if (changes.limit) next.set("limit", changes.limit);
-    const query = next.toString();
-    return query ? `/dashboard/donations?${query}` : "/dashboard/donations";
-  };
-
   const { headline } = overview;
   const periodLabel =
     period === "year"
@@ -176,41 +162,15 @@ export default async function MyGivingPage({
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-12">
         <section className="lg:col-span-8" aria-labelledby="every-gift">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h2 id="every-gift" className="font-semibold text-ink">
-              Every gift
-            </h2>
-            <FilterPills
-              filter={filter}
-              hrefFor={(value) => hrefWith({ filter: value })}
-            />
-          </div>
-
-          {overview.gifts.length > 0 ? (
-            <ul className="mt-4 space-y-3">
-              {overview.gifts.map((gift) => (
-                <GiftRow key={`${gift.kind}-${gift.id}`} gift={gift} />
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-4 rounded-2xl border border-ink/10 shadow-subtle bg-surface px-5 py-8 text-center text-sm text-ink/60">
-              {q
-                ? `No gifts match “${q}”.`
-                : "No gifts here for this period yet."}
-            </p>
-          )}
-
-          {overview.hasMoreGifts && (
-            <div className="mt-4 text-center">
-              <Link
-                href={hrefWith({ limit: String(limit + PAGE_SIZE) })}
-                scroll={false}
-                className="text-sm font-semibold text-blue-accent hover:underline"
-              >
-                Show more gifts
-              </Link>
-            </div>
-          )}
+          <GiftsPanel
+            period={period}
+            filter={filter}
+            q={q}
+            limit={limit}
+            pageSize={PAGE_SIZE}
+            gifts={overview.gifts}
+            hasMoreGifts={overview.hasMoreGifts}
+          />
         </section>
 
         <aside className="space-y-4 lg:col-span-4">

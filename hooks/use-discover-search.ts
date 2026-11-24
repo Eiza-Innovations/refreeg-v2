@@ -1,13 +1,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "nextjs-toploader/app";
 import { useDebounce } from "@/hooks/use-debounce";
-import {
-  searchDiscover,
-  type DiscoverItem,
-} from "@/actions/causes/discover-actions";
+import type { DiscoverItem } from "@/actions/causes/discover-actions";
 
-const RECENT_SEARCHES_KEY = "discover:recent-searches";
-const RECENT_SEARCHES_LIMIT = 5;
+const SEARCH_DEBOUNCE_MS = 300;
+const SEARCH_MAX_LENGTH = 100;
 
 export type OrgResult = {
   id: string;
@@ -17,105 +14,87 @@ export type OrgResult = {
   isVerified: boolean;
 };
 
-function readRecentSearches(): string[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(RECENT_SEARCHES_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+export type DiscoverSearchResponse = {
+  campaigns: DiscoverItem[];
+  petitions: DiscoverItem[];
+  organizations: OrgResult[];
+  totalCount: number;
+};
+
+async function fetchSearch(
+  query: string,
+  signal: AbortSignal,
+): Promise<DiscoverSearchResponse> {
+  const trimmed = query.trim();
+  const res = await fetch(
+    `/api/search?q=${encodeURIComponent(trimmed.slice(0, SEARCH_MAX_LENGTH))}`,
+    { signal },
+  );
+  if (!res.ok) throw new Error(`search failed: ${res.status}`);
+  return res.json();
 }
 
-function saveRecentSearch(query: string) {
-  if (typeof window === "undefined") return;
-  try {
-    const existing = readRecentSearches().filter((q) => q !== query);
-    const next = [query, ...existing].slice(0, RECENT_SEARCHES_LIMIT);
-    window.localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next));
-  } catch {}
+function isAbort(error: unknown): boolean {
+  return error instanceof DOMException
+    ? error.name === "AbortError"
+    : (error as { name?: string })?.name === "AbortError";
 }
 
 export function useDiscoverSearch({
-  active,
   onNavigate,
 }: {
-  active: boolean;
-
   onNavigate?: () => void;
-}) {
+} = {}) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<{
-    campaigns: DiscoverItem[];
-    petitions: DiscoverItem[];
-    organizations: OrgResult[];
-    totalCount: number;
-  } | null>(null);
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
-  const debouncedQuery = useDebounce(query, 300);
-
-  useEffect(() => {
-    if (active) setRecentSearches(readRecentSearches());
-  }, [active]);
+  const [results, setResults] = useState<DiscoverSearchResponse | null>(null);
+  const debouncedQuery = useDebounce(query, SEARCH_DEBOUNCE_MS);
 
   useEffect(() => {
     if (!debouncedQuery.trim()) {
       setResults(null);
+      setLoading(false);
       return;
     }
-    let cancelled = false;
+    const controller = new AbortController();
     setLoading(true);
-    searchDiscover(debouncedQuery)
+    fetchSearch(debouncedQuery, controller.signal)
       .then((data) => {
-        if (!cancelled) {
-          setResults(data);
-          setLoading(false);
-        }
+        setResults(data);
+        setLoading(false);
       })
-      .catch(() => {
-        if (!cancelled) {
-          setResults({
-            campaigns: [],
-            petitions: [],
-            organizations: [],
-            totalCount: 0,
-          });
-          setLoading(false);
-        }
+      .catch((error) => {
+        if (isAbort(error)) return;
+        setResults({
+          campaigns: [],
+          petitions: [],
+          organizations: [],
+          totalCount: 0,
+        });
+        setLoading(false);
       });
-    return () => {
-      cancelled = true;
-    };
+    return () => controller.abort();
   }, [debouncedQuery]);
 
   const goToFullResults = (q: string) => {
-    saveRecentSearch(q);
     onNavigate?.();
     router.push(`/causes?q=${encodeURIComponent(q)}`);
   };
 
-  const selectCause = (id: string, q: string) => {
-    saveRecentSearch(q);
+  const selectCause = (id: string) => {
     onNavigate?.();
     router.push(`/causes/${id}`);
   };
 
-  const selectPetition = (id: string, q: string) => {
-    saveRecentSearch(q);
+  const selectPetition = (id: string) => {
     onNavigate?.();
     router.push(`/petitions/${id}`);
   };
 
-  const selectOrg = (org: OrgResult, q: string) => {
-    saveRecentSearch(q);
+  const selectOrg = (org: OrgResult) => {
     onNavigate?.();
     if (org.username) router.push(`/${org.username}`);
-  };
-
-  const selectRecent = (q: string) => {
-    goToFullResults(q);
   };
 
   return {
@@ -123,11 +102,9 @@ export function useDiscoverSearch({
     setQuery,
     loading,
     results,
-    recentSearches,
     goToFullResults,
     selectCause,
     selectPetition,
     selectOrg,
-    selectRecent,
   };
 }

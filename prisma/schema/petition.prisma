@@ -23,6 +23,7 @@ model petitions {
   @@index([category], map: "idx_petitions_category")
   @@index([created_at(sort: Desc)], map: "idx_petitions_created_at")
   @@index([status], map: "idx_petitions_status")
+  @@index([title(ops: raw("gin_trgm_ops"))], type: Gin, map: "idx_petitions_title_trgm")
   @@index([user_id], map: "idx_petitions_user_id")
   @@index([video_links], map: "idx_petitions_video_links", type: Gin)
 }
