@@ -66,33 +66,6 @@ export type WorkspaceData = {
   };
 };
 
-export type OverviewRole = "admin" | "manager";
-export type OverviewQueue = {
-  label: string;
-  href: string;
-  count: number;
-  note: string;
-  tone: Tone;
-};
-export type OverviewItem = Omit<WorkItem, "href"> & {
-  href: string;
-  type: string;
-  owner: string;
-  waiting: string;
-  tone: Tone;
-};
-export type OverviewData = {
-  role: OverviewRole;
-  generatedAt: string;
-  label: string;
-  metrics: Metric[];
-  donations: Series | null;
-  donationsTotal: string;
-  queues: OverviewQueue[];
-  waiting: OverviewItem[];
-  totalWaiting: number;
-};
-
 export type AnalyticsViewProps = {
   data: WorkspaceData;
   compare: boolean;

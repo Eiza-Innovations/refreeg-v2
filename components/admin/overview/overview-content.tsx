@@ -12,7 +12,7 @@ import { MetricCards } from "@/components/admin/workspace/metric-cards";
 import { PageHeading } from "@/components/admin/workspace/page-heading";
 import { Panel } from "@/components/admin/workspace/panel";
 import { WorkspaceFrame } from "@/components/admin/workspace/workspace-frame";
-import type { OverviewData } from "@/components/admin/workspace/types";
+import type { OverviewData } from "@/types/admin-overview-types";
 import { downloadCsv } from "@/lib/admin-workspace";
 import { waitingColumns } from "./columns";
 

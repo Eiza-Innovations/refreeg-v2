@@ -6,7 +6,7 @@ import { Strong } from "@/components/marketing/Typography";
 import type { DataTableFeatures } from "@/components/ui/data-table-features";
 import { Chip } from "@/components/admin/workspace/chip";
 import { Person } from "@/components/admin/workspace/person";
-import type { OverviewItem } from "@/components/admin/workspace/types";
+import type { OverviewItem } from "@/types/admin-overview-types";
 
 const columnHelper = createColumnHelper<DataTableFeatures, OverviewItem>();
 

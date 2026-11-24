@@ -1,24 +1,21 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import {
-  getAdminOverview,
-  type AdminOverviewData,
-  type WaitingRow,
-} from "@/actions/admin/admin-overview-actions";
-import type {
-  Metric,
-  OverviewData,
-  OverviewItem,
-  OverviewQueue,
-  Tone,
-} from "@/components/admin/workspace/types";
+import { getAdminOverview } from "@/actions/admin/admin-overview-actions";
+import type { Metric, Tone } from "@/components/admin/workspace/types";
 import {
   formatChange,
   formatCount,
   formatNaira,
   initials,
 } from "@/lib/admin-workspace";
+import type {
+  AdminOverviewData,
+  OverviewData,
+  OverviewItem,
+  OverviewQueue,
+  WaitingRow,
+} from "@/types/admin-overview-types";
 
 const HOUR_MS = 60 * 60 * 1000;
 const STALE_MS = 72 * HOUR_MS;

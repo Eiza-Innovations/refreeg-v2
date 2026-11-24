@@ -18,6 +18,7 @@ Visual rules (colors, typography, shared UI) live in [DESIGN_GUIDE.md](./DESIGN_
 | Hooks            | `hooks/use-<feature>.ts`                | React Query wiring and any post-processing of a result.                              |
 | Schemas          | `lib/schemas/<feature>.schema.ts`       | One zod schema per form.                                                             |
 | Options          | `lib/options/<feature>.options.ts`      | Label and value lists.                                                               |
+| Types            | `types/<feature>-types.ts`              | Shared types and interfaces. Never declared or exported from `actions/`.             |
 | Components       | `components/<domain>/<Component>.tsx`   | Thin. Render, call hooks, hold local UI state.                                       |
 
 Domain folders keep the flat namespaces small:
@@ -176,12 +177,30 @@ const columns = useMemo(() => kycQueueColumns(tab), [tab]);
 
 A dialog that calls a server action wraps the call in `useMutation` from `@tanstack/react-query`, validates with `useValidator` first (rule 5), guards against double submit with `isPending`, and handles the result in `onSuccess`: show `result.error` via `FieldError` (rule 3) and return early; otherwise close and navigate. No hand-rolled `isSubmitting`/`submitError` state around a plain async handler.
 
+## 13. Types live in `types/`, never in actions
+
+Actions files export async functions only. Any type or interface a server action returns or accepts (result shapes, row types, input types) goes in `types/<feature>-types.ts` and is imported with `import type` by the action, the hook and the component. A `"use server"` file must not be the source of a type other layers import.
+
+```ts
+// types/admin-overview-types.ts
+export type AdminOverviewData = { role: "admin" | "manager" /* ... */ };
+
+// actions/admin/admin-overview-actions.ts
+import type { AdminOverviewData } from "@/types/admin-overview-types";
+export async function getAdminOverview() {
+  /* ... */
+}
+
+// hooks/use-admin-overview.ts
+import type { AdminOverviewData } from "@/types/admin-overview-types";
+```
+
 ## Review procedure
 
 When asked to review or rate changes against the standard:
 
 1. List changed and untracked files.
-2. Check each file against rules 1 to 12 and `DESIGN_GUIDE.md`.
+2. Check each file against rules 1 to 13 and `DESIGN_GUIDE.md`.
 3. Report violations as `file:line`, the rule number, and the fix.
 4. Fix them when asked, then review again until clean. Also run `pnpm lint` and `pnpm tsc --noEmit`.
 

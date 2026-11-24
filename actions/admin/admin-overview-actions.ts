@@ -11,43 +11,13 @@ import {
   giftSeries,
   giftTotals,
 } from "@/lib/admin-analytics/workspace-data";
+import type {
+  AdminOverviewData,
+  QueueStat,
+  WaitingRow,
+} from "@/types/admin-overview-types";
 
 const WAITING_LIMIT = 6;
-
-type QueueStat = { count: number; oldest: Date | null };
-
-export type WaitingRow = {
-  type: "Campaign" | "KYC" | "Receipt" | "Petition" | "Report";
-  /** Route param for the item's review page (user id for KYC, else the item id). */
-  ref: string;
-  title: string;
-  detail: string | null;
-  owner: string | null;
-  created_at: Date;
-  due_at: Date | null;
-};
-
-export type AdminOverviewData = {
-  role: "admin" | "manager";
-  generatedAt: Date;
-  label: string;
-  queues: {
-    campaigns: QueueStat;
-    kyc: QueueStat;
-    receipts: QueueStat;
-    petitions: QueueStat;
-    reports: QueueStat;
-  };
-  reportsOverdue: number;
-  waiting: WaitingRow[];
-  campaigns: { active: number; inactive: number; paused: number };
-  /** Admins only: managers never receive money figures. */
-  money: {
-    totals: Awaited<ReturnType<typeof giftTotals>>;
-    series: Awaited<ReturnType<typeof giftSeries>>;
-    labels: string[];
-  } | null;
-};
 
 async function waitingItems() {
   return prisma.$queryRaw<WaitingRow[]>`

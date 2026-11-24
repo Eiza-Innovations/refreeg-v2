@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { AdminOverview } from "@/components/admin/overview/admin-overview";
-import type { OverviewData } from "@/components/admin/workspace/types";
+import type { OverviewData } from "@/types/admin-overview-types";
 
 const useAdminOverview = jest.fn();
 jest.mock("@/hooks/use-admin-overview", () => ({

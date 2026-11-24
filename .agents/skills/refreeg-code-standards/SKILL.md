@@ -14,9 +14,10 @@ Tool-agnostic: works for any AI coding agent (Antigravity, subagents, Claude Cod
 | Hooks            | `hooks/use-<feature>.ts`                | React Query wiring and any post-processing of a result.                                                  |
 | Schemas          | `lib/schemas/<feature>.schema.ts`       | One zod schema per form.                                                                                 |
 | Options          | `lib/options/<feature>.options.ts`      | Label and value lists (`xxxOptions`).                                                                    |
+| Types            | `types/<feature>-types.ts`              | Shared types and interfaces. Never declared or exported from `actions/`.                                 |
 | Components       | `components/<domain>/<Component>.tsx`   | Thin. Render, call hooks, hold local UI state.                                                           |
 
-## Checklist (12 Rules)
+## Checklist (13 Rules)
 
 1. **Actions do only the work.** `actions/*` authenticate, validate, run one operation, and return `{ success, error }` or data. They do not format for display, toast, or trigger UI side effects. Parsing, view shaping, and side effects go in `hooks/use-<feature>.ts`.
 2. **No intermediary layers.** Plain calls, backend pagination, and API filters. No fetch-all-pages wrappers, no single-use helpers, no needless mappers renaming fields.
@@ -30,6 +31,7 @@ Tool-agnostic: works for any AI coding agent (Antigravity, subagents, Claude Cod
 10. **Small and flat.** One component per file (~200 lines max), early returns over nesting, no dead code/commented-out blocks/unused exports, plain names, and comments that explain _why_ only.
 11. **Tables use the shared DataTable.** `components/ui/data-table.tsx` + `data-table-features.ts` + a `columns.tsx` per table; never raw `<Table>` markup inside a page or card.
 12. **Submits run through useMutation.** `useMutation` wraps the action call, `useValidator` runs first, `isPending` guards double submit, and on response show `result.error` via `FieldError` and return early, or close and navigate on success.
+13. **Types live in `types/`.** `actions/*` export async functions only. Result shapes, row types and input types go in `types/<feature>-types.ts` and are imported with `import type` by the action, hook and component.
 
 ## When writing
 
@@ -39,7 +41,7 @@ Tool-agnostic: works for any AI coding agent (Antigravity, subagents, Claude Cod
 ## When reviewing or rating
 
 1. List changed and untracked files (read-only git commands, never commit or push unless asked).
-2. Check each file against rules 1 to 12 and `docs/DESIGN_GUIDE.md`. Specifically hunt raw HTML where a shared component exists, per-field `useState` in forms, inline options, hand-rolled `<Table>` markup, plain async dialog submits, and error maps.
+2. Check each file against rules 1 to 13 and `docs/DESIGN_GUIDE.md`. Specifically hunt raw HTML where a shared component exists, per-field `useState` in forms, inline options, hand-rolled `<Table>` markup, plain async dialog submits, error maps, and `export type`/`interface` inside `actions/`.
 3. Report each hit as `file:line`, rule number, and fix. End with a short verdict.
 4. If asked to fix, fix every hit, then review again until clean. Run `pnpm lint` and `pnpm tsc --noEmit`.
 

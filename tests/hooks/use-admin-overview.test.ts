@@ -1,7 +1,7 @@
 jest.mock("@/actions/admin/admin-overview-actions", () => ({
   getAdminOverview: jest.fn(),
 }));
-import type { AdminOverviewData } from "@/actions/admin/admin-overview-actions";
+import type { AdminOverviewData } from "@/types/admin-overview-types";
 import { buildOverview, waitingLabel } from "@/hooks/use-admin-overview";
 
 const now = new Date("2026-11-24T12:00:00Z");
