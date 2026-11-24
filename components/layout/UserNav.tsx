@@ -149,6 +149,7 @@ export function UserNav() {
         </div>
 
         <DropdownMenuGroup>
+          <MenuLink href="/dashboard">Dashboard</MenuLink>
           <MenuLink href="/dashboard/settings/profile">Your profile</MenuLink>
           <MenuLink href="/dashboard/settings/kyc">
             Verification
@@ -202,6 +203,9 @@ export function UserNav() {
               <MenuLink href="/dashboard/admin/users/kyc">KYC reviews</MenuLink>
               <MenuLink href="/dashboard/admin/receipts">
                 Receipt reviews
+              </MenuLink>
+              <MenuLink href="/dashboard/admin/reports">
+                Content reports
               </MenuLink>
               <MenuLink href="/dashboard/admin/api-reports">
                 API reports

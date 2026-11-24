@@ -1,12 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import {
-  Search as SearchIcon,
-  Flag,
-  Building2,
-  BadgeCheck,
-} from "lucide-react";
+import { Flag, Building2, BadgeCheck, Loader2 } from "lucide-react";
 import {
   CommandEmpty,
   CommandGroup,
@@ -17,6 +12,7 @@ import {
 } from "@/components/ui/command";
 import { getMediaUrl } from "@/lib/s3/media";
 import type { useDiscoverSearch } from "@/hooks/use-discover-search";
+import type { DiscoverItem } from "@/actions/causes/discover-actions";
 
 function HighlightedText({ text, query }: { text: string; query: string }) {
   if (!query.trim()) return <>{text}</>;
@@ -36,58 +32,82 @@ function HighlightedText({ text, query }: { text: string; query: string }) {
   );
 }
 
+/** The row used for campaign hits. */
+function CampaignRow({
+  item,
+  query,
+  onSelect,
+}: {
+  item: DiscoverItem;
+  query: string;
+  onSelect: () => void;
+}) {
+  return (
+    <CommandItem onSelect={onSelect} className="gap-3">
+      <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-md bg-slate-100">
+        {item.image && (
+          <Image
+            src={getMediaUrl(item.image) || "/icons/placeholder.svg"}
+            alt=""
+            fill
+            className="object-cover"
+            unoptimized
+          />
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-medium">
+          <HighlightedText text={item.title} query={query} />
+        </p>
+        <p className="truncate text-xs text-muted-foreground">
+          {item.orgName} · {item.percent}% funded
+          {item.urgent ? " · Urgent" : ""}
+        </p>
+      </div>
+    </CommandItem>
+  );
+}
+
 export function DiscoverSearchResults({
   search,
   inputPlaceholder = "Search campaigns, petitions, organisations…",
   autoFocus,
   listClassName,
+  hideInput = false,
 }: {
   search: ReturnType<typeof useDiscoverSearch>;
   inputPlaceholder?: string;
   autoFocus?: boolean;
 
   listClassName?: string;
+  /** Set when the caller renders its own input (inline combobox header). */
+  hideInput?: boolean;
 }) {
   const {
     query,
     setQuery,
     loading,
     results,
-    recentSearches,
     goToFullResults,
     selectCause,
     selectPetition,
     selectOrg,
-    selectRecent,
   } = search;
 
   return (
     <>
-      <CommandInput
-        placeholder={inputPlaceholder}
-        value={query}
-        onValueChange={setQuery}
-        autoFocus={autoFocus}
-      />
+      {!hideInput && (
+        <CommandInput
+          placeholder={inputPlaceholder}
+          value={query}
+          onValueChange={setQuery}
+          autoFocus={autoFocus}
+        />
+      )}
       <CommandList className={listClassName}>
-        {!query.trim() && (
-          <>
-            {recentSearches.length > 0 && (
-              <CommandGroup heading="Recent searches">
-                {recentSearches.map((q) => (
-                  <CommandItem key={q} onSelect={() => selectRecent(q)}>
-                    <SearchIcon className="h-4 w-4 text-muted-foreground" />
-                    {q}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            )}
-            <CommandEmpty>Start typing to search Discover.</CommandEmpty>
-          </>
-        )}
-
         {query.trim() && loading && (
-          <div className="py-6 text-center text-sm text-muted-foreground">
+          <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
             Searching…
           </div>
         )}
@@ -101,34 +121,12 @@ export function DiscoverSearchResults({
             {results.campaigns.length > 0 && (
               <CommandGroup heading="Campaigns">
                 {results.campaigns.map((item) => (
-                  <CommandItem
+                  <CampaignRow
                     key={item.id}
-                    onSelect={() => selectCause(item.id, query)}
-                    className="gap-3"
-                  >
-                    <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-md bg-slate-100">
-                      {item.image && (
-                        <Image
-                          src={
-                            getMediaUrl(item.image) || "/icons/placeholder.svg"
-                          }
-                          alt=""
-                          fill
-                          className="object-cover"
-                          unoptimized
-                        />
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium">
-                        <HighlightedText text={item.title} query={query} />
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {item.orgName} · {item.percent}% funded
-                        {item.urgent ? " · Urgent" : ""}
-                      </p>
-                    </div>
-                  </CommandItem>
+                    item={item}
+                    query={query}
+                    onSelect={() => selectCause(item.id)}
+                  />
                 ))}
               </CommandGroup>
             )}
@@ -138,7 +136,7 @@ export function DiscoverSearchResults({
                 {results.petitions.map((item) => (
                   <CommandItem
                     key={item.id}
-                    onSelect={() => selectPetition(item.id, query)}
+                    onSelect={() => selectPetition(item.id)}
                     className="gap-3"
                   >
                     <Flag className="h-4 w-4 text-amber-600" />
@@ -161,7 +159,7 @@ export function DiscoverSearchResults({
                 {results.organizations.map((org) => (
                   <CommandItem
                     key={org.id}
-                    onSelect={() => selectOrg(org, query)}
+                    onSelect={() => selectOrg(org)}
                     className="gap-3"
                   >
                     <Building2 className="h-4 w-4 text-slate-500" />

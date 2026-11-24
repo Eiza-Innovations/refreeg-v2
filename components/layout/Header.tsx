@@ -20,6 +20,7 @@ import {
   CircleDollarSign,
   ClipboardCheckIcon,
   FileText,
+  Flag,
   HandHeart,
   HeartHandshake,
   HelpCircle,
@@ -130,7 +131,7 @@ const publicNavItems: NavItem[] = [
     ],
   },
   {
-    title: "How Refreeg works",
+    title: "FAQs",
     href: "/faq",
     type: "link",
     // header: "Everything you need to launch, manage, and grow a campaign.",
@@ -185,6 +186,11 @@ const adminDashboardItems = [
     title: "Notifications",
     href: "/dashboard/admin/notifications",
     icon: Bell,
+  },
+  {
+    title: "Content Reports",
+    href: "/dashboard/admin/reports",
+    icon: Flag,
   },
   { title: "Logs", href: "/dashboard/admin/logs", icon: ClipboardCheckIcon },
 ];
@@ -435,15 +441,6 @@ export function Header() {
               </div>
 
               <div className="hidden lg:flex lg:items-center lg:gap-6">
-                {user && !isDashboardRoute ? (
-                  <Link
-                    href="/dashboard"
-                    className="whitespace-nowrap text-sm text-ink transition-colors hover:text-ink/70"
-                  >
-                    Dashboard
-                  </Link>
-                ) : null}
-
                 {!isLoading && !user ? (
                   <>
                     <Link

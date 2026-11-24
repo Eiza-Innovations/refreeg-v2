@@ -3,6 +3,10 @@ import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
 import { prisma } from "@/lib/prisma";
 import { isUuid } from "@/lib/uuid";
+import {
+  isStoreReviewDemoAccount,
+  STORE_REVIEW_DEMO_SAVED_CARD,
+} from "@/lib/auth/store-review-demo";
 
 export async function OPTIONS() {
   return handleCorsPreflight();
@@ -23,6 +27,13 @@ export async function DELETE(
     }
     const user = authResult.user!;
     const { id } = await params;
+
+    if (
+      isStoreReviewDemoAccount(user.email) &&
+      id === STORE_REVIEW_DEMO_SAVED_CARD.id
+    ) {
+      return apiSuccess({ message: "Card deleted successfully" });
+    }
 
     if (!isUuid(id)) {
       return apiError("Invalid card id", 400);
@@ -79,6 +90,16 @@ export async function PATCH(
     }
     const user = authResult.user!;
     const { id } = await params;
+
+    if (
+      isStoreReviewDemoAccount(user.email) &&
+      id === STORE_REVIEW_DEMO_SAVED_CARD.id
+    ) {
+      return apiSuccess({
+        card: STORE_REVIEW_DEMO_SAVED_CARD,
+        message: "Default card updated",
+      });
+    }
 
     if (!isUuid(id)) {
       return apiError("Invalid card id", 400);

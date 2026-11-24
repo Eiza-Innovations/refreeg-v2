@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Activity,
   BarChart3,
+  Building2,
   Contact,
   Database,
   Flag,
@@ -75,6 +76,11 @@ const navGroups: { label: string; items: NavItem[] }[] = [
         href: "/dashboard/admin/petitions",
         icon: Flag,
         countKey: "petitions",
+      },
+      {
+        title: "Organizations",
+        href: "/dashboard/admin/organizations/verifications",
+        icon: Building2,
       },
       {
         title: "Reports",

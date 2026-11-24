@@ -56,11 +56,13 @@ export interface Profile {
 export interface OnboardingProfileData {
   firstName: string;
   lastName: string;
+  displayName?: string;
   username: string;
+  bio?: string;
   location: string;
   phone: string;
   email: string;
-  profilePhoto?: File | null;
+  profilePhoto?: File | string | null;
   accountType: string;
   gender?: string;
 }

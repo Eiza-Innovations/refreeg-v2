@@ -18,6 +18,9 @@ model User {
   linkedin_url                String?
   crypto_wallets              Json?
   accountType                 String?                  @map("account_type")
+  /// Why the organisation joined: "fundraising" | "csr" | "both". Written
+  /// at step 1 and copied onto the Organization row when details save.
+  organizationPurpose         String?                  @map("organization_purpose")
   isVerified                  Boolean?                 @default(false) @map("is_verified")
   gender                      String?
   website                     String?
@@ -86,7 +89,12 @@ model User {
   bookmarks        Bookmark[]
   alertPreferences UserAlertPrefs?
   notifications    notifications[]
-  user_saved_cards user_saved_cards[]
+  user_saved_cards        user_saved_cards[]
+  submittedContentReports content_reports[]  @relation("ContentReportsSubmitted")
+  reportedContentReports  content_reports[]  @relation("ContentReportsAgainst")
+  reviewedContentReports  content_reports[]  @relation("ContentReportsReviewed")
+  initiatedUserBlocks     user_blocks[]      @relation("UserBlocksInitiated")
+  receivedUserBlocks      user_blocks[]      @relation("UserBlocksReceived")
 
   @@index([isBlocked], map: "idx_profiles_is_blocked")
   @@index([createdAt], map: "idx_profiles_created_at")
@@ -174,6 +182,18 @@ model Organization {
   phone          String?
   address        String?
   industry       String?
+  organisationType       String?                  @map("organisation_type")
+  registrationNumber     String?                  @map("registration_number")
+  country                String?
+  purpose                String?
+  contactRole            String?                  @map("contact_role")
+  csrBudget              Decimal?                 @map("csr_budget") @db.Decimal
+  csrFinancialYearStart  String?                  @map("csr_financial_year_start")
+  csrFocusCauses         String[]                 @default([]) @map("csr_focus_causes")
+  csrMatchEmployeeDonations Boolean               @default(false) @map("csr_match_employee_donations")
+  csrMatchCap            Decimal?                 @map("csr_match_cap") @db.Decimal
+  csrPublicReport        Boolean                  @default(false) @map("csr_public_report")
+  verificationStatus     String                   @default("unverified") @map("verification_status")
   logoUrl        String?                  @map("logo_url")
   bio            String?
   websiteUrl     String?                  @map("website_url")
@@ -189,7 +209,9 @@ model Organization {
   owner          User                     @relation("OrganizationOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   members        OrganizationMember[]
   invitations    OrganizationInvitation[]
+  verifications  OrganizationVerification[]
 
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "idx_organizations_name_trgm")
   @@map("organizations")
 }
 
@@ -225,6 +247,26 @@ model OrganizationInvitation {
   @@index([organizationId, status])
   @@index([email])
   @@map("organization_invitations")
+}
+
+/// Organisation verification submissions: CAC registration document plus
+/// director IDs, reviewed by admins (about 2 working days). Gates payouts
+/// and CSR giving via Organization.verificationStatus.
+model OrganizationVerification {
+  id                 String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId     String       @map("organization_id") @db.Uuid
+  status             String       @default("pending")
+  registrationDocKey String       @map("registration_doc_key")
+  directorIdKeys     String[]     @default([]) @map("director_id_keys")
+  note               String?
+  reviewedById       String?      @map("reviewed_by_id")
+  reviewedAt         DateTime?    @map("reviewed_at") @db.Timestamptz(6)
+  createdAt          DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, status])
+  @@map("organization_verifications")
 }
 
 model Role {

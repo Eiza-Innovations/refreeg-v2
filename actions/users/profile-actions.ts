@@ -214,7 +214,24 @@ export async function getCurrentOnboardingStep(
       return 1;
     }
 
-    if (profile.accountType !== "organization" && !profile.gender) {
+    // Organization onboarding skips the gender and profile steps; the
+    // organisation details step derives the owner profile server-side.
+    if (profile.accountType === "organization") {
+      const org = await prisma.organization.findFirst({
+        where: { ownerId: userId },
+        select: { purpose: true, csrBudget: true },
+      });
+      if (!org) return 3.5;
+      if (
+        (org.purpose === "csr" || org.purpose === "both") &&
+        org.csrBudget == null
+      ) {
+        return 3.6;
+      }
+      return 3.7;
+    }
+
+    if (!profile.gender) {
       return 2;
     }
 
@@ -231,23 +248,6 @@ export async function getCurrentOnboardingStep(
       return 3;
     }
 
-    // For organization accounts, check if org setup is complete (Step 3B)
-    if (profile.accountType === "organization") {
-      const org = await prisma.organization.findFirst({
-        where: { ownerId: userId },
-        select: { logoUrl: true, preferences: true },
-      });
-      // Org setup step: logo is optional, but we use a flag in preferences
-      // to know the user has visited the step. If preferences is still the
-      // default empty object "{}", they haven't been through org setup.
-      const prefs = org?.preferences as Record<string, unknown> | null;
-      const hasVisitedOrgSetup = prefs && Object.keys(prefs).length > 0;
-      if (!hasVisitedOrgSetup) {
-        // Return a special value: the orchestrator maps this to step 3B
-        return 3.5;
-      }
-    }
-
     return 4;
   } catch (error) {
     console.error("Error determining onboarding step:", error);
@@ -257,11 +257,14 @@ export async function getCurrentOnboardingStep(
 
 export async function getOnboardingData(userId: string): Promise<{
   accountType: string;
+  organizationPurpose: string;
   gender: string;
   profile: {
     firstName: string;
     lastName: string;
+    displayName: string;
     username: string;
+    bio: string;
     location: string;
     phone: string;
     email: string;
@@ -276,7 +279,10 @@ export async function getOnboardingData(userId: string): Promise<{
         gender: true,
         firstName: true,
         lastName: true,
+        organizationPurpose: true,
+        displayName: true,
         username: true,
+        bio: true,
         location: true,
         phone: true,
         email: true,
@@ -287,11 +293,14 @@ export async function getOnboardingData(userId: string): Promise<{
     if (!profile) {
       return {
         accountType: "",
+        organizationPurpose: "",
         gender: "",
         profile: {
           firstName: "",
           lastName: "",
+          displayName: "",
           username: "",
+          bio: "",
           location: "",
           phone: "",
           email: "",
@@ -301,11 +310,14 @@ export async function getOnboardingData(userId: string): Promise<{
 
     return {
       accountType: profile.accountType || "",
+      organizationPurpose: profile.organizationPurpose || "",
       gender: profile.gender || "",
       profile: {
         firstName: profile.firstName || "",
         lastName: profile.lastName || "",
+        displayName: profile.displayName || "",
         username: profile.username || "",
+        bio: profile.bio || "",
         location: profile.location || "",
         phone: profile.phone || "",
         email: profile.email || "",
@@ -316,11 +328,14 @@ export async function getOnboardingData(userId: string): Promise<{
     console.error("Error fetching onboarding data:", error);
     return {
       accountType: "",
+      organizationPurpose: "",
       gender: "",
       profile: {
         firstName: "",
         lastName: "",
+        displayName: "",
         username: "",
+        bio: "",
         location: "",
         phone: "",
         email: "",
@@ -332,9 +347,10 @@ export async function getOnboardingData(userId: string): Promise<{
 export async function saveStep1Progress(
   userId: string,
   accountType: string,
+  meta?: { organizationPurpose?: string },
 ): Promise<void> {
   await assertSelf(userId);
-  await saveStep1ProgressCore(userId, accountType);
+  await saveStep1ProgressCore(userId, accountType, meta);
   revalidatePath("/onboarding");
 }
 
@@ -387,6 +403,12 @@ export async function getOrganizationOnboardingData(userId: string) {
       select: {
         id: true,
         name: true,
+        organisationType: true,
+        registrationNumber: true,
+        country: true,
+        purpose: true,
+        contactRole: true,
+        verificationStatus: true,
         phone: true,
         address: true,
         industry: true,
@@ -407,6 +429,12 @@ export async function getOrganizationOnboardingData(userId: string) {
     return {
       id: org.id,
       name: org.name,
+      organisationType: org.organisationType || "",
+      registrationNumber: org.registrationNumber || "",
+      country: org.country || "",
+      purpose: org.purpose || "",
+      contactRole: org.contactRole || "",
+      verificationStatus: org.verificationStatus,
       phone: org.phone || "",
       address: org.address || "",
       industry: org.industry || "",

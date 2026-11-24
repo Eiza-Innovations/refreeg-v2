@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { DISCOVER_CACHE_TAG } from "@/lib/causes/discover-constants";
+import { ftsPetitionIds } from "@/lib/causes/search-fts";
 import type {
   Petition,
   PetitionWithUser,
@@ -356,7 +357,13 @@ export const listPetitions = cache(
     }
 
     if (options.search && options.search.trim()) {
-      where.title = { contains: options.search.trim(), mode: "insensitive" };
+      const needle = options.search.trim();
+      const ftsIds = await ftsPetitionIds(needle);
+      where.OR = [
+        { title: { contains: needle, mode: "insensitive" } },
+        { description: { contains: needle, mode: "insensitive" } },
+        ...(ftsIds ? [{ id: { in: ftsIds } }] : []),
+      ];
     }
 
     if (options.verifiedOnly) {
@@ -419,7 +426,7 @@ export const listPetitions = cache(
   },
 );
 
-function buildPetitionCountWhere(options: PetitionFilterOptions) {
+async function buildPetitionCountWhere(options: PetitionFilterOptions) {
   const where: any = {};
 
   if (options.categories && options.categories.length > 0) {
@@ -439,7 +446,13 @@ function buildPetitionCountWhere(options: PetitionFilterOptions) {
   }
 
   if (options.search && options.search.trim()) {
-    where.title = { contains: options.search.trim(), mode: "insensitive" };
+    const needle = options.search.trim();
+    const ftsIds = await ftsPetitionIds(needle);
+    where.OR = [
+      { title: { contains: needle, mode: "insensitive" } },
+      { description: { contains: needle, mode: "insensitive" } },
+      ...(ftsIds ? [{ id: { in: ftsIds } }] : []),
+    ];
   }
 
   if (options.verifiedOnly) {
@@ -452,7 +465,9 @@ function buildPetitionCountWhere(options: PetitionFilterOptions) {
 export async function countPetitions(
   options: PetitionFilterOptions = {},
 ): Promise<number> {
-  return prisma.petitions.count({ where: buildPetitionCountWhere(options) });
+  return prisma.petitions.count({
+    where: await buildPetitionCountWhere(options),
+  });
 }
 
 export async function countPetitionsByCategory(
@@ -460,7 +475,7 @@ export async function countPetitionsByCategory(
 ): Promise<Record<string, number>> {
   const groups = await prisma.petitions.groupBy({
     by: ["category"],
-    where: buildPetitionCountWhere(options),
+    where: await buildPetitionCountWhere(options),
     _count: { _all: true },
   });
 

@@ -1,10 +1,11 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+import { logAdminActivity } from "@/actions/admin/database-actions";
+import { getUserRole } from "@/actions/admin/role-actions";
+import { executeUserAccountDeletion } from "@/lib/auth/account-deletion";
 import { auth } from "@/lib/auth/auth";
 import { prisma } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
-import { getUserRole } from "@/actions/admin/role-actions";
-import { logAdminActivity } from "@/actions/admin/database-actions";
 
 export async function blockUser(userId: string): Promise<boolean> {
   const session = await auth();
@@ -14,22 +15,35 @@ export async function blockUser(userId: string): Promise<boolean> {
     return false;
   }
 
+  if (session.user.id === userId) {
+    console.error("Unauthorized: Cannot block yourself");
+    return false;
+  }
+
   const currentUserRole = await getUserRole(session.user.id);
   if (currentUserRole !== "admin" && currentUserRole !== "manager") {
     console.error("Unauthorized: Insufficient permissions to block user");
     return false;
   }
 
+  const targetUserRole = await getUserRole(userId);
+  if (currentUserRole === "manager" && targetUserRole === "admin") {
+    console.error("Unauthorized: Managers cannot block admin accounts");
+    return false;
+  }
+
   try {
+    const now = new Date();
     await prisma.user.update({
       where: { id: userId },
       data: {
         isBlocked: true,
-        updatedAt: new Date(),
+        sessions_invalidated_after: now,
+        updatedAt: now,
       },
     });
 
-    await logAdminActivity("block-user", session.user.id as string);
+    await logAdminActivity("block-user", session.user.id);
     revalidatePath("/dashboard/admin/users");
     return true;
   } catch (error) {
@@ -61,7 +75,7 @@ export async function unblockUser(userId: string): Promise<boolean> {
       },
     });
 
-    await logAdminActivity("unblock-user", session.user.id as string);
+    await logAdminActivity("unblock-user", session.user.id);
     revalidatePath("/dashboard/admin/users");
     return true;
   } catch (error) {
@@ -97,13 +111,10 @@ export async function deleteUserAccount(
       return { error: "You can only delete your own account" };
     }
 
-    await prisma.kyc_verifications.deleteMany({
-      where: { user_id: userId },
-    });
-
-    await prisma.user.delete({
-      where: { id: userId },
-    });
+    const result = await executeUserAccountDeletion(userId);
+    if (!result.success) {
+      return { error: result.error ?? "Failed to delete account" };
+    }
 
     revalidatePath("/dashboard/settings");
     return { error: null };
@@ -126,22 +137,32 @@ export async function deleteUserAsAdmin(
       return { error: "Not authenticated" };
     }
 
-    const currentUserRole = await getUserRole(session.user.id as string);
+    if (session.user.id === userId) {
+      return {
+        error: "You cannot delete your own account from admin user management",
+      };
+    }
+
+    const currentUserRole = await getUserRole(session.user.id);
     if (currentUserRole !== "admin" && currentUserRole !== "manager") {
       return {
         error: "Unauthorized: Only admins and managers can delete users",
       };
     }
 
-    await prisma.kyc_verifications.deleteMany({
-      where: { user_id: userId },
-    });
+    const targetUserRole = await getUserRole(userId);
+    if (currentUserRole === "manager" && targetUserRole === "admin") {
+      return {
+        error: "Unauthorized: Managers cannot delete admin accounts",
+      };
+    }
 
-    await prisma.user.delete({
-      where: { id: userId },
-    });
+    const result = await executeUserAccountDeletion(userId);
+    if (!result.success) {
+      return { error: result.error ?? "Failed to delete user" };
+    }
 
-    await logAdminActivity("delete-user", session.user.id as string);
+    await logAdminActivity("delete-user", session.user.id);
 
     revalidatePath("/dashboard/admin/users");
     return { error: null };

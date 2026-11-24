@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { sendOtpEmail } from "@/services/mail";
@@ -98,19 +98,19 @@ export async function POST(req: Request) {
       },
     });
 
-    const emailResult = await sendOtpEmail({
-      email,
-      userName: fullName,
-      otpCode,
+    // The OTP is persisted above, so respond immediately and deliver the
+    // email after the response is flushed. Awaiting SMTP inline kept new
+    // users on the signup screen for the entire mail round-trip.
+    after(async () => {
+      const emailResult = await sendOtpEmail({
+        email,
+        userName: fullName,
+        otpCode,
+      });
+      if (!emailResult.success) {
+        console.error("Failed to send OTP:", emailResult.error);
+      }
     });
-
-    if (!emailResult.success) {
-      console.error("Failed to send OTP:", emailResult.error);
-      return NextResponse.json(
-        { error: "Failed to send verification email. Please try again later." },
-        { status: 500 },
-      );
-    }
 
     return NextResponse.json(
       { message: "OTP sent successfully." },

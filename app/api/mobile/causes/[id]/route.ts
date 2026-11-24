@@ -9,6 +9,7 @@ import { deleteCause } from "@/actions/causes/cause-actions";
 import { listCommentsForCause } from "@/actions/causes/comment-actions";
 import { getApprovedProofUpdates } from "@/actions/causes/proof-update-actions";
 import { isOwnUploadKey } from "@/lib/s3/owned-key";
+import { getBlockedUserIds } from "@/lib/moderation/moderation-service";
 import { isUuid } from "@/lib/uuid";
 import { prisma } from "@/lib/prisma";
 
@@ -180,16 +181,38 @@ export async function GET(
       : await buildCauseDetail(causeRow);
 
     let isFollowing = false;
+    let blockedUserIds: string[] = [];
     if (authUserId) {
-      const followData = await prisma.campaign_follows.findFirst({
-        where: { cause_id: causeRow.id, user_id: authUserId },
-        select: { id: true },
-      });
+      const [followData, blocked] = await Promise.all([
+        prisma.campaign_follows.findFirst({
+          where: { cause_id: causeRow.id, user_id: authUserId },
+          select: { id: true },
+        }),
+        getBlockedUserIds(authUserId),
+      ]);
       isFollowing = Boolean(followData);
+      blockedUserIds = blocked;
     }
+
+    if (
+      blockedUserIds.length > 0 &&
+      causeRow.userId &&
+      blockedUserIds.includes(causeRow.userId)
+    ) {
+      return apiError("Cause not found", 404);
+    }
+
+    const comments =
+      blockedUserIds.length > 0 && Array.isArray(detail.comments)
+        ? detail.comments.filter(
+            (comment) =>
+              !comment.user_id || !blockedUserIds.includes(comment.user_id),
+          )
+        : detail.comments;
 
     return apiSuccess({
       ...detail,
+      comments,
       isFollowing,
     });
   } catch (error: any) {

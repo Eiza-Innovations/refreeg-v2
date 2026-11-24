@@ -57,6 +57,7 @@ model Cause {
 
   @@index([daysActive], map: "idx_causes_days_active")
   @@index([status], map: "idx_causes_status")
+  @@index([title(ops: raw("gin_trgm_ops"))], type: Gin, map: "idx_causes_title_trgm")
   @@index([userId], map: "idx_causes_user_id")
   @@index([videoLinks], map: "idx_causes_video_links", type: Gin)
   @@map("causes")

@@ -149,8 +149,10 @@ export async function sendPushMulticast(
           aps: {
             sound: "default",
             badge: 1,
+            ...(imageUrl ? { mutableContent: true } : {}),
           },
         },
+        ...(imageUrl ? { fcmOptions: { imageUrl } } : {}),
       },
     };
 
