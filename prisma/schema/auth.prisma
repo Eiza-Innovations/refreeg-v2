@@ -97,6 +97,7 @@ model User {
   receivedUserBlocks      user_blocks[]      @relation("UserBlocksReceived")
 
   @@index([isBlocked], map: "idx_profiles_is_blocked")
+  @@index([createdAt], map: "idx_profiles_created_at")
   @@map("profiles")
 }
 

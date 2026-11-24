@@ -16,6 +16,7 @@ Applies to any agent (Antigravity, subagents, Claude Code, Cursor, Codex, Copilo
 | Hooks            | `hooks/use-<feature>.ts`                | React Query wiring and any post-processing of a result.                                                  |
 | Schemas          | `lib/schemas/<feature>.schema.ts`       | One zod schema per form.                                                                                 |
 | Options          | `lib/options/<feature>.options.ts`      | Label and value lists (`xxxOptions`).                                                                    |
+| Types            | `types/<feature>-types.ts`              | Shared types and interfaces. Never declared or exported from `actions/`.                                 |
 | Components       | `components/<domain>/<Component>.tsx`   | Thin. Render, call hooks, hold local UI state.                                                           |
 
 ## Core Rules (from `docs/CODE_STANDARDS.mdx`)
@@ -34,6 +35,7 @@ Follow these for all new code and any file you substantially change (do not mass
 10. **Small and flat:** One component per file (~200 lines max), early returns over deep nesting, no dead code or commented-out blocks, plain descriptive names, and comments that explain _why_, not _what_.
 11. **Tables use the shared DataTable:** Every table renders through `components/ui/data-table.tsx` + `data-table-features.ts` + a `columns.tsx` built with `createColumnHelper`; never hand-roll `<Table>` markup inside a page or card.
 12. **Dialog and form submits run through useMutation:** Wrap server-action submits in `useMutation`, run `useValidator` first, guard double submits with `isPending`, show `result.error` via `FieldError` and return early, and close and navigate on success.
+13. **Types live in `types/`, never in actions:** `actions/*` export async functions only. Put result shapes, row types and input types in `types/<feature>-types.ts` and import them with `import type` from the action, hook and component.
 
 ## 🍯 Honey (I Shrunk the AI) — token economy
 
