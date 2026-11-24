@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendOtpEmail } from "@/services/mail";
 
@@ -53,11 +53,17 @@ export async function POST(req: Request) {
       },
     });
 
-    // Send the new OTP email
-    await sendOtpEmail({
-      email: normalizedEmail,
-      userName: pendingUser.fullName,
-      otpCode: newOtp,
+    // Respond before sending: the code is already persisted above, and
+    // awaiting SMTP inline made the resend request wait on the mail server.
+    after(async () => {
+      const emailResult = await sendOtpEmail({
+        email: normalizedEmail,
+        userName: pendingUser.fullName,
+        otpCode: newOtp,
+      });
+      if (!emailResult.success) {
+        console.error("Failed to resend OTP:", emailResult.error);
+      }
     });
 
     return NextResponse.json(
