@@ -334,6 +334,7 @@ describe("profile-actions", () => {
       });
       expect(result).toEqual({
         accountType: "individual",
+        organizationPurpose: "",
         gender: "female",
         profile: {
           firstName: "Amina",

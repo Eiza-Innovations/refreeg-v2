@@ -19,6 +19,9 @@ jest.mock("next/server", () => ({
     }),
   },
   NextRequest: class {},
+  // The route schedules the OTP email with after(); there is no request
+  // store in tests, so run the callback inline.
+  after: (fn: () => unknown) => fn(),
 }));
 
 // ── Mock Prisma ────────────────────────────────────────────────────────────────

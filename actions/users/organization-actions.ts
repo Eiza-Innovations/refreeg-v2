@@ -494,40 +494,37 @@ export async function updateOrganization(input: SaveOrganizationDetailsInput) {
     });
 
     let finalUsername: string | null = owner?.username || null;
+    const ownerData: Prisma.UserUpdateInput = { accountType: "organization" };
 
-    if (owner) {
-      const ownerData: Prisma.UserUpdateInput = { accountType: "organization" };
-
-      if (input.contactName !== undefined) {
-        const contactName = input.contactName.trim();
-        if (contactName.length < 2) {
-          throw new Error("Enter your name.");
-        }
-        const [firstName, ...rest] = contactName.split(" ");
-        ownerData.fullName = contactName;
-        ownerData.firstName = firstName;
-        ownerData.lastName = rest.join(" ") || null;
+    if (input.contactName !== undefined) {
+      const contactName = input.contactName.trim();
+      if (contactName.length < 2) {
+        throw new Error("Enter your name.");
       }
-      if (desiredUsername) {
-        ownerData.username = desiredUsername;
-        finalUsername = desiredUsername;
-      } else if (!owner.username) {
-        const generated = await generateOwnerUsername(name);
-        ownerData.username = generated;
-        finalUsername = generated;
-      }
-      if (!owner.location && input.country?.trim()) {
-        ownerData.location = input.country.trim();
-      }
-      if (!owner.phone && input.phone?.trim()) {
-        ownerData.phone = input.phone.trim();
-      }
-
-      await prisma.user.update({
-        where: { id: session.user.id },
-        data: ownerData,
-      });
+      const [firstName, ...rest] = contactName.split(" ");
+      ownerData.fullName = contactName;
+      ownerData.firstName = firstName;
+      ownerData.lastName = rest.join(" ") || null;
     }
+    if (desiredUsername) {
+      ownerData.username = desiredUsername;
+      finalUsername = desiredUsername;
+    } else if (owner && !owner.username) {
+      const generated = await generateOwnerUsername(name);
+      ownerData.username = generated;
+      finalUsername = generated;
+    }
+    if (owner && !owner.location && input.country?.trim()) {
+      ownerData.location = input.country.trim();
+    }
+    if (owner && !owner.phone && input.phone?.trim()) {
+      ownerData.phone = input.phone.trim();
+    }
+
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: ownerData,
+    });
 
     revalidatePath("/dashboard/settings");
     revalidatePath("/dashboard/settings/organization");
