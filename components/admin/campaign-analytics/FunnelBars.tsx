@@ -1,3 +1,4 @@
+import { Small, Span } from "@/components/marketing/Typography";
 import { formatCount } from "@/lib/campaign-analytics/format";
 import { funnelStepOptions } from "@/lib/options/campaign-analytics.options";
 import { cn } from "@/lib/utils";
@@ -46,7 +47,7 @@ export function FunnelBars({
             key={row.step}
             className="grid grid-cols-[7.5rem_1fr_3.5rem_3rem] items-center gap-3 text-sm sm:grid-cols-[9rem_1fr_4rem_3.5rem]"
           >
-            <span className="truncate text-ink/70">{stepLabel(row.step)}</span>
+            <Span className="truncate text-ink/70">{stepLabel(row.step)}</Span>
             <span
               className={cn(
                 "overflow-hidden rounded-md bg-cream-muted",
@@ -58,22 +59,22 @@ export function FunnelBars({
                 style={{ width: `${(row.sessions / top) * 100}%` }}
               />
             </span>
-            <span className="font-semibold text-ink">
+            <Span className="font-semibold text-ink">
               {formatCount(row.sessions)}
               {compare && (
-                <span className="block text-[11px] font-normal text-ink/50">
+                <Small className="block text-[11px] font-normal text-ink/50">
                   was {formatCount(row.previous)}
-                </span>
+                </Small>
               )}
-            </span>
-            <span
+            </Span>
+            <Small
               className={cn(
-                "text-right text-xs font-semibold",
+                "text-right font-semibold",
                 rate?.bad ? "text-rust" : "text-forest",
               )}
             >
               {rate?.text}
-            </span>
+            </Small>
           </li>
         );
       })}

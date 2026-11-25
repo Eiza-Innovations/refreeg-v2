@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { P, Small } from "@/components/marketing/Typography";
 import { AnalyticsHeader } from "@/components/admin/campaign-analytics/AnalyticsHeader";
 import { FundingCurveChart } from "@/components/admin/campaign-analytics/FundingCurveChart";
 import { FunnelBars } from "@/components/admin/campaign-analytics/FunnelBars";
@@ -115,10 +116,10 @@ export function CampaignOverviewClient() {
               <CardHeader className="flex-row items-start justify-between gap-4 space-y-0 pb-2">
                 <div className="space-y-1">
                   <CardTitle className="text-base">Funding velocity</CardTitle>
-                  <p className="text-xs text-ink/50">
+                  <Small className="block text-ink/50">
                     % of goal by day since launch ·{" "}
                     {data?.cohortLabel ?? "this period"} cohort vs average
-                  </p>
+                  </Small>
                 </div>
                 <SectionLink href={`${BASE}/velocity`} label="By campaign" />
               </CardHeader>
@@ -146,7 +147,7 @@ export function CampaignOverviewClient() {
               </CardHeader>
               <CardContent>
                 {dropOff.error ? (
-                  <p className="text-sm text-rust">{dropOff.error}</p>
+                  <P className="text-rust md:text-sm">{dropOff.error}</P>
                 ) : !dropOff.data ? (
                   <Skeleton className="h-40 w-full" />
                 ) : (

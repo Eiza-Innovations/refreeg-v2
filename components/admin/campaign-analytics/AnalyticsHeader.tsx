@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Heading, P, Span } from "@/components/marketing/Typography";
 import { cn } from "@/lib/utils";
 import { useAnalyticsPeriod } from "@/hooks/use-campaign-analytics";
 import { analyticsPeriodOptions } from "@/lib/options/campaign-analytics.options";
@@ -40,13 +41,17 @@ export function AnalyticsHeader({
               Campaign analytics
             </Link>
             <ArrowRight className="h-3 w-3" />
-            <span>{crumb}</span>
+            <Span>{crumb}</Span>
           </nav>
         )}
-        <h1 className="font-fraunces text-3xl tracking-tight text-ink">
+        <Heading
+          as="h1"
+          size="subsection"
+          className="tracking-tight md:text-3xl"
+        >
           {title}
-        </h1>
-        <p className="text-sm text-ink/60">{description}</p>
+        </Heading>
+        <P className="text-ink/60 md:text-sm">{description}</P>
       </div>
       <div className="flex flex-wrap items-center gap-3">
         {showPeriod && (

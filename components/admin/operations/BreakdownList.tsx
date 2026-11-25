@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { P, Span } from "@/components/marketing/Typography";
 
 export function BreakdownList({
   title,
@@ -16,7 +17,7 @@ export function BreakdownList({
       </CardHeader>
       <CardContent>
         {total === 0 ? (
-          <p className="text-sm text-ink/60">Nothing in this period.</p>
+          <P className="text-ink/60 md:text-sm">Nothing in this period.</P>
         ) : (
           <ul className="space-y-3">
             {rows.map((row) => (
@@ -24,21 +25,21 @@ export function BreakdownList({
                 key={row.label}
                 className="grid grid-cols-[1fr_6rem_3rem] items-center gap-3 text-sm"
               >
-                <span
+                <Span
                   className="truncate capitalize text-ink/70"
                   title={row.label}
                 >
                   {row.label.replace(/_/g, " ")}
-                </span>
+                </Span>
                 <span className="h-2 overflow-hidden rounded-full bg-cream-muted">
                   <span
                     className="block h-full rounded-full bg-blue-accent"
                     style={{ width: `${(row.value / total) * 100}%` }}
                   />
                 </span>
-                <span className="text-right font-semibold text-ink">
+                <Span className="text-right font-semibold text-ink">
                   {row.value.toLocaleString()}
-                </span>
+                </Span>
               </li>
             ))}
           </ul>

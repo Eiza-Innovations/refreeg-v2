@@ -6,6 +6,13 @@ import { RefreshCw, CheckCircle2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import { WorkspaceFrame } from "@/components/admin/workspace/workspace-frame";
+import {
+  H3,
+  Heading,
+  P,
+  Span,
+  Strong,
+} from "@/components/marketing/Typography";
 
 export default function AdminCachePage() {
   const [isClearingGlobal, setIsClearingGlobal] = useState(false);
@@ -51,13 +58,17 @@ export default function AdminCachePage() {
   return (
     <WorkspaceFrame className="mx-auto max-w-4xl space-y-6">
       <div className="mb-2">
-        <h1 className="font-fraunces text-3xl font-medium tracking-tight text-ink">
+        <Heading
+          as="h1"
+          size="subsection"
+          className="font-medium tracking-tight md:text-3xl"
+        >
           Cache Management
-        </h1>
-        <p className="text-ink/60 mt-2 text-sm">
+        </Heading>
+        <P className="mt-2 text-ink/60 md:text-sm">
           Manually invalidate the Next.js Data and Full Route Cache to force
           fresh data to appear in production.
-        </p>
+        </P>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -66,25 +77,25 @@ export default function AdminCachePage() {
           <div className="p-6 space-y-4">
             <div className="flex items-center gap-2">
               <RefreshCw className="h-6 w-6 text-blue-500" />
-              <h3 className="font-semibold text-lg leading-none tracking-tight">
+              <H3 className="font-semibold leading-none tracking-tight md:text-lg">
                 Global Purge
-              </h3>
+              </H3>
             </div>
-            <p className="text-sm text-muted-foreground">
+            <P className="text-muted-foreground md:text-sm">
               This will clear the entire site&apos;s layout cache. It ensures
               everyone sees the absolute latest version of the site, but may
               cause the next immediate page loads to be slightly slower as they
               rebuild.
-            </p>
+            </P>
             <button
               onClick={handleGlobalClear}
               disabled={isClearingGlobal}
               className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 h-10 px-4 py-2 w-full mt-4"
             >
               {isClearingGlobal ? (
-                <span className="flex items-center gap-2">
+                <Span className="flex items-center gap-2">
                   <RefreshCw className="h-4 w-4 animate-spin" /> Purging...
-                </span>
+                </Span>
               ) : (
                 "Purge All Cache"
               )}
@@ -97,18 +108,18 @@ export default function AdminCachePage() {
           <div className="p-6 space-y-4">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-6 w-6 text-green-500" />
-              <h3 className="font-semibold text-lg leading-none tracking-tight">
+              <H3 className="font-semibold leading-none tracking-tight md:text-lg">
                 Targeted Purge
-              </h3>
+              </H3>
             </div>
-            <p className="text-sm text-muted-foreground">
+            <P className="text-muted-foreground md:text-sm">
               Only clear the cache for a specific route. Best if you just pushed
               a fix to one specific page (e.g.,{" "}
               <code className="bg-muted px-1 rounded">
                 /causes/save-the-whales
               </code>
               ) and don&apos;t want to affect the whole site.
-            </p>
+            </P>
             <form
               onSubmit={handlePathClear}
               className="flex flex-col gap-3 mt-4"
@@ -126,9 +137,9 @@ export default function AdminCachePage() {
                 className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-10 px-4 py-2"
               >
                 {isClearingPath ? (
-                  <span className="flex items-center gap-2">
+                  <Span className="flex items-center gap-2">
                     <RefreshCw className="h-4 w-4 animate-spin" /> Purging...
-                  </span>
+                  </Span>
                 ) : (
                   "Purge Specific Path"
                 )}
@@ -141,9 +152,10 @@ export default function AdminCachePage() {
       <div className="mt-8 p-4 bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg flex gap-3 text-sm text-blue-800 dark:text-blue-300">
         <AlertCircle className="h-5 w-5 shrink-0" />
         <div>
-          <strong>Note:</strong> Clearing the cache only affects Next.js
-          server-side caching (Data Cache and Full Route Cache). If users are
-          still seeing stale data, ask them to hard-refresh their browser (
+          <Strong className="text-current">Note:</Strong> Clearing the cache
+          only affects Next.js server-side caching (Data Cache and Full Route
+          Cache). If users are still seeing stale data, ask them to hard-refresh
+          their browser (
           <kbd className="font-mono bg-blue-100 dark:bg-blue-900 px-1 rounded text-xs">
             Ctrl + Shift + R
           </kbd>{" "}

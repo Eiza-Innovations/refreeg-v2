@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Small, Span } from "@/components/marketing/Typography";
 import { cn } from "@/lib/utils";
 import type { Series } from "@/types/operations-analytics-types";
 
@@ -21,7 +22,7 @@ export function PeriodBarChart({
       <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-base">{title}</CardTitle>
         {series.values[peak] > 0 && (
-          <p className="text-xs text-ink/50">Peak {series.labels[peak]}</p>
+          <Small className="text-ink/50">Peak {series.labels[peak]}</Small>
         )}
       </CardHeader>
       <CardContent>
@@ -51,7 +52,7 @@ export function PeriodBarChart({
                 index % tickEvery === 0 || index === series.labels.length - 1,
             )
             .map((label, index) => (
-              <span key={label + index}>{label}</span>
+              <Span key={label + index}>{label}</Span>
             ))}
         </div>
       </CardContent>

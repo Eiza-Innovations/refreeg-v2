@@ -1,3 +1,4 @@
+import { Span } from "@/components/marketing/Typography";
 import { RISK_HIGH } from "@/lib/campaign-analytics/risk-levels";
 import { cn } from "@/lib/utils";
 
@@ -20,7 +21,7 @@ export function RiskScoreBar({ score }: { score: number }) {
           style={{ width: `${score}%` }}
         />
       </span>
-      <span className="w-6 text-sm font-semibold text-ink">{score}</span>
+      <Span className="w-6 text-sm font-semibold text-ink">{score}</Span>
     </div>
   );
 }

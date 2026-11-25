@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
 import { checkRateLimit } from "@/lib/api/rate-limit";
-import { recordFunnelEvent } from "@/lib/campaign-analytics/funnel";
+import { recordFunnelEvent } from "@/actions/causes/funnel-actions";
 import { funnelEventSchema } from "@/lib/schemas/campaign-analytics.schema";
 
 export async function POST(request: NextRequest) {

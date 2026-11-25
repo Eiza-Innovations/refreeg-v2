@@ -6,6 +6,7 @@ import { CampaignCell } from "@/components/admin/campaign-analytics/CampaignCell
 import { ForecastBadge } from "@/components/admin/campaign-analytics/ForecastBadge";
 import { Sparkline } from "@/components/admin/campaign-analytics/Sparkline";
 import type { DataTableFeatures } from "@/components/ui/data-table-features";
+import { Small, Span } from "@/components/marketing/Typography";
 import {
   formatNairaCompact,
   percentChange,
@@ -35,13 +36,13 @@ export const velocityColumns = (compare: boolean) =>
       id: "raised",
       header: "Raised",
       cell: ({ row }) => (
-        <span className="text-sm text-ink">
+        <Span className="text-sm text-ink">
           {formatNairaCompact(row.original.raised)}
-          <span className="text-ink/50">
+          <Span className="text-ink/50">
             {" "}
             / {formatNairaCompact(row.original.goal)}
-          </span>
-        </span>
+          </Span>
+        </Span>
       ),
     }),
     columnHelper.accessor("perDay", {
@@ -52,19 +53,19 @@ export const velocityColumns = (compare: boolean) =>
           row.original.previousPerDay,
         );
         return (
-          <span className="text-sm font-semibold text-ink">
+          <Span className="text-sm font-semibold text-ink">
             {formatNairaCompact(row.original.perDay)}/day
             {compare && change != null && (
-              <span
+              <Small
                 className={cn(
                   "block text-[11px] font-medium",
                   change >= 0 ? "text-forest" : "text-rust",
                 )}
               >
                 {signedPercent(change)} vs last period
-              </span>
+              </Small>
             )}
-          </span>
+          </Span>
         );
       },
     }),
@@ -76,7 +77,7 @@ export const velocityColumns = (compare: boolean) =>
     columnHelper.accessor("daysLeft", {
       header: "Days left",
       cell: (info) => (
-        <span className="text-sm text-ink">{info.getValue() ?? "—"}</span>
+        <Span className="text-sm text-ink">{info.getValue() ?? "—"}</Span>
       ),
     }),
     columnHelper.display({

@@ -17,7 +17,7 @@ jest.mock("@/services/paystack", () => ({
   default: { verifyTransactionFull: jest.fn() },
 }));
 
-jest.mock("@/lib/campaign-analytics/funnel", () => ({
+jest.mock("@/actions/causes/funnel-actions", () => ({
   recordPaymentOutcome: jest.fn().mockResolvedValue(undefined),
 }));
 

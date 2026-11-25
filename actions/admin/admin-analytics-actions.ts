@@ -9,7 +9,7 @@ import {
   endOfDay,
   format,
 } from "date-fns";
-import { medianDecisionHours } from "@/lib/operations-analytics/queues";
+import { medianDecisionHours } from "@/actions/admin/operations-queue-actions";
 import { getWorkspaceData as fetchWorkspaceData } from "@/lib/admin-analytics/workspace-data";
 import type { Period, WorkspaceData } from "@/components/admin/workspace/types";
 import type {

@@ -1,4 +1,7 @@
+"use server";
+
 import { unstable_cache } from "next/cache";
+import { requireAdminOrManager } from "@/lib/auth/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { DAY_MS, reportingWindow } from "@/lib/campaign-analytics/period";
 import {
@@ -297,8 +300,13 @@ async function loadFraudRisk(): Promise<FraudRiskReport> {
   };
 }
 
-export const getFraudRiskData = unstable_cache(
+const cachedFraudRisk = unstable_cache(
   loadFraudRisk,
   ["campaign-analytics-fraud-risk"],
   { revalidate: 3600, tags: [CAMPAIGN_ANALYTICS_TAG] },
 );
+
+export async function getFraudRiskData(): Promise<FraudRiskReport> {
+  await requireAdminOrManager();
+  return cachedFraudRisk();
+}

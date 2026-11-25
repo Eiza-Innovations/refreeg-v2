@@ -3,7 +3,7 @@ import type { PaymentProviderType } from "@/types";
 import Flutterwave from "@/services/flutterwave";
 import Paystack from "@/services/paystack";
 import { processSuccessfulCharge } from "@/lib/payments/paystack-charge-processing";
-import { recordPaymentOutcome } from "@/lib/campaign-analytics/funnel";
+import { recordPaymentOutcome } from "@/actions/causes/funnel-actions";
 
 export async function POST(request: NextRequest) {
   try {

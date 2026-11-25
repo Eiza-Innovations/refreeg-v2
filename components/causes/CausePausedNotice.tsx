@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CalloutBanner } from "@/components/ui/callout-banner";
 import { Button } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/eyebrow";
+import { Heading } from "@/components/marketing/Typography";
 import { Ban, Clock3 } from "lucide-react";
 
 export function CausePausedNotice({
@@ -14,9 +15,13 @@ export function CausePausedNotice({
   return (
     <div className="container mx-auto max-w-2xl px-4 py-16 text-center">
       <Eyebrow>{removed ? "Removed after review" : "Campaign paused"}</Eyebrow>
-      <h1 className="mt-3 font-fraunces text-3xl font-semibold text-ink">
+      <Heading
+        as="h1"
+        size="subsection"
+        className="mt-3 font-semibold md:text-3xl"
+      >
         {title}
-      </h1>
+      </Heading>
 
       {removed ? (
         <CalloutBanner

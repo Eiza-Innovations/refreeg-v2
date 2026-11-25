@@ -10,9 +10,9 @@ jest.mock("@/lib/prisma", () => ({
 
 import { prisma } from "@/lib/prisma";
 import { reportingWindow } from "@/lib/campaign-analytics/period";
+import { recordPaymentOutcome } from "@/actions/causes/funnel-actions";
 import {
   failureReason,
-  recordPaymentOutcome,
   worstSteps,
   type SegmentRow,
 } from "@/lib/campaign-analytics/funnel";

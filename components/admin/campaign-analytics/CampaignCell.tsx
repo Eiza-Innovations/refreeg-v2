@@ -1,4 +1,5 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Small, Span } from "@/components/marketing/Typography";
 import { initials } from "@/lib/kyc-review";
 import { cn } from "@/lib/utils";
 
@@ -24,8 +25,8 @@ export function CampaignCell({
         </AvatarFallback>
       </Avatar>
       <span className="flex min-w-0 flex-col">
-        <span className="truncate font-medium text-ink">{title}</span>
-        <span className="truncate text-xs text-ink/50">{owner}</span>
+        <Span className="truncate font-medium text-ink">{title}</Span>
+        <Small className="truncate text-ink/50">{owner}</Small>
       </span>
     </span>
   );

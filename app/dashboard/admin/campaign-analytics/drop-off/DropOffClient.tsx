@@ -5,6 +5,7 @@ import { CalloutBanner } from "@/components/ui/callout-banner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { P, Small, Span } from "@/components/marketing/Typography";
 import { AnalyticsHeader } from "@/components/admin/campaign-analytics/AnalyticsHeader";
 import { FunnelBars } from "@/components/admin/campaign-analytics/FunnelBars";
 import { LeaveReasonsList } from "@/components/admin/campaign-analytics/LeaveReasonsList";
@@ -92,9 +93,9 @@ export function DropOffClient() {
         <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
           <CardTitle className="text-base">Giving funnel</CardTitle>
           {views > 0 && (
-            <p className="text-xs text-ink/50">
+            <Small className="text-ink/50">
               {((paid / views) * 100).toFixed(1)}% of views end in a gift
-            </p>
+            </Small>
           )}
         </CardHeader>
         <CardContent>
@@ -133,9 +134,9 @@ export function DropOffClient() {
             </CardHeader>
             <CardContent className="space-y-4">
               {report.segments.length === 0 ? (
-                <p className="text-sm text-ink/60">
+                <P className="text-ink/60 md:text-sm">
                   No group converts worse than average in this period.
-                </p>
+                </P>
               ) : (
                 <ul className="divide-y divide-hairline text-sm">
                   {report.segments.map((row) => (
@@ -143,11 +144,11 @@ export function DropOffClient() {
                       key={row.segment}
                       className="flex justify-between gap-4 py-2"
                     >
-                      <span className="text-ink/70">{row.segment}</span>
-                      <span className="text-right font-medium text-rust">
+                      <Span className="text-ink/70">{row.segment}</Span>
+                      <Span className="text-right font-medium text-rust">
                         {signedPercent(row.dropVsAverage)} at{" "}
                         {labelOf(funnelStepOptions, row.step).toLowerCase()}
-                      </span>
+                      </Span>
                     </li>
                   ))}
                 </ul>

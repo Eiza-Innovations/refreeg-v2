@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Small } from "@/components/marketing/Typography";
 import { KpiCard } from "@/components/admin/campaign-analytics/KpiCard";
 import { BreakdownList } from "@/components/admin/operations/BreakdownList";
 import { PeriodBarChart } from "@/components/admin/operations/PeriodBarChart";
@@ -85,10 +86,10 @@ export function ReviewReportView({
       </div>
 
       {loggedFromNow.includes(queue) && (
-        <p className="text-xs text-ink/50">
+        <Small className="block text-ink/50">
           Decision counts and wait times use decisions logged from this release
           on.
-        </p>
+        </Small>
       )}
 
       <PeriodBarChart

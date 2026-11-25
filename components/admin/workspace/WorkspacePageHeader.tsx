@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { ArrowRight } from "lucide-react";
+import { Heading, P, Span } from "@/components/marketing/Typography";
 
 export function WorkspacePageHeader({
   title,
@@ -26,13 +27,17 @@ export function WorkspacePageHeader({
               {crumb}
             </button>
             <ArrowRight className="h-3 w-3" />
-            <span>{title}</span>
+            <Span>{title}</Span>
           </nav>
         )}
-        <h1 className="font-fraunces text-[32px] font-normal leading-tight tracking-tight text-ink">
+        <Heading
+          as="h1"
+          size="subsection"
+          className="leading-tight tracking-tight md:text-[32px]"
+        >
           {title}
-        </h1>
-        <p className="text-sm text-ink/60">{subtitle}</p>
+        </Heading>
+        <P className="text-ink/60 md:text-sm">{subtitle}</P>
       </div>
       {actions && (
         <div className="flex flex-wrap items-center gap-2">{actions}</div>

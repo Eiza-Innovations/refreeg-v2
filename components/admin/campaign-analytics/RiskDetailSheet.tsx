@@ -6,6 +6,7 @@ import { AlertTriangle, Snowflake, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { FieldError } from "@/components/ui/field-error";
+import { Small, Span } from "@/components/marketing/Typography";
 import {
   Sheet,
   SheetContent,
@@ -102,16 +103,16 @@ export function RiskDetailSheet({
                     <AlertTriangle className="h-4 w-4" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-medium text-ink">
+                    <Span className="block text-sm font-medium text-ink">
                       {signal.label}
-                    </span>
-                    <span className="block text-xs text-ink/50">
+                    </Span>
+                    <Small className="block text-ink/50">
                       +{signal.weight} points
-                    </span>
+                    </Small>
                   </span>
-                  <span className="max-w-[55%] text-right text-xs text-rust">
+                  <Small className="max-w-[55%] text-right text-rust">
                     {signal.detail}
-                  </span>
+                  </Small>
                 </li>
               ))}
             </ul>

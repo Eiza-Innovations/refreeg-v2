@@ -1,3 +1,4 @@
+import { P, Span } from "@/components/marketing/Typography";
 import { leaveReasonOptions } from "@/lib/options/campaign-analytics.options";
 import { cn } from "@/lib/utils";
 import type { LeaveReasonRow } from "@/types/campaign-analytics-types";
@@ -13,7 +14,9 @@ export function LeaveReasonsList({ reasons }: { reasons: LeaveReasonRow[] }) {
   const failures = reasons.reduce((total, row) => total + row.sessions, 0);
   if (failures === 0) {
     return (
-      <p className="text-sm text-ink/60">No failed payments in this period.</p>
+      <P className="text-ink/60 md:text-sm">
+        No failed payments in this period.
+      </P>
     );
   }
 
@@ -26,10 +29,10 @@ export function LeaveReasonsList({ reasons }: { reasons: LeaveReasonRow[] }) {
             key={row.reason}
             className="grid grid-cols-[1fr_8rem_2.5rem] items-center gap-3 text-sm"
           >
-            <span className="text-ink/70">
+            <Span className="text-ink/70">
               {leaveReasonOptions.find((option) => option.value === row.reason)
                 ?.label ?? row.reason}
-            </span>
+            </Span>
             <span className="h-2 overflow-hidden rounded-full bg-cream-muted">
               <span
                 className={cn(
@@ -39,9 +42,9 @@ export function LeaveReasonsList({ reasons }: { reasons: LeaveReasonRow[] }) {
                 style={{ width: `${share}%` }}
               />
             </span>
-            <span className="text-right font-semibold text-ink">
+            <Span className="text-right font-semibold text-ink">
               {Math.round(share)}%
-            </span>
+            </Span>
           </li>
         );
       })}

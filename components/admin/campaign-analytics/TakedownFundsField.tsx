@@ -1,4 +1,5 @@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Small, Span } from "@/components/marketing/Typography";
 import { formatNairaShort } from "@/lib/causes/discover-summary";
 import { takedownFundOptions } from "@/lib/options/campaign-analytics.options";
 import { cn } from "@/lib/utils";
@@ -33,12 +34,12 @@ export function TakedownFundsField({
         >
           <RadioGroupItem value={option.value} className="mt-0.5" />
           <span className="space-y-0.5">
-            <span className="block text-sm font-semibold text-ink">
+            <Span className="block text-sm font-semibold text-ink">
               {option.label}
               {option.value === "refund" &&
                 ` · ${donors} donor${donors === 1 ? "" : "s"}, ${formatNairaShort(raised)}`}
-            </span>
-            <span className="block text-xs text-ink/60">{option.hint}</span>
+            </Span>
+            <Small className="block text-ink/60">{option.hint}</Small>
           </span>
         </label>
       ))}
