@@ -6,6 +6,7 @@ import { Shield, User, UserCog } from "lucide-react";
 import { createColumnHelper } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import type { DataTableFeatures } from "@/components/ui/data-table-features";
+import { Span } from "@/components/marketing/Typography";
 import { CopyEmail } from "@/components/engagement/CopyEmail";
 import { UserActions } from "./user-actions";
 import type { UserWithRole } from "@/types";
@@ -69,9 +70,9 @@ export function createUsersColumns(currentUserRole: string) {
     columnHelper.accessor("created_at", {
       header: "Joined",
       cell: ({ row }) => (
-        <span className="text-sm text-ink/80">
+        <Span className="text-sm text-ink/80">
           {format(new Date(row.original.created_at), "MMM d, yyyy")}
-        </span>
+        </Span>
       ),
     }),
     columnHelper.display({

@@ -147,6 +147,7 @@ Before writing raw HTML, check `components/ui/` and the shared components. Look 
 
 - Empty list: render the one list component and vary its empty message by state. Do not wrap it in a ternary with a second empty component.
 - Banner, status chip, stepper: use the shared component, not a one-off.
+- Typography: use shared typography from `@/components/marketing/Typography` (`Heading`, `P`, `Lead`, `Small`, `Strong`, `Span`) instead of raw typography HTML elements (`h1`–`h6`, `p`, `span`, `small`, `strong`).
 - Colors and fonts: tokens from the design guide, never hardcoded values.
 
 ## 10. Small and flat
@@ -197,7 +198,7 @@ import type { AdminOverviewData } from "@/types/admin-overview-types";
 
 ## 14. Admin screens inherit the shell and WorkspaceFrame
 
-Never inject arbitrary layout wrappers (e.g. `ClientLayoutWrapper` with radial gradients or glassmorphic overlays) into dashboard routes. Every `/dashboard/admin/*` screen inherits chrome from `AdminShell` (`bg-cream`) and page padding from `<WorkspaceFrame>` (`components/admin/workspace/workspace-frame.tsx`, `px-4 py-8 sm:px-8 max-w-[1440px]`). Actions and overview queries must access recently migrated or optional models defensively (e.g. `(prisma as any).<model>?.aggregate`) with fallback defaults so schema evolution never crashes the overview.
+Never inject arbitrary layout wrappers (e.g. `ClientLayoutWrapper` with radial gradients or glassmorphic overlays) into dashboard routes. Every `/dashboard/admin/*` screen inherits chrome from `AdminShell` (`bg-cream`) and page padding from `<WorkspaceFrame>` (`components/admin/workspace/workspace-frame.tsx`, `px-4 py-8 sm:px-8 max-w-[1440px]`). Never add redundant server-side role checks (`if (role !== "admin")`) inside `/dashboard/admin/*` page components — `middleware.ts` already guards `/dashboard/admin/*` routes globally. Actions and overview queries must access recently migrated or optional models defensively (e.g. `(prisma as any).<model>?.aggregate`) with fallback defaults so schema evolution never crashes the overview.
 
 ## Review procedure
 

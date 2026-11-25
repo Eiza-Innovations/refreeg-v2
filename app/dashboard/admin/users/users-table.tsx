@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { DataTable } from "@/components/ui/data-table";
 import { PaginationButton } from "@/components/engagement/PaginationButton";
+import { Small } from "@/components/marketing/Typography";
 import { createUsersColumns } from "./columns";
 import type { UserWithRole } from "@/types";
 
@@ -34,13 +35,13 @@ export function UsersTable({
         <DataTable columns={columns} data={users} />
       </div>
       <div className="mt-4 flex flex-col items-center justify-between gap-3 sm:flex-row">
-        <p className="text-xs text-ink/60">
+        <Small className="text-ink/60">
           {total === 0
             ? "0 users"
             : `Showing ${(page - 1) * pageSize + 1}–${
                 (page - 1) * pageSize + users.length
               } of ${total} users`}
-        </p>
+        </Small>
         {totalPages > 1 && (
           <PaginationButton currentPage={page} totalPages={totalPages} />
         )}
