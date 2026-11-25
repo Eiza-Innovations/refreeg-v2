@@ -22,34 +22,36 @@ External: S3 bucket refreeg-media (media + DB backups), Sentry, Paystack/Flutter
 
 ## Host
 
-| | |
-|---|---|
-| Instance | `i-02aafc150dd7b319a`, **t4g.medium** (2 vCPU Graviton/arm64, 3.7 GiB RAM) |
-| Region / AZ | us-east-1 / us-east-1b |
-| Public / private IP | `52.4.61.249` / `172.31.30.150` |
-| OS | Amazon Linux 2023, kernel 6.1 (aarch64) |
-| SSH user | `ec2-user` (only login user; key auth only, passwords off) |
-| SSH host key | `ED25519 SHA256:AYIzmrwDg4bweHluU187VL5dnFWi2lpKE60M+iQpjpc` |
-| Swap | 4 GiB file at `/mnt/data/swapfile` |
+|                     |                                                                            |
+| ------------------- | -------------------------------------------------------------------------- |
+| Instance            | `i-02aafc150dd7b319a`, **t4g.medium** (2 vCPU Graviton/arm64, 3.7 GiB RAM) |
+| Region / AZ         | us-east-1 / us-east-1b                                                     |
+| Public / private IP | `52.4.61.249` / `172.31.30.150`                                            |
+| OS                  | Amazon Linux 2023, kernel 6.1 (aarch64)                                    |
+| SSH user            | `ec2-user` (only login user; key auth only, passwords off)                 |
+| SSH host key        | `ED25519 SHA256:AYIzmrwDg4bweHluU187VL5dnFWi2lpKE60M+iQpjpc`               |
+| Swap                | 4 GiB file at `/mnt/data/swapfile`                                         |
 
 ### Disks
 
-| Device | Mount | Size | Holds |
-|---|---|---|---|
-| `nvme0n1p1` | `/` | 11 GB | OS, Docker, Postgres data (`~/app/DB/db_data`), PM2 home |
-| `nvme1n1` | `/mnt/data` | 10 GB | App releases, shared cache/logs, swapfile |
-| `nvme2n1` | — | 11 GB | Attached, **not mounted** (looks like an old root volume) |
+| Device      | Mount       | Size  | Holds                                                     |
+| ----------- | ----------- | ----- | --------------------------------------------------------- |
+| `nvme0n1p1` | `/`         | 11 GB | OS, Docker, Postgres data (`~/app/DB/db_data`), PM2 home  |
+| `nvme1n1`   | `/mnt/data` | 10 GB | App releases, shared cache/logs, swapfile                 |
+| `nvme2n1`   | —           | 11 GB | Attached, **not mounted** (looks like an old root volume) |
 
 ## Connecting
 
 Key: `refreeg.ppk` (PuTTY format). Ask a maintainer for it; never commit it.
 
 **PuTTY / plink (Windows):**
+
 ```powershell
 plink -i $HOME\.ssh\refreeg.ppk ec2-user@52.4.61.249
 ```
 
-**OpenSSH:** convert once with the PuTTYgen GUI (*Conversions → Export OpenSSH key*) to `refreeg.pem`, then:
+**OpenSSH:** convert once with the PuTTYgen GUI (_Conversions → Export OpenSSH key_) to `refreeg.pem`, then:
+
 ```bash
 ssh -i ~/.ssh/refreeg.pem ec2-user@52.4.61.249
 ```
@@ -84,7 +86,7 @@ One Next.js process serves both `www.refreeg.com` and `apps.refreeg.com`. `middl
 
 ### Environment
 
-`shared/secrets.env` is regenerated from GitHub Actions secrets on every deploy. Full key list: the *Create secrets env file* step in [deploy.yml](../.github/workflows/deploy.yml). On the box it also has `GOOGLE_CLIENT_SECRET`, which the workflow doesn't write (a leftover from a manual edit; it gets dropped on the next deploy unless it's added to the workflow).
+`shared/secrets.env` is regenerated from GitHub Actions secrets on every deploy. Full key list: the _Create secrets env file_ step in [deploy.yml](../.github/workflows/deploy.yml). On the box it also has `GOOGLE_CLIENT_SECRET`, which the workflow doesn't write (a leftover from a manual edit; it gets dropped on the next deploy unless it's added to the workflow).
 
 `NEXT_PUBLIC_*` values are **baked in at build time** on the runner. Changing them in `secrets.env` alone does nothing; redeploy instead.
 
@@ -104,11 +106,11 @@ The repo [nginx/nginx.conf](../nginx/nginx.conf) is **out of date** compared wit
 
 Certbot 2.6 with the `certbot-renew.timer` (twice daily).
 
-| Cert | Domains | Expires |
-|---|---|---|
-| `www.refreeg.com` | www, apex | 2026-12-27 |
-| `apps.refreeg.com` | apps | 2027-02-15 |
-| `new.refreeg.com` | new | **expired 2026-08-18**, unused, safe to delete |
+| Cert               | Domains   | Expires                                        |
+| ------------------ | --------- | ---------------------------------------------- |
+| `www.refreeg.com`  | www, apex | 2026-12-27                                     |
+| `apps.refreeg.com` | apps      | 2027-02-15                                     |
+| `new.refreeg.com`  | new       | **expired 2026-08-18**, unused, safe to delete |
 
 ## Database
 
@@ -119,6 +121,7 @@ Certbot 2.6 with the `certbot-renew.timer` (twice daily).
 - `refreeg_test_db` (same image, named volume `refreeg_test_pgdata`) runs on **:5433**.
 
 Shell in:
+
 ```bash
 sudo docker exec -it refreeg_prod_db psql -U refreeg -d postgres
 ```
@@ -135,6 +138,7 @@ CI runs `prisma migrate deploy` before building. It opens an SSH tunnel through 
 - No retention or lifecycle rule is set in the script; check the S3 bucket's lifecycle policy.
 
 Restore (into an empty DB):
+
 ```bash
 aws s3 cp s3://refreeg-media/db-backups/<file>.dump /tmp/r.dump
 sudo docker exec -i refreeg_prod_db pg_restore --no-owner -U refreeg -d postgres --clean < /tmp/r.dump
@@ -180,12 +184,12 @@ df -h / /mnt/data                          # disk
 
 ## Known issues (as of 2026-11-23)
 
-| Severity | Issue | Suggested fix |
-|---|---|---|
-| **Critical** | Postgres **5432 and 5433 are reachable from the internet** (Docker publishes on `0.0.0.0`, and the security group allows it). The prod DB role uses a weak password, and the full connection string sits in plaintext in `ec2-user`'s crontab. | Bind to localhost (`127.0.0.1:5432:5432` in compose), close 5432/5433 in the security group, rotate the DB password, and move the URL out of the crontab into a root-only env file. |
-| High | Root disk is **94% full** (756 MB free). Postgres data lives there. | Delete `~/.cursor-server`, stale `~/.local`/`/root/.local` caches and old `~/.pm2/logs/*`; vacuum the journal (`journalctl --vacuum-size=200M`); consider moving `db_data` to `/mnt/data` or growing the volume. |
-| Medium | `refreeg` shows **751 PM2 restarts**. `refreeg.err.log` has repeated `LRUCache: calculateSize returned 0` unhandled rejections from Next's image optimizer. | Investigate the image-optimizer cache error (likely a zero-byte cached image) and check `pm2.log` for OOM-triggered restarts. |
-| Medium | No PM2 log rotation. `~/.pm2/pm2.log` is 69 MB. `shared/logs` is only truncated at deploy time. | `pm2 install pm2-logrotate`. |
-| Low | Repo `nginx/nginx.conf` doesn't match production. | Copy the live config back into the repo (minus cert paths). |
-| Low | Expired `new.refreeg.com` cert; unmounted `nvme2n1` volume; stale `api.*`/`frontend.*` logs. | Clean up. Detach and snapshot the extra volume if it's unneeded. |
-| Low | `deploy.yml` comments say the DB is "a separate host". It's actually local Docker on the same box. | Fix the comment. |
+| Severity     | Issue                                                                                                                                                                                                                                          | Suggested fix                                                                                                                                                                                                    |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Critical** | Postgres **5432 and 5433 are reachable from the internet** (Docker publishes on `0.0.0.0`, and the security group allows it). The prod DB role uses a weak password, and the full connection string sits in plaintext in `ec2-user`'s crontab. | Bind to localhost (`127.0.0.1:5432:5432` in compose), close 5432/5433 in the security group, rotate the DB password, and move the URL out of the crontab into a root-only env file.                              |
+| High         | Root disk is **94% full** (756 MB free). Postgres data lives there.                                                                                                                                                                            | Delete `~/.cursor-server`, stale `~/.local`/`/root/.local` caches and old `~/.pm2/logs/*`; vacuum the journal (`journalctl --vacuum-size=200M`); consider moving `db_data` to `/mnt/data` or growing the volume. |
+| Medium       | `refreeg` shows **751 PM2 restarts**. `refreeg.err.log` has repeated `LRUCache: calculateSize returned 0` unhandled rejections from Next's image optimizer.                                                                                    | Investigate the image-optimizer cache error (likely a zero-byte cached image) and check `pm2.log` for OOM-triggered restarts.                                                                                    |
+| Medium       | No PM2 log rotation. `~/.pm2/pm2.log` is 69 MB. `shared/logs` is only truncated at deploy time.                                                                                                                                                | `pm2 install pm2-logrotate`.                                                                                                                                                                                     |
+| Low          | Repo `nginx/nginx.conf` doesn't match production.                                                                                                                                                                                              | Copy the live config back into the repo (minus cert paths).                                                                                                                                                      |
+| Low          | Expired `new.refreeg.com` cert; unmounted `nvme2n1` volume; stale `api.*`/`frontend.*` logs.                                                                                                                                                   | Clean up. Detach and snapshot the extra volume if it's unneeded.                                                                                                                                                 |
+| Low          | `deploy.yml` comments say the DB is "a separate host". It's actually local Docker on the same box.                                                                                                                                             | Fix the comment.                                                                                                                                                                                                 |
