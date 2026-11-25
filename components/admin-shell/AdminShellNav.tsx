@@ -9,6 +9,7 @@ import {
   Contact,
   Database,
   Flag,
+  Handshake,
   LayoutGrid,
   Megaphone,
   Receipt,
@@ -91,7 +92,14 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   },
   {
     label: "People & growth",
-    items: [{ title: "Users", href: "/dashboard/admin/users", icon: Users }],
+    items: [
+      { title: "Users", href: "/dashboard/admin/users", icon: Users },
+      {
+        title: "Partners",
+        href: "/dashboard/admin/partners",
+        icon: Handshake,
+      },
+    ],
   },
   {
     label: "System",
