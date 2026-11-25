@@ -250,9 +250,9 @@ function GiveForm({ props }: { props: QuickDonateProps }) {
       </div>
 
       {error && (
-        <P className="mt-4 font-medium text-rust md:text-sm" role="alert">
-          {error}
-        </P>
+        <div role="alert">
+          <P className="mt-4 font-medium text-rust md:text-sm">{error}</P>
+        </div>
       )}
 
       <Button

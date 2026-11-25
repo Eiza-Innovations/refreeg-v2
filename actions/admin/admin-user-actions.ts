@@ -269,7 +269,8 @@ export async function exportUsersToCSV(): Promise<{
     console.error("Error exporting users to CSV:", error);
     return {
       csv: "",
-      error: "Failed to export users data",
+      error:
+        error instanceof Error ? error.message : "Failed to export users data",
     };
   }
 }

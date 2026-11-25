@@ -23,12 +23,10 @@ export function BreakdownList({
             {rows.map((row) => (
               <li
                 key={row.label}
+                title={row.label}
                 className="grid grid-cols-[1fr_6rem_3rem] items-center gap-3 text-sm"
               >
-                <Span
-                  className="truncate capitalize text-ink/70"
-                  title={row.label}
-                >
+                <Span className="truncate capitalize text-ink/70">
                   {row.label.replace(/_/g, " ")}
                 </Span>
                 <span className="h-2 overflow-hidden rounded-full bg-cream-muted">
