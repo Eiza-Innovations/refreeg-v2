@@ -1,17 +1,11 @@
-import type { AnalyticsPeriod } from "@/types/campaign-analytics-types";
+import type {
+  AnalyticsPeriod,
+  ReportingWindow,
+} from "@/types/campaign-analytics-types";
 
 // Reporting windows follow Lagos wall-clock time (WAT, UTC+1, no DST).
 const LAGOS_OFFSET_MS = 60 * 60 * 1000;
 export const DAY_MS = 24 * 60 * 60 * 1000;
-
-export type ReportingWindow = {
-  from: Date;
-  to: Date;
-  previousFrom: Date;
-  previousTo: Date;
-  days: number;
-  label: string;
-};
 
 const fromLagos = (y: number, m: number, d = 1) =>
   new Date(Date.UTC(y, m, d) - LAGOS_OFFSET_MS);

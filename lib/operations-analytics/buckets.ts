@@ -1,6 +1,8 @@
 import { Prisma } from "@prisma/client";
-import type { ReportingWindow } from "@/lib/campaign-analytics/period";
-import type { AnalyticsPeriod } from "@/types/campaign-analytics-types";
+import type {
+  AnalyticsPeriod,
+  ReportingWindow,
+} from "@/types/campaign-analytics-types";
 import type { Series } from "@/types/operations-analytics-types";
 
 const LAGOS_OFFSET_MS = 60 * 60 * 1000;

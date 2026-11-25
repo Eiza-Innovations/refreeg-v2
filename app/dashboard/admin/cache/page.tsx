@@ -5,6 +5,7 @@ import { clearSiteCache } from "@/actions/admin/admin-cache-actions";
 import { RefreshCw, CheckCircle2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
+import { Button } from "@/components/ui/button";
 import { WorkspaceFrame } from "@/components/admin/workspace/workspace-frame";
 import {
   H3,
@@ -87,10 +88,11 @@ export default function AdminCachePage() {
               cause the next immediate page loads to be slightly slower as they
               rebuild.
             </P>
-            <button
+            <Button
               onClick={handleGlobalClear}
               disabled={isClearingGlobal}
-              className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 h-10 px-4 py-2 w-full mt-4"
+              variant="destructive"
+              className="mt-4 w-full"
             >
               {isClearingGlobal ? (
                 <Span className="flex items-center gap-2">
@@ -99,7 +101,7 @@ export default function AdminCachePage() {
               ) : (
                 "Purge All Cache"
               )}
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -131,10 +133,10 @@ export default function AdminCachePage() {
                 onChange={(e) => setSpecificPath(e.target.value)}
                 className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
               />
-              <button
+              <Button
                 type="submit"
                 disabled={isClearingPath || !specificPath.trim()}
-                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-10 px-4 py-2"
+                variant="ink"
               >
                 {isClearingPath ? (
                   <Span className="flex items-center gap-2">
@@ -143,7 +145,7 @@ export default function AdminCachePage() {
                 ) : (
                   "Purge Specific Path"
                 )}
-              </button>
+              </Button>
             </form>
           </div>
         </div>

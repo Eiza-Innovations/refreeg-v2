@@ -2,6 +2,7 @@
 
 import type { CauseStatus } from "@/types";
 import type React from "react";
+import { P, Small } from "@/components/marketing/Typography";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "nextjs-toploader/app";
@@ -317,13 +318,13 @@ export function DonationForm({
                 required
               />
               {amountError ? (
-                <p className="text-xs font-medium text-rose-600">
+                <Small className="block font-medium text-rose-600">
                   {amountError}
-                </p>
+                </Small>
               ) : (
-                <p className="text-xs text-muted-foreground">
+                <Small className="block text-muted-foreground">
                   Minimum donation is ₦{MIN_DONATION_AMOUNT}.
-                </p>
+                </Small>
               )}
             </div>
           )}
@@ -376,9 +377,9 @@ export function DonationForm({
                 className="rounded-none border-0 shadow-none focus-visible:ring-0"
               />
             </div>
-            <p className="text-xs text-muted-foreground">
+            <Small className="block text-muted-foreground">
               Help us keep the platform running. Tip goes 100% to RefreeG.
-            </p>
+            </Small>
           </div>
 
           <div className="space-y-2">
@@ -403,7 +404,9 @@ export function DonationForm({
           {optionalFieldsExtra}
 
           {submitError ? (
-            <p className="text-sm font-medium text-rose-600">{submitError}</p>
+            <P className="font-medium text-rose-600 md:text-sm">
+              {submitError}
+            </P>
           ) : null}
 
           {afterFields}
@@ -420,7 +423,7 @@ export function DonationForm({
                 <span>Checkout total</span>
                 <span>₦{totalAmount.toLocaleString()}</span>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">
+              <Small className="mt-2 block text-muted-foreground">
                 Includes ₦{donationAmount.toLocaleString()} donation
                 {serviceFee > 0
                   ? `, ₦${serviceFee.toLocaleString()} service fee`
@@ -432,7 +435,7 @@ export function DonationForm({
                   ? `, and ₦${tipAmount.toLocaleString()} platform tip`
                   : ""}
                 .
-              </p>
+              </Small>
             </div>
           )}
         </CardContent>

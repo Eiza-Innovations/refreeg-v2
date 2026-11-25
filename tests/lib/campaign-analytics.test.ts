@@ -11,11 +11,8 @@ jest.mock("@/lib/prisma", () => ({
 import { prisma } from "@/lib/prisma";
 import { reportingWindow } from "@/lib/campaign-analytics/period";
 import { recordPaymentOutcome } from "@/actions/causes/funnel-actions";
-import {
-  failureReason,
-  worstSteps,
-  type SegmentRow,
-} from "@/lib/campaign-analytics/funnel";
+import { failureReason, worstSteps } from "@/lib/campaign-analytics/funnel";
+import type { SegmentRow } from "@/types/campaign-analytics-types";
 
 const mockPrisma = prisma as any;
 

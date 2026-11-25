@@ -78,3 +78,21 @@ export type FraudRiskReport = {
   scored: number;
   confirmedThisMonth: number;
 };
+
+export type SegmentCounts = Record<FunnelStep, number>;
+
+export type SegmentRow = SegmentCounts & {
+  device: string | null;
+  big_gift: boolean | null;
+  first_time: boolean | null;
+  no_photo: boolean;
+};
+
+export type ReportingWindow = {
+  from: Date;
+  to: Date;
+  previousFrom: Date;
+  previousTo: Date;
+  days: number;
+  label: string;
+};

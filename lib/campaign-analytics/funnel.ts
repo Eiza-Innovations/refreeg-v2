@@ -4,7 +4,8 @@ import {
 } from "@/lib/options/campaign-analytics.options";
 import type {
   FunnelSegmentRow,
-  FunnelStep,
+  SegmentCounts,
+  SegmentRow,
 } from "@/types/campaign-analytics-types";
 
 const steps = funnelStepOptions.map((option) => option.value);
@@ -28,14 +29,6 @@ export const failureReason = (data: {
     return "transfer_incomplete";
   }
   return data.status === "abandoned" ? "abandoned" : "card_declined";
-};
-
-type SegmentCounts = Record<FunnelStep, number>;
-export type SegmentRow = SegmentCounts & {
-  device: string | null;
-  big_gift: boolean | null;
-  first_time: boolean | null;
-  no_photo: boolean;
 };
 
 const segmentMatchers: Record<

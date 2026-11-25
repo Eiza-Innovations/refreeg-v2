@@ -2,6 +2,7 @@
 
 import { createColumnHelper } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { CampaignCell } from "@/components/admin/campaign-analytics/CampaignCell";
 import { RiskScoreBar } from "@/components/admin/campaign-analytics/RiskScoreBar";
 import { RiskSuggestionBadge } from "@/components/admin/campaign-analytics/RiskSuggestionBadge";
@@ -17,8 +18,10 @@ export const fraudRiskColumns = (onOpen: (row: RiskRow) => void) =>
       id: "campaign",
       header: "Campaign",
       cell: ({ row }) => (
-        <button
+        <Button
           type="button"
+          variant="bare"
+          size="bare"
           onClick={() => onOpen(row.original)}
           aria-label={`Open risk details for ${row.original.title}`}
           className="max-w-64 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
@@ -28,7 +31,7 @@ export const fraudRiskColumns = (onOpen: (row: RiskRow) => void) =>
             owner={row.original.owner}
             tone={row.original.score >= RISK_HIGH ? "risk" : "neutral"}
           />
-        </button>
+        </Button>
       ),
     }),
     columnHelper.accessor("score", {

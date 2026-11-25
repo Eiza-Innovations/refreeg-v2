@@ -4,13 +4,9 @@ import { randomUUID } from "crypto";
 import { Prisma } from "@prisma/client";
 import { revalidateTag, unstable_cache } from "next/cache";
 import { getFraudRiskData } from "@/actions/admin/campaign-risk-actions";
+import { requireAdminOrManager } from "@/lib/auth/admin-auth";
 import { prisma } from "@/lib/prisma";
-import {
-  readReport,
-  requireReviewer,
-  UNAUTHORIZED,
-} from "@/lib/admin/report-access";
-import { worstSteps, type SegmentRow } from "@/lib/campaign-analytics/funnel";
+import { worstSteps } from "@/lib/campaign-analytics/funnel";
 import { DAY_MS, reportingWindow } from "@/lib/campaign-analytics/period";
 import {
   AUDIT_CLEARED,
@@ -31,6 +27,7 @@ import {
   takedownReasonOptions,
 } from "@/lib/options/campaign-analytics.options";
 import {
+  analyticsPeriodSchema,
   campaignRiskActionSchema,
   takedownCampaignSchema,
   type CampaignRiskActionInput,
@@ -41,6 +38,7 @@ import type {
   AnalyticsPeriod,
   CampaignOverview,
   DropOffReport,
+  SegmentRow,
   VelocityForecast,
   VelocityRow,
 } from "@/types/campaign-analytics-types";
@@ -334,25 +332,43 @@ const getDropOffData = unstable_cache(
   { revalidate: 300, tags: [CAMPAIGN_ANALYTICS_TAG] },
 );
 
+async function runReport<T>(
+  period: AnalyticsPeriod | null,
+  load: () => Promise<T>,
+) {
+  if (period !== null && !analyticsPeriodSchema.safeParse(period).success) {
+    return { success: false, error: "Unknown period", data: null };
+  }
+  try {
+    return { success: true, error: null, data: await load() };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+      data: null,
+    };
+  }
+}
+
 export async function getCampaignOverview(period: AnalyticsPeriod) {
-  return readReport(period, () => getCampaignOverviewData(period));
+  return runReport(period, () => getCampaignOverviewData(period));
 }
 
 export async function getFundingVelocity(period: AnalyticsPeriod) {
-  return readReport(period, () => getVelocityData(period));
+  return runReport(period, () => getVelocityData(period));
 }
 
 export async function getCampaignDropOff(period: AnalyticsPeriod) {
-  return readReport(period, () => getDropOffData(period));
+  return runReport(period, () => getDropOffData(period));
 }
 
 export async function getFraudRisk() {
-  return readReport(null, () => getFraudRiskData());
+  return runReport(null, () => getFraudRiskData());
 }
 
 export async function takeDownCampaign(input: TakedownCampaignInput) {
-  const actorId = await requireReviewer();
-  if (!actorId) return UNAUTHORIZED;
+  const actor = await requireAdminOrManager();
+  const actorId = actor.id;
   const parsed = takedownCampaignSchema.safeParse(input);
   if (!parsed.success) {
     return {
@@ -445,8 +461,8 @@ export async function takeDownCampaign(input: TakedownCampaignInput) {
 }
 
 export async function setCampaignRiskState(input: CampaignRiskActionInput) {
-  const actorId = await requireReviewer();
-  if (!actorId) return UNAUTHORIZED;
+  const actor = await requireAdminOrManager();
+  const actorId = actor.id;
   const parsed = campaignRiskActionSchema.safeParse(input);
   if (!parsed.success) {
     return {

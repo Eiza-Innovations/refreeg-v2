@@ -1,13 +1,14 @@
 "use server";
 
 import { Prisma } from "@prisma/client";
-import { requireAdminOrManager } from "@/lib/auth/admin-auth";
 import { prisma } from "@/lib/prisma";
-import type { ReportingWindow } from "@/lib/campaign-analytics/period";
 import { SLA_HOURS } from "@/lib/campaign-analytics/risk-levels";
 import { bucketSql } from "@/lib/operations-analytics/buckets";
 import { REVIEW_APPROVED, REVIEW_REJECTED } from "@/lib/admin/review-decisions";
-import type { AnalyticsPeriod } from "@/types/campaign-analytics-types";
+import type {
+  AnalyticsPeriod,
+  ReportingWindow,
+} from "@/types/campaign-analytics-types";
 import type { QueueKey, QueueStats } from "@/types/operations-analytics-types";
 
 type QueueSource = {
@@ -85,7 +86,6 @@ export async function queueStats(
   key: QueueKey,
   w: ReportingWindow,
 ): Promise<QueueStats> {
-  await requireAdminOrManager();
   const s = queueSources[key];
   const hours = Prisma.sql`EXTRACT(EPOCH FROM ${s.decidedAt} - ${s.created}) / 3600`;
   const timed = decisionTimed(s);
@@ -140,7 +140,6 @@ export async function decisionBuckets(
   period: AnalyticsPeriod,
   w: ReportingWindow,
 ) {
-  await requireAdminOrManager();
   const s = queueSources[key];
   return prisma.$queryRaw<{ bucket: string; count: number }[]>`
     SELECT ${bucketSql(period, s.decidedAt)} AS bucket, COUNT(*)::int AS count
@@ -151,7 +150,6 @@ export async function decisionBuckets(
 
 /** Decisions by status in the window and the one before. */
 export async function decisionOutcomes(key: QueueKey, w: ReportingWindow) {
-  await requireAdminOrManager();
   const s = queueSources[key];
   const rows = await prisma.$queryRaw<
     { status: string; current: number; previous: number }[]
@@ -178,7 +176,6 @@ export async function medianDecisionHours(
   from?: Date,
   to?: Date,
 ) {
-  await requireAdminOrManager();
   const s = queueSources[key];
   const range =
     from && to

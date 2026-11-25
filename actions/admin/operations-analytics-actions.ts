@@ -8,13 +8,9 @@ import {
   queueStats,
 } from "@/actions/admin/operations-queue-actions";
 import { prisma } from "@/lib/prisma";
-import { readReport } from "@/lib/admin/report-access";
 import { getReportingWindow } from "@/lib/admin-analytics/period";
 import { giftSeries, giftTotals } from "@/lib/admin-analytics/workspace-data";
-import {
-  reportingWindow,
-  type ReportingWindow,
-} from "@/lib/campaign-analytics/period";
+import { reportingWindow } from "@/lib/campaign-analytics/period";
 import { CAMPAIGN_ANALYTICS_TAG } from "@/lib/campaign-analytics/shared";
 import {
   AUDIT_TAKEN_DOWN,
@@ -23,8 +19,12 @@ import {
 import { REVIEW_REJECTED } from "@/lib/admin/review-decisions";
 import { bucketSql, toSeries } from "@/lib/operations-analytics/buckets";
 import { kycIdTypeFilterOptions } from "@/lib/options/kyc-review.options";
+import { analyticsPeriodSchema } from "@/lib/schemas/campaign-analytics.schema";
 import { queueKeySchema } from "@/lib/schemas/operations-analytics.schema";
-import type { AnalyticsPeriod } from "@/types/campaign-analytics-types";
+import type {
+  AnalyticsPeriod,
+  ReportingWindow,
+} from "@/types/campaign-analytics-types";
 import type {
   AdminOverview,
   OverviewItem,
@@ -395,6 +395,21 @@ const getReviewReportData = unstable_cache(
   { revalidate: 300, tags: [CAMPAIGN_ANALYTICS_TAG] },
 );
 
+async function runReport<T>(period: AnalyticsPeriod, load: () => Promise<T>) {
+  if (!analyticsPeriodSchema.safeParse(period).success) {
+    return { success: false, error: "Unknown period", data: null };
+  }
+  try {
+    return { success: true, error: null, data: await load() };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+      data: null,
+    };
+  }
+}
+
 export async function getReviewReport(
   queue: QueueKey,
   period: AnalyticsPeriod,
@@ -402,9 +417,9 @@ export async function getReviewReport(
   if (!queueKeySchema.safeParse(queue).success) {
     return { success: false, error: "Unknown report", data: null };
   }
-  return readReport(period, () => getReviewReportData(queue, period));
+  return runReport(period, () => getReviewReportData(queue, period));
 }
 
 export async function getAdminOverview(period: AnalyticsPeriod) {
-  return readReport(period, () => getAdminOverviewData(period));
+  return runReport(period, () => getAdminOverviewData(period));
 }

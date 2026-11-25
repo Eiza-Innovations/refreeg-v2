@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Heading, P, Span } from "@/components/marketing/Typography";
 
 export function WorkspacePageHeader({
@@ -23,9 +24,15 @@ export function WorkspacePageHeader({
             aria-label="Breadcrumb"
             className="flex items-center gap-1.5 text-xs text-ink/50"
           >
-            <button type="button" onClick={onCrumb} className="hover:text-ink">
+            <Button
+              type="button"
+              variant="bare"
+              size="bare"
+              onClick={onCrumb}
+              className="text-xs font-normal text-ink/50 hover:text-ink"
+            >
               {crumb}
-            </button>
+            </Button>
             <ArrowRight className="h-3 w-3" />
             <Span>{title}</Span>
           </nav>
