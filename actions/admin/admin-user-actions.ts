@@ -3,8 +3,9 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth/auth";
 import { getUserRole } from "@/lib/auth/admin-auth";
-import { isAdminOrManager } from "./role-actions";
+import { isAdminOrManager, listUsersWithRoles } from "./role-actions";
 import { revalidatePath } from "next/cache";
+import type { UserWithRole } from "@/types";
 
 export async function blockUser(userId: string): Promise<boolean> {
   const session = await auth();
@@ -222,4 +223,53 @@ export async function getUserDetailsForAdmin(userId: string) {
     ...user,
     kyc_verifications: kyc ? [kyc] : [],
   };
+}
+
+export async function exportUsersToCSV(): Promise<{
+  csv: string;
+  error: string | null;
+}> {
+  try {
+    const users = await listUsersWithRoles();
+    const activeUsers = users.filter((user) => !user.is_blocked);
+
+    const headers = [
+      "ID",
+      "Full Name",
+      "Email",
+      "Role",
+      "KYC Status",
+      "Joined Date",
+    ];
+
+    const rows = activeUsers.map((user: UserWithRole) => {
+      return [
+        user.id,
+        user.full_name || "N/A",
+        user.email,
+        user.role,
+        user.kyc_status || "Not Submitted",
+        new Date(user.created_at).toLocaleDateString(),
+      ].map((field) => {
+        const stringField = String(field);
+        if (stringField.includes(",") || stringField.includes('"')) {
+          return `"${stringField.replace(/"/g, '""')}"`;
+        }
+        return stringField;
+      });
+    });
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.join(",")),
+    ].join("\n");
+
+    return { csv: csvContent, error: null };
+  } catch (error) {
+    console.error("Error exporting users to CSV:", error);
+    return {
+      csv: "",
+      error: "Failed to export users data",
+    };
+  }
 }

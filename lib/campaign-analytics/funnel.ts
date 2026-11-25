@@ -2,7 +2,11 @@ import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { reportingWindow } from "@/lib/campaign-analytics/period";
 import { CAMPAIGN_ANALYTICS_TAG } from "@/lib/campaign-analytics/shared";
-import { funnelStepOptions } from "@/lib/options/campaign-analytics.options";
+import {
+  BIG_GIFT_AMOUNT,
+  funnelSegmentOptions,
+  funnelStepOptions,
+} from "@/lib/options/campaign-analytics.options";
 import type { FunnelEventInput } from "@/lib/schemas/campaign-analytics.schema";
 import type {
   AnalyticsPeriod,
@@ -11,7 +15,6 @@ import type {
   FunnelStep,
 } from "@/types/campaign-analytics-types";
 
-const BIG_GIFT = 50_000;
 const steps = funnelStepOptions.map((option) => option.value);
 
 const deviceFrom = (userAgent: string | null) => {
@@ -106,16 +109,16 @@ export type SegmentRow = SegmentCounts & {
   no_photo: boolean;
 };
 
-const segments: { label: string; match: (row: SegmentRow) => boolean }[] = [
-  { label: "Mobile web, Android", match: (row) => row.device === "android" },
-  { label: "Mobile web, iPhone", match: (row) => row.device === "ios" },
-  {
-    label: `Gifts over ₦${BIG_GIFT.toLocaleString()}`,
-    match: (row) => row.big_gift === true,
-  },
-  { label: "First-time donors", match: (row) => row.first_time === true },
-  { label: "Campaigns without photos", match: (row) => row.no_photo },
-];
+const segmentMatchers: Record<
+  (typeof funnelSegmentOptions)[number]["value"],
+  (row: SegmentRow) => boolean
+> = {
+  android: (row) => row.device === "android",
+  ios: (row) => row.device === "ios",
+  big_gift: (row) => row.big_gift === true,
+  first_time: (row) => row.first_time === true,
+  no_photo: (row) => row.no_photo,
+};
 
 const totals = (rows: SegmentRow[]) =>
   Object.fromEntries(
@@ -128,8 +131,8 @@ const totals = (rows: SegmentRow[]) =>
 /** Worst step for each segment, as change in step conversion vs everyone. */
 export function worstSteps(rows: SegmentRow[]): FunnelSegmentRow[] {
   const all = totals(rows);
-  return segments.flatMap(({ label, match }) => {
-    const seg = totals(rows.filter(match));
+  return funnelSegmentOptions.flatMap(({ label, value }) => {
+    const seg = totals(rows.filter(segmentMatchers[value]));
     const drops = steps.slice(1).flatMap((step, index) => {
       const before = steps[index];
       if (!seg[before] || !all[before] || !all[step]) return [];
@@ -167,7 +170,7 @@ async function loadDropOff(period: AnalyticsPeriod): Promise<DropOffReport> {
     prisma.$queryRaw<SegmentRow[]>`
       WITH s AS (
         SELECT session_id, cause_id, MAX(device) AS device,
-          MAX(amount) > ${BIG_GIFT} AS big_gift, BOOL_OR(first_time) AS first_time,
+          MAX(amount) > ${BIG_GIFT_AMOUNT} AS big_gift, BOOL_OR(first_time) AS first_time,
           BOOL_OR(step = 'view') AS view, BOOL_OR(step = 'give') AS give,
           BOOL_OR(step = 'amount') AS amount, BOOL_OR(step = 'payment') AS payment,
           BOOL_OR(step = 'paid') AS paid

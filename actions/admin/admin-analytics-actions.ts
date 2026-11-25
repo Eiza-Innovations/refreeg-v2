@@ -10,6 +10,8 @@ import {
   format,
 } from "date-fns";
 import { medianDecisionHours } from "@/lib/operations-analytics/queues";
+import { getWorkspaceData as fetchWorkspaceData } from "@/lib/admin-analytics/workspace-data";
+import type { Period, WorkspaceData } from "@/components/admin/workspace/types";
 import type {
   Alert,
   AnalyticsData,
@@ -401,4 +403,11 @@ export async function getApiCampaigns(search?: string) {
       testCount,
     },
   };
+}
+
+export async function getWorkspaceData(
+  period: Period = "month",
+): Promise<WorkspaceData> {
+  await requireAdminOrManager();
+  return fetchWorkspaceData(period);
 }

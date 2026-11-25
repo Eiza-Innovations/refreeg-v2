@@ -67,3 +67,16 @@ export const takedownFundOptions = [
 export const velocityCategoryOptions = [
   { label: "All categories", value: "all" },
 ] as const satisfies readonly Option[];
+
+export const BIG_GIFT_AMOUNT = 50_000;
+
+export const funnelSegmentOptions = [
+  { label: "Mobile web, Android", value: "android" },
+  { label: "Mobile web, iPhone", value: "ios" },
+  {
+    label: `Gifts over ₦${BIG_GIFT_AMOUNT.toLocaleString()}`,
+    value: "big_gift",
+  },
+  { label: "First-time donors", value: "first_time" },
+  { label: "Campaigns without photos", value: "no_photo" },
+] as const satisfies readonly Option[];
