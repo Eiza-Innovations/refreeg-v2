@@ -80,6 +80,8 @@ model User {
   roles                       Role[]
   saved_searches              saved_searches[]
   sessions                    Session[]
+  wishlists                   wishlists[]
+  wishlist_contributions      wishlist_contributions[]
   ownedOrganization           Organization?            @relation("OrganizationOwner")
   organizationMemberships     OrganizationMember[]
   sentOrganizationInvitations OrganizationInvitation[] @relation("OrganizationInviter")
