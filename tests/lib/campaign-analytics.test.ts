@@ -51,7 +51,10 @@ describe("failureReason", () => {
     [{ status: "failed", channel: "card" }, "card_declined"],
     [{ status: "abandoned", channel: "card" }, "abandoned"],
     [{ status: "abandoned", channel: "bank_transfer" }, "transfer_incomplete"],
-    [{ status: "failed", gateway_response: "Transaction timed out" }, "timeout"],
+    [
+      { status: "failed", gateway_response: "Transaction timed out" },
+      "timeout",
+    ],
   ])("%o → %s", (data, reason) => {
     expect(failureReason(data)).toBe(reason);
   });
@@ -74,7 +77,14 @@ describe("worstSteps", () => {
   it("reports the step where a segment converts worst vs everyone", () => {
     const [android] = worstSteps([
       row({}),
-      row({ device: "android", view: 100, give: 10, amount: 8, payment: 6, paid: 4 }),
+      row({
+        device: "android",
+        view: 100,
+        give: 10,
+        amount: 8,
+        payment: 6,
+        paid: 4,
+      }),
     ]);
     expect(android.segment).toBe("Mobile web, Android");
     expect(android.step).toBe("give");

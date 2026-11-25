@@ -25,7 +25,9 @@ export default async function AdminLogsPage() {
       <WorkspaceFrame className="mx-auto max-w-xl py-12">
         <Card className="border border-hairline bg-surface shadow-flat">
           <CardHeader>
-            <CardTitle className="font-fraunces text-xl text-ink">Access Denied</CardTitle>
+            <CardTitle className="font-fraunces text-xl text-ink">
+              Access Denied
+            </CardTitle>
             <CardDescription className="text-ink/60">
               You do not have permission to access this page.
             </CardDescription>
@@ -48,7 +50,9 @@ export default async function AdminLogsPage() {
       <WorkspaceFrame className="mx-auto max-w-xl py-12">
         <Card className="border border-hairline bg-surface shadow-flat">
           <CardHeader>
-            <CardTitle className="font-fraunces text-xl text-ink">Failed to load logs</CardTitle>
+            <CardTitle className="font-fraunces text-xl text-ink">
+              Failed to load logs
+            </CardTitle>
             <CardDescription className="text-ink/60">
               {(error as Error).message || "Unknown error"}
             </CardDescription>

@@ -81,7 +81,8 @@ export function RiskDetailSheet({
                 Risk score {campaign.score}
               </SheetTitle>
               <SheetDescription className="sr-only">
-                Signals behind this campaign&rsquo;s risk score and what you can do.
+                Signals behind this campaign&rsquo;s risk score and what you can
+                do.
               </SheetDescription>
               <span className="block h-1.5 overflow-hidden rounded-full bg-cream-muted">
                 <span

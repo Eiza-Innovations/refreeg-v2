@@ -121,7 +121,9 @@ export default async function AdminUsersPage({
           description={`There ${kycAttentionCount === 1 ? "is" : "are"} ${kycAttentionCount} user${kycAttentionCount > 1 ? "s" : ""} with new or edited KYC submissions awaiting your attention.`}
           action={
             <Button variant="ink" size="sm" asChild>
-              <Link href={`/dashboard/admin/users/kyc/${pendingKyc.firstUserId}`}>
+              <Link
+                href={`/dashboard/admin/users/kyc/${pendingKyc.firstUserId}`}
+              >
                 Review Now
               </Link>
             </Button>
@@ -147,12 +149,24 @@ export default async function AdminUsersPage({
             <Table>
               <TableHeader className="bg-bone">
                 <TableRow className="border-b border-hairline hover:bg-transparent">
-                  <TableHead className="font-semibold text-ink/70">User</TableHead>
-                  <TableHead className="font-semibold text-ink/70">Role</TableHead>
-                  <TableHead className="font-semibold text-ink/70">Status</TableHead>
-                  <TableHead className="font-semibold text-ink/70">Joined</TableHead>
-                  <TableHead className="font-semibold text-ink/70">KYC</TableHead>
-                  <TableHead className="text-right font-semibold text-ink/70">Actions</TableHead>
+                  <TableHead className="font-semibold text-ink/70">
+                    User
+                  </TableHead>
+                  <TableHead className="font-semibold text-ink/70">
+                    Role
+                  </TableHead>
+                  <TableHead className="font-semibold text-ink/70">
+                    Status
+                  </TableHead>
+                  <TableHead className="font-semibold text-ink/70">
+                    Joined
+                  </TableHead>
+                  <TableHead className="font-semibold text-ink/70">
+                    KYC
+                  </TableHead>
+                  <TableHead className="text-right font-semibold text-ink/70">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -194,7 +208,10 @@ export default async function AdminUsersPage({
                             Manager
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="gap-1 text-ink/70">
+                          <Badge
+                            variant="outline"
+                            className="gap-1 text-ink/70"
+                          >
                             <User className="h-3 w-3" />
                             User
                           </Badge>

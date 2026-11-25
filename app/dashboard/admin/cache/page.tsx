@@ -51,7 +51,9 @@ export default function AdminCachePage() {
   return (
     <WorkspaceFrame className="mx-auto max-w-4xl space-y-6">
       <div className="mb-2">
-        <h1 className="font-fraunces text-3xl font-medium tracking-tight text-ink">Cache Management</h1>
+        <h1 className="font-fraunces text-3xl font-medium tracking-tight text-ink">
+          Cache Management
+        </h1>
         <p className="text-ink/60 mt-2 text-sm">
           Manually invalidate the Next.js Data and Full Route Cache to force
           fresh data to appear in production.
