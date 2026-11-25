@@ -17,7 +17,7 @@ Tool-agnostic: works for any AI coding agent (Antigravity, subagents, Claude Cod
 | Types            | `types/<feature>-types.ts`              | Shared types and interfaces. Never declared or exported from `actions/`.                                 |
 | Components       | `components/<domain>/<Component>.tsx`   | Thin. Render, call hooks, hold local UI state.                                                           |
 
-## Checklist (13 Rules)
+## Checklist (16 Rules)
 
 1. **Actions do only the work.** `actions/*` authenticate, validate, run one operation, and return `{ success, error }` or data. They do not format for display, toast, or trigger UI side effects. Parsing, view shaping, and side effects go in `hooks/use-<feature>.ts`.
 2. **No intermediary layers.** Plain calls, backend pagination, and API filters. No fetch-all-pages wrappers, no single-use helpers, no needless mappers renaming fields.
@@ -33,6 +33,9 @@ Tool-agnostic: works for any AI coding agent (Antigravity, subagents, Claude Cod
 12. **Submits run through useMutation.** `useMutation` wraps the action call, `useValidator` runs first, `isPending` guards double submit, and on response show `result.error` via `FieldError` and return early, or close and navigate on success.
 13. **Types live in `types/`.** `actions/*` export async functions only. Result shapes, row types and input types go in `types/<feature>-types.ts` and are imported with `import type` by the action, hook and component.
 14. **Shell inheritance and WorkspaceFrame.** Never inject arbitrary background gradient/overlay wrappers (`ClientLayoutWrapper`). Every `/dashboard/admin/*` screen inherits `AdminShell` (`bg-cream`) and page padding from `<WorkspaceFrame>` (`components/admin/workspace/workspace-frame.tsx`, `px-4 py-8 sm:px-8 max-w-[1440px]`). Never add redundant server-side role checks (`if (role !== "admin")`) inside `/dashboard/admin/*` page components — `middleware.ts` already guards all `/dashboard/admin/*` routes globally. Access recently migrated or optional Prisma models defensively (e.g. `(prisma as any).<model>?.aggregate`) with fallback defaults so schema evolution never crashes screens.
+15. **Prisma best practice.** Typed client first, `$queryRaw` only when needed. `select` needed columns; no query in a loop. Guarded writes atomic (`$transaction`, conditional `updateMany` + `count`). Catch `P2002`/`P2025`; log Prisma errors, return stable messages. `@relation` + `onDelete`, enums/CHECK, `Timestamptz`/`Decimal`, index every filter/sort/join. One generated migration per change; no `IF NOT EXISTS` drift hiding, no edited applied migrations, no duplicate table migrations; every used model exists in `prisma/schema/`.
+16. **SQL best practice.** `Prisma.sql` params only, `Prisma.raw` literal identifiers only, no spliced constants (`make_interval`), cast ambiguous params. Bound every scan; no self-joins on large/unindexed columns, per-row correlated subqueries or unbounded windows. Dedupe fan-out joins before counting. No `SELECT *`; half-open `TIMESTAMPTZ` ranges; cache heavy reports with a tag; `EXPLAIN` new queries.
+17. **Server actions are public endpoints.** Each action authenticates and authorizes itself, reads included. Never trust `userId`/`userAgent`/role arguments. No internal helpers exported from `"use server"` files. Anonymous writes go through a rate-limited, validated route handler.
 
 ## When writing
 
@@ -42,7 +45,7 @@ Tool-agnostic: works for any AI coding agent (Antigravity, subagents, Claude Cod
 ## When reviewing or rating
 
 1. List changed and untracked files (read-only git commands, never commit or push unless asked).
-2. Check each file against rules 1 to 13 and `docs/DESIGN_GUIDE.md`. Specifically hunt raw HTML where a shared component exists, per-field `useState` in forms, inline options, hand-rolled `<Table>` markup, plain async dialog submits, error maps, and `export type`/`interface` inside `actions/`.
+2. Check each file against rules 1 to 16 and `docs/DESIGN_GUIDE.md`. Specifically hunt raw HTML where a shared component exists, per-field `useState` in forms, inline options, hand-rolled `<Table>` markup, plain async dialog submits, error maps, `export type`/`interface` inside `actions/`, unauthenticated actions, raw SQL without bounds or indexes, and unsafe migrations.
 3. Report each hit as `file:line`, rule number, and fix. End with a short verdict.
 4. If asked to fix, fix every hit, then review again until clean. Run `pnpm lint` and `pnpm tsc --noEmit`.
 
