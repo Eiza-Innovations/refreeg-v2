@@ -5,8 +5,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import { Icons } from "@/components/layout/Icons";
 import { Button } from "@/components/ui/button";
-import { FormStepper } from "@/components/ui/premium/form-stepper";
-import { PremiumFormContainer } from "@/components/ui/premium/premium-form-container";
+import { Card } from "@/components/ui/card";
+import { Eyebrow } from "@/components/ui/eyebrow";
+import { Stepper } from "@/components/ui/stepper";
+import { Heading, Lead } from "@/components/marketing/Typography";
 import { useAuth } from "@/hooks/use-auth";
 import { usePetition } from "@/hooks/use-petition";
 import { usePetitionDraft } from "@/hooks/use-petition-draft";
@@ -121,61 +123,84 @@ export function PetitionWizard({ mode, petition }: Props) {
   };
 
   const busy = isLoading || submitting;
+  const steps = copy.steps.map((label, i) => ({
+    label,
+    status:
+      i + 1 < currentStep
+        ? ("done" as const)
+        : i + 1 === currentStep
+          ? ("current" as const)
+          : ("upcoming" as const),
+  }));
 
   return (
-    <PremiumFormContainer title={copy.title} description={copy.description}>
-      <FormStepper steps={copy.steps} currentStep={currentStep} />
+    <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 lg:py-12">
+      <header>
+        <Eyebrow>
+          Step {currentStep} of {copy.steps.length}
+        </Eyebrow>
+        <Heading as="h1" size="subsection" className="mt-2">
+          {copy.title}
+        </Heading>
+        <Lead className="mt-2 text-sm text-ink/60">{copy.description}</Lead>
+      </header>
 
-      <form className="space-y-8" onSubmit={handleSubmit}>
-        <div className="min-h-[400px]">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentStep}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              {currentStep === 1 && (
-                <PetitionBasicsStep {...wizard} copy={copy} />
-              )}
-              {currentStep === 2 && (
-                <PetitionStoryStep {...wizard} copy={copy} />
-              )}
-              {currentStep === 3 && (
-                <PetitionTimelineStep {...wizard} copy={copy} />
-              )}
-              {currentStep === 4 && (
-                <PetitionMediaStep {...wizard} copy={copy} />
-              )}
-              {currentStep === 5 && <PetitionReviewStep form={form} />}
-            </motion.div>
-          </AnimatePresence>
-        </div>
+      <Stepper steps={steps} className="mt-8" />
 
-        <div className="flex justify-between items-center pt-8 border-t border-gray-100">
+      <form onSubmit={handleSubmit}>
+        <Card variant="surface" className="mt-8 p-5 sm:p-8">
+          <div className="min-h-[360px]">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentStep}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+              >
+                {currentStep === 1 && (
+                  <PetitionBasicsStep {...wizard} copy={copy} />
+                )}
+                {currentStep === 2 && (
+                  <PetitionStoryStep {...wizard} copy={copy} />
+                )}
+                {currentStep === 3 && (
+                  <PetitionTimelineStep {...wizard} copy={copy} />
+                )}
+                {currentStep === 4 && (
+                  <PetitionMediaStep {...wizard} copy={copy} />
+                )}
+                {currentStep === 5 && <PetitionReviewStep form={form} />}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </Card>
+
+        <div className="mt-6 flex items-center justify-between">
           <Button
             type="button"
-            variant="ghost"
+            variant="surface"
             onClick={wizard.prevStep}
             disabled={currentStep === 1 || busy}
-            className="hover:bg-gray-50"
+            className="h-11 rounded-xl px-6"
           >
             Back
           </Button>
           {currentStep < LAST_PETITION_STEP ? (
             <Button
               type="button"
+              variant="ink"
               onClick={wizard.nextStep}
-              className="bg-brand text-white hover:bg-brand/90 px-8"
+              className="h-11 rounded-xl px-8"
             >
               Continue
             </Button>
           ) : (
             <Button
               type="submit"
+              variant="lime"
               disabled={busy}
-              className="bg-brand text-white hover:bg-brand/90 px-8"
+              className="h-11 rounded-xl px-8"
             >
               {busy ? (
                 <>
@@ -189,6 +214,6 @@ export function PetitionWizard({ mode, petition }: Props) {
           )}
         </div>
       </form>
-    </PremiumFormContainer>
+    </div>
   );
 }

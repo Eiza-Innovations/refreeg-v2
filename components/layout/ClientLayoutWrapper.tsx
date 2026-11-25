@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const CREAM_ROUTES = [
   "/dashboard/settings",
   "/dashboard/donations",
+  "/dashboard/petitions",
   "/dashboard/admin/analytics",
   "/dashboard/admin/users/kyc",
   "/dashboard/admin/receipts",

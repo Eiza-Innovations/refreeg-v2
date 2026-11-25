@@ -1,6 +1,10 @@
 import dynamic from "next/dynamic";
 import { differenceInDays, format } from "date-fns";
+import { Card } from "@/components/ui/card";
+import { Eyebrow } from "@/components/ui/eyebrow";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Heading, P, Small, Strong } from "@/components/marketing/Typography";
+import { StepHeading } from "./step-heading";
 import { useObjectUrl, useObjectUrls } from "@/hooks/use-object-urls";
 import { petitionCategoryOptions } from "@/lib/options/petition.options";
 import type { PetitionFormFields } from "@/lib/schemas/petition.schema";
@@ -19,61 +23,76 @@ export function PetitionReviewStep({ form }: { form: PetitionFormFields }) {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <h3 className="text-lg font-semibold">{form.title}</h3>
-        <p className="text-sm text-muted-foreground">{category?.label}</p>
-      </div>
+      <StepHeading
+        title="Check before you submit"
+        text="This is how your petition will read. Our team reviews it before it goes live."
+      />
 
-      <div className="space-y-2">
-        {form.sections.map((section, index) => (
-          <div key={index} className="space-y-2">
-            <h5 className="font-medium">{section.heading}</h5>
-            <p className="text-sm text-muted-foreground whitespace-pre-line">
-              {section.description}
-            </p>
-          </div>
-        ))}
-      </div>
+      <Card variant="parchment" className="space-y-5 p-6">
+        <div className="space-y-1">
+          <Eyebrow>{category?.label}</Eyebrow>
+          <Heading as="h3" size="subsection" className="text-3xl md:text-3xl">
+            {form.title}
+          </Heading>
+        </div>
 
-      <div className="space-y-2">
-        <h4 className="font-medium">Signature Goal</h4>
-        <p className="text-sm">{form.goal} Signatures</p>
-      </div>
-
-      <div className="space-y-2">
-        <h4 className="font-medium">Duration</h4>
-        {form.startDate && form.endDate && (
-          <p className="text-sm">
-            {differenceInDays(form.endDate, form.startDate)} days:{" "}
-            {format(form.startDate, "PPP")} - {format(form.endDate, "PPP")}
-          </p>
-        )}
-      </div>
-
-      <div className="space-y-2">
-        <h4 className="font-medium">Media Preview</h4>
         <MultimediaCarousel
           media={[...mediaUrls, ...form.videoLinks]}
           coverImage={coverUrl || form.image || undefined}
           title={form.title}
         />
-      </div>
+
+        <div className="space-y-4">
+          {form.sections.map((section, index) => (
+            <div key={index} className="space-y-1">
+              <Strong>{section.heading}</Strong>
+              <P className="whitespace-pre-line text-ink/70">
+                {section.description}
+              </P>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card variant="surface" className="grid gap-4 p-6 sm:grid-cols-2">
+        <div>
+          <Eyebrow>Signature goal</Eyebrow>
+          <p className="mt-1 font-fraunces text-2xl text-ink">
+            {Number(form.goal).toLocaleString()}
+          </p>
+        </div>
+        <div>
+          <Eyebrow>Duration</Eyebrow>
+          {form.startDate && form.endDate ? (
+            <>
+              <p className="mt-1 font-fraunces text-2xl text-ink">
+                {differenceInDays(form.endDate, form.startDate)} days
+              </p>
+              <Small className="text-ink/60">
+                {format(form.startDate, "PPP")} to {format(form.endDate, "PPP")}
+              </Small>
+            </>
+          ) : (
+            <Small className="mt-1 block text-ink/60">Not set</Small>
+          )}
+        </div>
+      </Card>
 
       {form.multimedia.length > 0 && (
-        <div className="space-y-2">
-          <h4 className="font-medium">Multimedia Files</h4>
-          <div className="grid grid-cols-2 gap-4">
+        <Card variant="surface" className="space-y-3 p-6">
+          <Eyebrow>Uploaded files</Eyebrow>
+          <ul className="grid gap-3 sm:grid-cols-2">
             {form.multimedia.map((file, index) => (
-              <div key={index} className="flex flex-col">
-                <p className="text-sm font-medium">{file.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {file.type.startsWith("image/") ? "Image file" : "Video file"}{" "}
-                  - {Math.round(file.size / 1024)} KB
-                </p>
-              </div>
+              <li key={index}>
+                <Strong>{file.name}</Strong>
+                <Small className="block text-ink/60">
+                  {file.type.startsWith("image/") ? "Image" : "Video"} ·{" "}
+                  {Math.round(file.size / 1024)} KB
+                </Small>
+              </li>
             ))}
-          </div>
-        </div>
+          </ul>
+        </Card>
       )}
     </div>
   );
