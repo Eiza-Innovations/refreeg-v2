@@ -11,8 +11,7 @@ import {
   sendPetitionRejectedEmailForUser,
 } from "@/services/mail";
 import { recordReviewDecision } from "@/lib/admin/review-decisions";
-
-export type PetitionStatus = "pending" | "approved" | "rejected";
+import type { PetitionStatus } from "@/types/common-types";
 
 type AdminPetitionRow = {
   id: string;

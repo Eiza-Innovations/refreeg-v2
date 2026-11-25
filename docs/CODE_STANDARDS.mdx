@@ -195,6 +195,10 @@ export async function getAdminOverview() {
 import type { AdminOverviewData } from "@/types/admin-overview-types";
 ```
 
+## 14. Admin screens inherit the shell and WorkspaceFrame
+
+Never inject arbitrary layout wrappers (e.g. `ClientLayoutWrapper` with radial gradients or glassmorphic overlays) into dashboard routes. Every `/dashboard/admin/*` screen inherits chrome from `AdminShell` (`bg-cream`) and page padding from `<WorkspaceFrame>` (`components/admin/workspace/workspace-frame.tsx`, `px-4 py-8 sm:px-8 max-w-[1440px]`). Actions and overview queries must access recently migrated or optional models defensively (e.g. `(prisma as any).<model>?.aggregate`) with fallback defaults so schema evolution never crashes the overview.
+
 ## Review procedure
 
 When asked to review or rate changes against the standard:

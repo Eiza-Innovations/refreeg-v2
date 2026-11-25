@@ -36,6 +36,7 @@ Follow these for all new code and any file you substantially change (do not mass
 11. **Tables use the shared DataTable:** Every table renders through `components/ui/data-table.tsx` + `data-table-features.ts` + a `columns.tsx` built with `createColumnHelper`; never hand-roll `<Table>` markup inside a page or card.
 12. **Dialog and form submits run through useMutation:** Wrap server-action submits in `useMutation`, run `useValidator` first, guard double submits with `isPending`, show `result.error` via `FieldError` and return early, and close and navigate on success.
 13. **Types live in `types/`, never in actions:** `actions/*` export async functions only. Put result shapes, row types and input types in `types/<feature>-types.ts` and import them with `import type` from the action, hook and component.
+14. **Shell inheritance & WorkspaceFrame:** Never inject arbitrary layout wrappers (e.g. `ClientLayoutWrapper` with background gradients/overlays) into dashboard routes. Every `/dashboard/admin/*` screen inherits chrome from `AdminShell` (`bg-cream`) and standard page padding from `<WorkspaceFrame>` (`components/admin/workspace/workspace-frame.tsx`, `px-4 py-8 sm:px-8 max-w-[1440px]`). Access recently migrated or optional Prisma models defensively with fallback defaults.
 
 ## 🍯 Honey (I Shrunk the AI) — token economy
 

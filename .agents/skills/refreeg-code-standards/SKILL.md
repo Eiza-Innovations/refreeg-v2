@@ -32,6 +32,7 @@ Tool-agnostic: works for any AI coding agent (Antigravity, subagents, Claude Cod
 11. **Tables use the shared DataTable.** `components/ui/data-table.tsx` + `data-table-features.ts` + a `columns.tsx` per table; never raw `<Table>` markup inside a page or card.
 12. **Submits run through useMutation.** `useMutation` wraps the action call, `useValidator` runs first, `isPending` guards double submit, and on response show `result.error` via `FieldError` and return early, or close and navigate on success.
 13. **Types live in `types/`.** `actions/*` export async functions only. Result shapes, row types and input types go in `types/<feature>-types.ts` and are imported with `import type` by the action, hook and component.
+14. **Shell inheritance and WorkspaceFrame.** Never inject arbitrary background gradient/overlay wrappers (`ClientLayoutWrapper`). Every `/dashboard/admin/*` screen inherits `AdminShell` (`bg-cream`) and page padding from `<WorkspaceFrame>` (`components/admin/workspace/workspace-frame.tsx`, `px-4 py-8 sm:px-8 max-w-[1440px]`). Access recently migrated or optional Prisma models defensively (e.g. `(prisma as any).<model>?.aggregate`) with fallback defaults so schema evolution never crashes screens.
 
 ## When writing
 

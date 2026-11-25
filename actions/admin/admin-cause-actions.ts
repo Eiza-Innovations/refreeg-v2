@@ -12,9 +12,7 @@ import {
   allocateUniqueCauseSlug,
   shouldRefreshCauseSlug,
 } from "@/lib/causes/slug";
-
-export type CauseStatus =
-  "pending" | "approved" | "rejected" | "expired" | "removed";
+import type { CauseStatus } from "@/types/common-types";
 
 const requireApprovalLocation = (location?: string | null) => {
   const normalizedLocation = location?.trim();
