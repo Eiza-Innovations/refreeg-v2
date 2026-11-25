@@ -5,6 +5,8 @@ import { clearSiteCache } from "@/actions/admin/admin-cache-actions";
 import { RefreshCw, CheckCircle2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
+import { WorkspaceFrame } from "@/components/admin/workspace/workspace-frame";
+
 export default function AdminCachePage() {
   const [isClearingGlobal, setIsClearingGlobal] = useState(false);
   const [isClearingPath, setIsClearingPath] = useState(false);
@@ -47,10 +49,10 @@ export default function AdminCachePage() {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Cache Management</h1>
-        <p className="text-muted-foreground mt-2">
+    <WorkspaceFrame className="mx-auto max-w-4xl space-y-6">
+      <div className="mb-2">
+        <h1 className="font-fraunces text-3xl font-medium tracking-tight text-ink">Cache Management</h1>
+        <p className="text-ink/60 mt-2 text-sm">
           Manually invalidate the Next.js Data and Full Route Cache to force
           fresh data to appear in production.
         </p>
@@ -150,6 +152,6 @@ export default function AdminCachePage() {
           ) to clear their local Browser/Router cache.
         </div>
       </div>
-    </div>
+    </WorkspaceFrame>
   );
 }

@@ -7,6 +7,7 @@ import type { Metadata } from "next";
 import { causePublicPath } from "@/lib/causes/slug";
 import { CausePausedNotice } from "@/components/causes/CausePausedNotice";
 import { isAdminOrManager } from "@/actions/admin/role-actions";
+import { FunnelStepBeacon } from "@/components/causes/FunnelStepBeacon";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -39,6 +40,10 @@ export default async function QuickDonatePage({
 
   const user = await getCurrentUser();
 
+  if (cause.status === "removed") {
+    return <CausePausedNotice title={cause.title} removed />;
+  }
+
   if (cause.paused && user?.id !== cause.user_id) {
     const isAdmin = user?.id ? await isAdminOrManager(user.id) : false;
     if (!isAdmin) {
@@ -49,19 +54,22 @@ export default async function QuickDonatePage({
   const profile = user ? await getProfile(user.id) : null;
 
   return (
-    <QuickDonateForm
-      causeId={cause.id}
-      causeSlug={cause.slug}
-      causeTitle={cause.title}
-      causeImage={cause.image}
-      causeMultimedia={cause.multimedia}
-      goal={cause.goal}
-      raised={cause.raised}
-      subaccount={(cause as any).user?.sub_account_code ?? undefined}
-      defaultName={profile?.display_name || profile?.full_name || ""}
-      defaultEmail={profile?.email ?? ""}
-      defaultAnonymous={profile?.donation_preference === "anonymous"}
-      userId={user?.id}
-    />
+    <>
+      <FunnelStepBeacon causeId={cause.id} step="give" />
+      <QuickDonateForm
+        causeId={cause.id}
+        causeSlug={cause.slug}
+        causeTitle={cause.title}
+        causeImage={cause.image}
+        causeMultimedia={cause.multimedia}
+        goal={cause.goal}
+        raised={cause.raised}
+        subaccount={(cause as any).user?.sub_account_code ?? undefined}
+        defaultName={profile?.display_name || profile?.full_name || ""}
+        defaultEmail={profile?.email ?? ""}
+        defaultAnonymous={profile?.donation_preference === "anonymous"}
+        userId={user?.id}
+      />
+    </>
   );
 }

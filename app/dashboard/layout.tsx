@@ -1,6 +1,5 @@
 import { auth } from "@/lib/auth/auth";
 import { redirect } from "next/navigation";
-import ClientLayoutWrapper from "@/components/layout/ClientLayoutWrapper";
 import { ClaimBanner } from "@/components/engagement/ClaimBanner";
 import { isSessionInvalidated } from "@/lib/auth/session-guard";
 import { getCachedProfile } from "@/lib/profile-cache";
@@ -44,10 +43,7 @@ export default async function DashboardLayout({
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <ClientLayoutWrapper>
-        {/* <ClaimBanner /> */}
-        {children}
-      </ClientLayoutWrapper>
+      {children}
     </HydrationBoundary>
   );
 }

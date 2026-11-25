@@ -1,4 +1,8 @@
 import type React from "react";
+import Link from "next/link";
+import { format } from "date-fns";
+import { redirect } from "next/navigation";
+import { Shield, User, UserCog } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -7,7 +11,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { CalloutBanner } from "@/components/ui/callout-banner";
 import {
   Table,
   TableBody,
@@ -16,41 +21,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Shield,
-  UserCheck,
-  UserX,
-  MoreHorizontal,
-  Search,
-  UserCog,
-  User,
-} from "lucide-react";
-import { format } from "date-fns";
-import { auth } from "@/lib/auth/auth";
-import { redirect } from "next/navigation";
-import { UserActions } from "./user-actions";
+import { WorkspaceFrame } from "@/components/admin/workspace/workspace-frame";
+import { PageHeading } from "@/components/admin/workspace/page-heading";
 import { UserSearch } from "@/components/engagement/Search";
 import { CopyEmail } from "@/components/engagement/CopyEmail";
-import type { UserWithRole } from "@/types";
-import type { UsersWithRolesPage } from "@/actions/admin/role-actions";
+import { PaginationButton } from "@/components/engagement/PaginationButton";
+import { auth } from "@/lib/auth/auth";
 import {
   getUserRole,
   listUsersWithRolesPage,
   getPendingKycSummary,
 } from "@/actions/admin/role-actions";
-import { PaginationButton } from "@/components/engagement/PaginationButton";
-import Link from "next/link";
+import type { UserWithRole } from "@/types";
+import type { UsersWithRolesPage } from "@/actions/admin/role-actions";
 import { ExportCSVButton } from "./components/export-csv-button";
 import { SendKycReminderButton } from "./components/send-kyc-reminder-button";
+import { UserActions } from "./user-actions";
 
 export default async function AdminUsersPage({
   searchParams,
@@ -85,27 +71,35 @@ export default async function AdminUsersPage({
   } catch (err) {
     console.error("AdminUsersPage data fetch error:", err);
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Unable to load users</CardTitle>
-          <CardDescription>
-            Couldn&apos;t load users. Check the server logs for details.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <WorkspaceFrame className="mx-auto max-w-xl py-12">
+        <Card className="border border-hairline bg-surface shadow-flat">
+          <CardHeader>
+            <CardTitle className="font-fraunces text-xl text-ink">
+              Unable to load users
+            </CardTitle>
+            <CardDescription className="text-ink/60">
+              Couldn&apos;t load users. Check the server logs for details.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </WorkspaceFrame>
     );
   }
 
   if (!userRole || (userRole !== "admin" && userRole !== "manager")) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Access Denied</CardTitle>
-          <CardDescription>
-            You do not have permission to access this page.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <WorkspaceFrame className="mx-auto max-w-xl py-12">
+        <Card className="border border-hairline bg-surface shadow-flat">
+          <CardHeader>
+            <CardTitle className="font-fraunces text-xl text-ink">
+              Access Denied
+            </CardTitle>
+            <CardDescription className="text-ink/60">
+              You do not have permission to access this page.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </WorkspaceFrame>
     );
   }
 
@@ -113,60 +107,52 @@ export default async function AdminUsersPage({
   const kycAttentionCount = pendingKyc.count;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Manage Users</h1>
-        <p className="text-muted-foreground">
-          View and manage user accounts and permissions.
-        </p>
-      </div>
+    <WorkspaceFrame className="mx-auto max-w-[1440px] space-y-6">
+      <PageHeading
+        title="Manage Users"
+        subtitle="View and manage user accounts and permissions."
+      />
 
       {kycAttentionCount > 0 && pendingKyc.firstUserId && (
-        <div className="rounded-md bg-yellow-50 border border-yellow-300 p-4 flex items-center gap-4">
-          <Shield className="h-6 w-6 text-yellow-600" />
-          <div className="flex-1">
-            <span className="font-medium text-yellow-800">
-              {kycAttentionCount} KYC submission
-              {kycAttentionCount > 1 ? "s" : ""} require review
-            </span>
-            <span className="block text-yellow-700 text-sm">
-              There {kycAttentionCount === 1 ? "is" : "are"} {kycAttentionCount}{" "}
-              user
-              {kycAttentionCount > 1 ? "s" : ""} with new or edited KYC
-              submissions awaiting your attention.
-            </span>
-          </div>
-          <Link
-            href={`/dashboard/admin/users/kyc/${pendingKyc.firstUserId}`}
-            className="ml-4 px-3 py-1 rounded bg-yellow-200 text-yellow-900 font-medium hover:bg-yellow-300 transition"
-          >
-            Review Now
-          </Link>
-        </div>
+        <CalloutBanner
+          variant="gold"
+          icon={<Shield className="mt-0.5 h-5 w-5 text-amber" />}
+          title={`${kycAttentionCount} KYC submission${kycAttentionCount > 1 ? "s" : ""} require review`}
+          description={`There ${kycAttentionCount === 1 ? "is" : "are"} ${kycAttentionCount} user${kycAttentionCount > 1 ? "s" : ""} with new or edited KYC submissions awaiting your attention.`}
+          action={
+            <Button variant="ink" size="sm" asChild>
+              <Link href={`/dashboard/admin/users/kyc/${pendingKyc.firstUserId}`}>
+                Review Now
+              </Link>
+            </Button>
+          }
+        />
       )}
 
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <CardTitle>Users</CardTitle>
-            <div className="flex items-center gap-2">
+      <Card className="border border-hairline bg-surface shadow-flat">
+        <CardHeader className="border-b border-hairline pb-4">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <CardTitle className="font-fraunces text-xl font-normal text-ink">
+              Users
+            </CardTitle>
+            <div className="flex flex-wrap items-center gap-2">
               <SendKycReminderButton />
               <ExportCSVButton />
               <UserSearch defaultValue={params.search} />
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
+        <CardContent className="pt-6">
+          <div className="overflow-x-auto rounded-lg border border-hairline">
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Joined</TableHead>
-                  <TableHead>KYC</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+              <TableHeader className="bg-bone">
+                <TableRow className="border-b border-hairline hover:bg-transparent">
+                  <TableHead className="font-semibold text-ink/70">User</TableHead>
+                  <TableHead className="font-semibold text-ink/70">Role</TableHead>
+                  <TableHead className="font-semibold text-ink/70">Status</TableHead>
+                  <TableHead className="font-semibold text-ink/70">Joined</TableHead>
+                  <TableHead className="font-semibold text-ink/70">KYC</TableHead>
+                  <TableHead className="text-right font-semibold text-ink/70">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -174,19 +160,22 @@ export default async function AdminUsersPage({
                   <TableRow>
                     <TableCell
                       colSpan={6}
-                      className="text-center py-8 text-muted-foreground"
+                      className="py-12 text-center text-sm text-ink/60"
                     >
                       No users found
                     </TableCell>
                   </TableRow>
                 ) : (
                   users.map((userItem: UserWithRole) => (
-                    <TableRow key={userItem.id}>
+                    <TableRow
+                      key={userItem.id}
+                      className="border-b border-hairline last:border-0 hover:bg-cream/40"
+                    >
                       <TableCell>
-                        <div className="flex flex-col">
+                        <div className="flex flex-col gap-0.5">
                           <Link
                             href={`/${userItem.username || userItem.id}`}
-                            className="font-medium hover:underline"
+                            className="font-medium text-ink hover:underline"
                           >
                             {userItem.full_name || "Unnamed User"}
                           </Link>
@@ -195,57 +184,52 @@ export default async function AdminUsersPage({
                       </TableCell>
                       <TableCell>
                         {userItem.role === "admin" ? (
-                          <Badge variant="default" className="bg-red-500">
-                            <Shield className="mr-1 h-3 w-3" />
+                          <Badge variant="live" className="gap-1">
+                            <Shield className="h-3 w-3" />
                             Admin
                           </Badge>
                         ) : userItem.role === "manager" ? (
-                          <Badge variant="default" className="bg-blue-500">
-                            <UserCog className="mr-1 h-3 w-3" />
+                          <Badge variant="blue" className="gap-1">
+                            <UserCog className="h-3 w-3" />
                             Manager
                           </Badge>
                         ) : (
-                          <Badge variant="outline">
-                            <User className="mr-1 h-3 w-3" />
+                          <Badge variant="outline" className="gap-1 text-ink/70">
+                            <User className="h-3 w-3" />
                             User
                           </Badge>
                         )}
                       </TableCell>
                       <TableCell>
                         {userItem.is_blocked ? (
-                          <Badge variant="destructive">Blocked</Badge>
+                          <Badge variant="critical">Blocked</Badge>
                         ) : (
-                          <Badge
-                            variant="outline"
-                            className="bg-green-500/10 text-green-500 border-green-500/20"
-                          >
-                            Active
-                          </Badge>
+                          <Badge variant="forest">Active</Badge>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-sm text-ink/80">
                         {format(new Date(userItem.created_at), "MMM d, yyyy")}
                       </TableCell>
                       <TableCell>
-                        <a
+                        <Link
                           href={`/dashboard/admin/users/kyc/${userItem.id}`}
-                          className="inline-block relative group"
+                          className="relative inline-block transition-opacity hover:opacity-80"
                           title="Review KYC"
                         >
                           {userItem.kyc_status === "approved" ? (
-                            <Shield className="h-6 w-6 text-green-500" />
+                            <Shield className="h-5 w-5 text-forest" />
                           ) : userItem.kyc_status === "rejected" ? (
-                            <Shield className="h-6 w-6 text-red-500" />
+                            <Shield className="h-5 w-5 text-rust" />
                           ) : userItem.kyc_status === "pending" ? (
-                            <Shield className="h-6 w-6 text-black" />
+                            <Shield className="h-5 w-5 text-gold" />
                           ) : (
-                            <Shield className="h-6 w-6 text-gray-400" />
+                            <Shield className="h-5 w-5 text-ink/30" />
                           )}
 
                           {userItem.kyc_status === "pending" && (
-                            <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 border-2 border-white" />
+                            <span className="absolute -right-0.5 -top-0.5 block h-2 w-2 rounded-full border border-surface bg-rust" />
                           )}
-                        </a>
+                        </Link>
                       </TableCell>
                       <TableCell className="text-right">
                         <UserActions
@@ -260,7 +244,7 @@ export default async function AdminUsersPage({
             </Table>
           </div>
           <div className="mt-4 flex flex-col items-center justify-between gap-3 sm:flex-row">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs text-ink/60">
               {usersPage.total === 0
                 ? "0 users"
                 : `Showing ${(usersPage.page - 1) * usersPage.pageSize + 1}–${
@@ -276,6 +260,6 @@ export default async function AdminUsersPage({
           </div>
         </CardContent>
       </Card>
-    </div>
+    </WorkspaceFrame>
   );
 }

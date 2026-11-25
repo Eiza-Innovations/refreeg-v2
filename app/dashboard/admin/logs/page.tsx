@@ -9,6 +9,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import { WorkspaceFrame } from "@/components/admin/workspace/workspace-frame";
 
 export default async function AdminLogsPage() {
   const session = await auth();
@@ -21,33 +22,39 @@ export default async function AdminLogsPage() {
 
   if (role !== "admin" && role !== "manager") {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Access Denied</CardTitle>
-          <CardDescription>
-            You do not have permission to access this page.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <WorkspaceFrame className="mx-auto max-w-xl py-12">
+        <Card className="border border-hairline bg-surface shadow-flat">
+          <CardHeader>
+            <CardTitle className="font-fraunces text-xl text-ink">Access Denied</CardTitle>
+            <CardDescription className="text-ink/60">
+              You do not have permission to access this page.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </WorkspaceFrame>
     );
   }
 
   try {
     const logs = await listAdminLogs();
     return (
-      <div>
+      <WorkspaceFrame className="mx-auto max-w-[1440px] space-y-6">
         <AdminLogs logs={logs} />
-      </div>
+      </WorkspaceFrame>
     );
   } catch (error) {
     console.error("Error in Admin Logs page:", error);
     return (
-      <div className="p-4 text-center text-red-500">
-        <p>Failed to load admin logs.</p>
-        <p className="text-sm text-gray-500 mt-2">
-          {(error as Error).message || "Unknown error"}
-        </p>
-      </div>
+      <WorkspaceFrame className="mx-auto max-w-xl py-12">
+        <Card className="border border-hairline bg-surface shadow-flat">
+          <CardHeader>
+            <CardTitle className="font-fraunces text-xl text-ink">Failed to load logs</CardTitle>
+            <CardDescription className="text-ink/60">
+              {(error as Error).message || "Unknown error"}
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </WorkspaceFrame>
     );
   }
 }

@@ -10,6 +10,7 @@ import {
   sendPetitionApprovedEmailForUser,
   sendPetitionRejectedEmailForUser,
 } from "@/services/mail";
+import { recordReviewDecision } from "@/lib/admin/review-decisions";
 
 export type PetitionStatus = "pending" | "approved" | "rejected";
 
@@ -305,6 +306,14 @@ export async function updatePetitionStatus(
       });
     }
   }
+
+  await recordReviewDecision({
+    actorId: session.user.id,
+    kind: "petition",
+    targetId: petitionId,
+    decision: status,
+    editReview: pendingEdit.length > 0,
+  });
 
   revalidatePath("/dashboard/admin/petitions");
   revalidateTag(DISCOVER_CACHE_TAG);

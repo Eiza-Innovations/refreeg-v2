@@ -51,6 +51,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatHours } from "@/lib/campaign-analytics/format";
 
 export default function AdminAnalytics() {
   const router = useRouter();
@@ -532,10 +533,10 @@ export default function AdminAnalytics() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">
-                      Avg Time
+                      Median time to decision
                     </p>
                     <p className="text-2xl font-bold">
-                      {kyc?.avgProcessingTimeHours.toFixed(1)}h
+                      {formatHours(kyc?.avgProcessingTimeHours ?? null)}
                     </p>
                   </div>
                 </div>
@@ -615,10 +616,10 @@ export default function AdminAnalytics() {
                   </div>
                   <div className="pt-4 border-t">
                     <p className="text-sm font-medium text-muted-foreground">
-                      Avg Approval Time
+                      Median time to decision
                     </p>
                     <p className="text-xl font-bold">
-                      {lifecycle?.avgApprovalTimeHours.toFixed(1)} hours
+                      {formatHours(lifecycle?.avgApprovalTimeHours ?? null)}
                     </p>
                   </div>
                 </div>

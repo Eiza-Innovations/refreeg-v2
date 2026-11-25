@@ -3,6 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { auth } from "@/lib/auth/auth";
 import { redirect } from "next/navigation";
 import { isAdminOrManager } from "@/actions/admin/role-actions";
+import { WorkspaceFrame } from "@/components/admin/workspace/workspace-frame";
 
 const ManageCauses = dynamic(() => import("@/components/admin/ManageCause"), {
   loading: () => <Skeleton className="h-[800px] w-full" />,
@@ -21,5 +22,9 @@ export default async function AdminCausesPage() {
     redirect("/dashboard");
   }
 
-  return <ManageCauses />;
+  return (
+    <WorkspaceFrame className="mx-auto max-w-[1440px] space-y-6">
+      <ManageCauses />
+    </WorkspaceFrame>
+  );
 }

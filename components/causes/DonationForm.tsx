@@ -1,5 +1,6 @@
 "use client";
 
+import type { CauseStatus } from "@/types";
 import type React from "react";
 
 import { useEffect, useState } from "react";
@@ -35,7 +36,7 @@ interface DonationFormProps {
   };
   subaccount?: string;
   flutterwaveSubAccountId?: string;
-  status: "pending" | "rejected" | "approved" | "expired";
+  status: CauseStatus;
   causeName?: string;
   causeUrl?: string;
   recurring?: "one_time" | "weekly" | "monthly";
@@ -103,10 +104,7 @@ export function DonationForm({
     startTime: null as number | null,
   });
 
-  const isDisabled =
-    status === "pending" || status === "rejected" || status === "expired"
-      ? true
-      : false;
+  const isDisabled = status !== "approved";
 
   useEffect(() => {
     const hasStartedFilling =

@@ -15,6 +15,7 @@ import { useValidator } from "@/hooks/use-validator";
 import { MIN_DONATION_AMOUNT, giveSchema } from "@/lib/schemas/donation.schema";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { calculateProviderFee, calculateServiceFee, cn } from "@/lib/utils";
+import { trackFunnelStep } from "@/lib/campaign-analytics/track-funnel";
 
 type QuickDonateProps = NonNullable<
   Awaited<ReturnType<typeof getQuickDonateProps>>
@@ -289,6 +290,8 @@ export function GiveModal({
 
   useEffect(() => {
     if (!open) return;
+    trackFunnelStep(causeId, "view");
+    trackFunnelStep(causeId, "give");
     let cancelled = false;
     setLoading(true);
     getQuickDonateProps(causeId).then((result) => {

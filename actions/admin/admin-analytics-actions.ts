@@ -9,6 +9,10 @@ import {
   endOfDay,
   format,
 } from "date-fns";
+import { medianDecisionHours } from "@/lib/operations-analytics/queues";
+
+const range = (from?: string, to?: string): [Date?, Date?] =>
+  from && to ? [new Date(from), new Date(to)] : [];
 
 export interface AnalyticsData {
   totalDonations: {
@@ -56,7 +60,8 @@ export interface KycAnalytics {
   total: number;
   approvalRate: number;
   pending: number;
-  avgProcessingTimeHours: number;
+  /** Median hours from submission to decision; null until decisions exist. */
+  avgProcessingTimeHours: number | null;
 }
 
 export interface PaymentAnalytics {
@@ -71,7 +76,7 @@ export interface CauseLifecycle {
     pending: number;
     approved: number;
   };
-  avgApprovalTimeHours: number;
+  avgApprovalTimeHours: number | null;
 }
 
 export interface Alert {
@@ -315,7 +320,10 @@ export async function getKycAnalytics(
     total,
     pending,
     approvalRate: total > 0 ? (approved / total) * 100 : 0,
-    avgProcessingTimeHours: 24,
+    avgProcessingTimeHours: await medianDecisionHours(
+      "kyc",
+      ...range(from, to),
+    ),
   };
 }
 
@@ -360,7 +368,10 @@ export async function getCauseLifecycleAnalytics(
       pending,
       approved,
     },
-    avgApprovalTimeHours: 12,
+    avgApprovalTimeHours: await medianDecisionHours(
+      "campaigns",
+      ...range(from, to),
+    ),
   };
 }
 
