@@ -49,20 +49,28 @@ const Flutterwave = {
         currency: "NGN",
         redirect_url:
           data.callbackUrl ||
-          `${baseUrl}/causes/${data.causeId}/payment/verify`,
+          // Non-cause charges (wishlist items) must pass an explicit
+          // callbackUrl; no cause-verify URL exists for them.
+          (data.causeId
+            ? `${baseUrl}/causes/${data.causeId}/payment/verify`
+            : undefined),
         customer: {
           email: data.email,
           name: data.full_name || data.email,
         },
         customizations: {
           title: "RefreeG Donation",
-          description: `Donation to cause ${data.causeId}`,
+          description: data.wishlistItemId
+            ? "Wishlist gift"
+            : `Donation to cause ${data.causeId}`,
         },
         meta: {
           amount: data.amount,
           tip_amount: data.tipAmount || 0,
           customer_name: data.full_name || "",
-          cause_id: data.causeId,
+          ...(data.wishlistItemId
+            ? { wishlist_item_id: data.wishlistItemId }
+            : { cause_id: data.causeId }),
           email: data.email,
           message: data.message || "",
           is_anonymous: String(data.isAnonymous),

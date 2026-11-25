@@ -61,6 +61,7 @@ function needsSession(pathname: string) {
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/onboarding") ||
     pathname.startsWith("/auth") ||
+    pathname.startsWith("/wishlist/new") ||
     pathname.startsWith("/api")
   );
 }
@@ -83,7 +84,9 @@ const handleAuth = auth(async (req) => {
   }
 
   const isProtectedRoute =
-    pathname.startsWith("/dashboard") || pathname.startsWith("/onboarding");
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/onboarding") ||
+    pathname.startsWith("/wishlist/new");
 
   if (isProtectedRoute && !user) {
     const signInUrl = absoluteUrl("/auth/signin", req);
@@ -161,6 +164,7 @@ export const config = {
     "/dashboard/:path*",
     "/onboarding",
     "/onboarding/:path*",
+    "/wishlist/new",
     "/auth",
     "/auth/:path*",
     // Every API route except the public image proxy, whose cacheable

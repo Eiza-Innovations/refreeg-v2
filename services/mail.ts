@@ -1068,6 +1068,74 @@ export async function sendDonationReceivedEmail({
   });
 }
 
+export async function sendWishlistContributionEmail({
+  to,
+  ownerName,
+  giverName,
+  wishlistTitle,
+  itemName,
+  amount,
+  wishlistUrl,
+  giftNote,
+}: {
+  to: string;
+  ownerName: string;
+  giverName: string;
+  wishlistTitle: string;
+  itemName: string;
+  amount: number;
+  wishlistUrl: string;
+  giftNote?: string | null;
+}) {
+  const note = giftNote?.trim();
+  return sendMail({
+    to,
+    subject: `💚 A gift was just given on "${wishlistTitle}"!`,
+    templateName: "wishlist-contribution-received",
+    context: {
+      ownerName,
+      giverName,
+      wishlistTitle,
+      itemName,
+      amount: amount.toLocaleString(),
+      wishlistUrl,
+      showNote: Boolean(note),
+      giftNote: note,
+      currentYear: new Date().getFullYear(),
+    },
+  });
+}
+
+export async function sendWishlistItemFundedEmail({
+  to,
+  ownerName,
+  wishlistTitle,
+  itemName,
+  amount,
+  wishlistUrl,
+}: {
+  to: string;
+  ownerName: string;
+  wishlistTitle: string;
+  itemName: string;
+  amount: number;
+  wishlistUrl: string;
+}) {
+  return sendMail({
+    to,
+    subject: `🎉 "${itemName}" is fully funded!`,
+    templateName: "wishlist-item-funded",
+    context: {
+      ownerName,
+      wishlistTitle,
+      itemName,
+      amount: amount.toLocaleString(),
+      wishlistUrl,
+      currentYear: new Date().getFullYear(),
+    },
+  });
+}
+
 const COMMENT_EXCERPT_MAX_LENGTH = 200;
 
 export async function sendNewCommentEmail({

@@ -73,7 +73,9 @@ export interface TransactionData extends Partial<
   serviceFee: number;
   providerFee?: number;
   tipAmount?: number;
-  causeId: string;
+  /** Cause donations carry causeId; wishlist charges carry wishlistItemId. */
+  causeId?: string;
+  wishlistItemId?: string;
   message?: string;
   isAnonymous?: boolean;
   paymentProvider?: PaymentProviderType;

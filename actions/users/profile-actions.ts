@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth/auth";
+import { isReservedUsername } from "@/utils/username";
 import { isOwnUploadKey } from "@/lib/s3/owned-key";
 import {
   completeOnboardingCore,
@@ -373,6 +374,10 @@ export async function checkUsernameAvailability(
     if (!normalizedUsername || normalizedUsername.length < 3) {
       return true; // Too short to check: let field validation handle it
     }
+
+    // A username that collides with a static route would make that route's
+    // profile page unreachable (e.g. a user named "wishlist").
+    if (isReservedUsername(normalizedUsername)) return false;
 
     const profile = await prisma.user.findUnique({
       where: { username: normalizedUsername },
