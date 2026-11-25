@@ -1,98 +1,23 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { SignatureForm } from "@/components/engagement/SignatureForm";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getPetition } from "@/actions/petitions/petition-actions";
 import { auth } from "@/lib/auth/auth";
-import {
-  getProfile,
-  getProfileByUsername,
-} from "@/actions/users/profile-actions";
+import { getProfile } from "@/actions/users/profile-actions";
 import {
   listSignaturesForPetition,
   checkUserSignature,
 } from "@/actions/petitions/signature-actions";
 import { notFound } from "next/navigation";
 import { isUuid } from "@/lib/uuid";
-import { ShareModal } from "@/components/engagement/ShareModal";
 import { getBaseURL } from "@/lib/utils";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  AlertCircle,
-  Facebook,
-  Instagram,
-  Linkedin,
-  Twitter,
-} from "lucide-react";
-import Link from "next/link";
-import MultimediaCarousel from "@/components/marketing/MultimediaCarousel";
+import { SignatureForm } from "@/components/engagement/SignatureForm";
 import { SignersList } from "@/components/engagement/SignersList";
 import { CommentsSection } from "@/components/comments/comment-section";
-import { Signature } from "@/types";
-import { Metadata } from "next";
-import Image from "next/image";
-import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
-
-const mockPetition = {
-  id: "1",
-  title: "Clean Water Initiative",
-  description:
-    "Providing clean water to communities in rural areas. Access to clean water is a fundamental human right, yet millions of people around the world still lack this basic necessity. This initiative aims to install water purification systems in communities that currently rely on contaminated water sources, reducing waterborne diseases and improving overall health outcomes. Your donation will directly fund the purchase and installation of water filters, the construction of wells, and educational programs on water hygiene and conservation.",
-  category: "Environment",
-  raised: 12500,
-  goal: 20000,
-  image: "/placeholder.svg?height=300&width=600",
-  user: {
-    name: "Environmental Action Group",
-    email: "contact@example.org",
-  },
-  created_at: "2023-05-15T10:30:00Z",
-  status: "approved",
-};
-
-const mockSigners = [
-  {
-    id: "1",
-    name: "John Doe",
-    amount: 500,
-    date: "2023-06-01T14:30:00Z",
-    message: "Keep up the great work!",
-  },
-  {
-    id: "2",
-    name: "Anonymous",
-    amount: 1000,
-    date: "2023-06-02T09:15:00Z",
-    message: null,
-  },
-  {
-    id: "3",
-    name: "Sarah Johnson",
-    amount: 250,
-    date: "2023-06-03T16:45:00Z",
-    message: "Happy to support this cause",
-  },
-  {
-    id: "4",
-    name: "Anonymous",
-    amount: 5000,
-    date: "2023-06-04T11:20:00Z",
-    message: "Water is life",
-  },
-  {
-    id: "5",
-    name: "Michael Brown",
-    amount: 750,
-    date: "2023-06-05T13:10:00Z",
-    message: null,
-  },
-];
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PetitionHeader } from "@/components/petitions/detail/petition-header";
+import { PetitionMedia } from "@/components/petitions/detail/petition-media";
+import { PetitionProgressCard } from "@/components/petitions/detail/petition-progress-card";
+import { PetitionStory } from "@/components/petitions/detail/petition-story";
+import { parseSocialLinks } from "@/lib/petitions/social-links";
+import type { Metadata } from "next";
 
 export async function generateMetadata({
   params,
@@ -215,13 +140,6 @@ export default async function PetitionDetailPage({
         )
       : null;
 
-  // Calculate signature progress based on number of signatures amount
-  // Calculate signature progress based on total donated amount
-  const percentRaised = Math.min(
-    Math.round((amount / petition.goal) * 100),
-    100,
-  );
-
   const profile = {
     email: myProfile?.email || "",
     name: myProfile?.full_name || "",
@@ -230,206 +148,66 @@ export default async function PetitionDetailPage({
   };
 
   const baseUrl = getBaseURL();
-  const hasCreatorWallet = !!creatorProfile?.solana_wallet;
   const creatorUsername = creatorProfile?.username;
 
-  // Parse social media links from JSON string
-  let socialMedia = {
-    twitter: "",
-    facebook: "",
-    instagram: "",
-    linkedin: "",
-  };
-
-  if (creatorProfile?.social_media) {
-    try {
-      // Handle both string (from DB) and object (already parsed) cases
-      const parsedSocial =
-        typeof creatorProfile.social_media === "string"
-          ? JSON.parse(creatorProfile.social_media)
-          : creatorProfile.social_media;
-
-      socialMedia = {
-        twitter: parsedSocial.twitter || "",
-        facebook: parsedSocial.facebook || "",
-        instagram: parsedSocial.instagram || "",
-        linkedin: parsedSocial.linkedin || "",
-      };
-    } catch (e) {
-      console.error("Error parsing social media:", e);
-    }
-  }
-
-  // Check if any social media links exist
-  const hasSocialMedia =
-    socialMedia.twitter ||
-    socialMedia.facebook ||
-    socialMedia.instagram ||
-    socialMedia.linkedin;
-
-  // Multimedia logic (carousel)
-  const allMedia = Array.isArray((petition as any).multimedia)
-    ? (petition as any).multimedia
+  const socials = parseSocialLinks(creatorProfile?.social_media);
+  const multimedia: string[] = Array.isArray(petition.multimedia)
+    ? petition.multimedia
     : [];
-  // Video links (if supported)
-  const videoLinks = Array.isArray((petition as any).video_links)
-    ? (petition as any).video_links
+  const videoLinks: string[] = Array.isArray(petition.video_links)
+    ? petition.video_links
     : [];
 
   return (
-    <div className="container py-10">
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-6">
-          {(() => {
-            // Combine multimedia (images) and video_links (video URLs)
-            const combinedMedia = [...(allMedia || []), ...(videoLinks || [])];
-
-            return combinedMedia.length > 0 ? (
-              <MultimediaCarousel
-                media={combinedMedia}
-                coverImage={petition.image || undefined}
-                title={petition.title}
-              />
-            ) : (
-              <div className="aspect-video w-full overflow-hidden rounded-lg relative">
-                <Image
-                  src={getMediaUrl(petition.image) || "/icons/placeholder.svg"}
-                  alt={petition.title}
-                  fill
-                  sizes="(max-width: 1024px) 100vw, 66vw"
-                  className="object-cover"
-                  priority
-                  unoptimized={isProxyMediaUrl(getMediaUrl(petition.image))}
-                />
-              </div>
-            );
-          })()}
+    <div className="bg-cream">
+      <div className="container grid gap-10 py-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:py-12">
+        <div className="min-w-0 space-y-8">
+          <PetitionHeader
+            title={petition.title}
+            category={petition.category}
+            createdAt={petition.created_at}
+            creatorName={petition.user?.name}
+            creatorHref={
+              creatorUsername
+                ? `/${creatorUsername}`
+                : `/profile/${petition.user_id}`
+            }
+            status={petition.status}
+            socials={socials}
+          />
+          <PetitionMedia
+            title={petition.title}
+            cover={petition.image}
+            media={[...multimedia, ...videoLinks]}
+          />
 
           <Tabs defaultValue="about">
-            <TabsList>
-              <TabsTrigger value="about">About</TabsTrigger>
-              <TabsTrigger value="signers">
+            <TabsList variant="pill">
+              <TabsTrigger value="about" variant="pill">
+                About
+              </TabsTrigger>
+              <TabsTrigger value="signers" variant="pill">
                 Signatures ({amount.toLocaleString()})
               </TabsTrigger>
-
-              <TabsTrigger value="comments">
+              <TabsTrigger value="comments" variant="pill">
                 Comments ({mergedComments.length.toLocaleString()})
               </TabsTrigger>
             </TabsList>
-            <TabsContent value="about" className="space-y-4">
-              <h1 className="text-3xl font-bold">{petition.title}</h1>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                {petition.user && (
-                  <span>
-                    Created by{" "}
-                    <Link
-                      href={
-                        creatorUsername
-                          ? `/${creatorUsername}`
-                          : `/profile/${petition.user_id}`
-                      }
-                      className="hover:underline text-blue-600"
-                    >
-                      {petition.user?.name}
-                    </Link>
-                  </span>
-                )}
-                <span>•</span>
-                <span>{formattedDate}</span>
-                <span>•</span>
-                <span className="capitalize">{petition.category}</span>
-              </div>
-              {/* Social Media Links */}
-              {hasSocialMedia && (
-                <div className="flex items-center gap-4 pt-2">
-                  {socialMedia.twitter && (
-                    <a
-                      href={socialMedia.twitter}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-gray-500 hover:text-blue-400 transition-colors"
-                      aria-label="Twitter"
-                    >
-                      <Twitter className="h-5 w-5" />
-                    </a>
-                  )}
-                  {socialMedia.facebook && (
-                    <a
-                      href={socialMedia.facebook}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-gray-500 hover:text-blue-600 transition-colors"
-                      aria-label="Facebook"
-                    >
-                      <Facebook className="h-5 w-5" />
-                    </a>
-                  )}
-                  {socialMedia.instagram && (
-                    <a
-                      href={socialMedia.instagram}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-gray-500 hover:text-pink-600 transition-colors"
-                      aria-label="Instagram"
-                    >
-                      <Instagram className="h-5 w-5" />
-                    </a>
-                  )}
-                  {socialMedia.linkedin && (
-                    <a
-                      href={socialMedia.linkedin}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-gray-500 hover:text-blue-700 transition-colors"
-                      aria-label="LinkedIn"
-                    >
-                      <Linkedin className="h-5 w-5" />
-                    </a>
-                  )}
-                </div>
-              )}
-              {/* Main description */}
-              {petition.description && (
-                <p className="whitespace-pre-line text-lg text-neutral-800">
-                  {petition.description}
-                </p>
-              )}
-              {/* Video links (if supported) */}
-              {videoLinks.length > 0 && (
-                <div className="mt-4">
-                  <h3 className="text-xl font-semibold mb-2">Videos</h3>
-                  <ul className="space-y-2">
-                    {videoLinks.map((link: string, idx: number) => (
-                      <li key={idx}>
-                        <a
-                          href={link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 underline"
-                        >
-                          {link}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {/* Sections */}
-              {petition.sections &&
-                petition.sections.length > 0 &&
-                petition.sections.map((section: any, index: number) => (
-                  <div key={index} className="mt-4">
-                    <h3 className="text-xl font-semibold">{section.heading}</h3>
-                    <p className="text-muted-foreground whitespace-pre-line">
-                      {section.description}
-                    </p>
-                  </div>
-                ))}
+            <TabsContent value="about" className="mt-6">
+              <PetitionStory
+                description={petition.description}
+                sections={petition.sections}
+                videoLinks={videoLinks}
+              />
             </TabsContent>
-            <TabsContent value="signers" className="cursor-none">
-              <SignersList signers={signers} petitionTitle={petition.title} />
+            <TabsContent value="signers" className="mt-6">
+              <SignersList
+                signers={signers}
+                petitionTitle={petition.title}
+                goal={petition.goal}
+              />
             </TabsContent>
-            <TabsContent value="comments" className="space-y-4">
+            <TabsContent value="comments" className="mt-6 space-y-4">
               <CommentsSection
                 comments={mergedComments as any}
                 causeId={petition.id}
@@ -440,68 +218,29 @@ export default async function PetitionDetailPage({
           </Tabs>
         </div>
 
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Signature Progress</CardTitle>
-              <CardDescription>
-                Help us reach our goal of {petition.goal.toLocaleString()}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="font-medium">{amount.toLocaleString()}</span>
-                  <span className="text-muted-foreground">
-                    of {petition.goal.toLocaleString()}
-                  </span>
-                </div>
-                <Progress value={percentRaised} />
-                <div className="text-sm text-muted-foreground text-right">
-                  {percentRaised}% of goal
-                </div>
-              </div>
-
-              <div className="text-sm">
-                <div className="flex justify-between py-1">
-                  <span>Total signers</span>
-                  <span className="font-medium">{amount.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between py-1 border-t">
-                  <span>Days Left</span>
-                  <span className="font-medium">
-                    {daysLeft != null ? daysLeft : "N/A"}
-                  </span>
-                </div>
-              </div>
-
-              <div className="pt-4">
-                <ShareModal
-                  url={`${baseUrl}/petitions/${petition.id}`}
-                  title={petition.title}
-                  entityId={petition.id}
-                  entityType="petition"
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="space-y-4">
-            <SignatureForm
-              petitionId={petition.id}
-              profile={profile}
-              status={petition.status}
-              subaccount={petition?.user?.sub_account_code}
-              hasSigned={hasSigned}
-              petitionData={{
-                title: petition.title,
-                creatorId: petition.user_id,
-                creatorEmail: creatorProfile?.email || undefined,
-                creatorName: petition.user?.name,
-              }}
-            />
-          </div>
-        </div>
+        <aside className="space-y-5 lg:sticky lg:top-24 lg:self-start">
+          <PetitionProgressCard
+            petitionId={petition.id}
+            title={petition.title}
+            url={`${baseUrl}/petitions/${petition.id}`}
+            signatures={amount}
+            goal={petition.goal}
+            daysLeft={daysLeft}
+          />
+          <SignatureForm
+            petitionId={petition.id}
+            profile={profile}
+            status={petition.status}
+            subaccount={petition?.user?.sub_account_code}
+            hasSigned={hasSigned}
+            petitionData={{
+              title: petition.title,
+              creatorId: petition.user_id,
+              creatorEmail: creatorProfile?.email || undefined,
+              creatorName: petition.user?.name,
+            }}
+          />
+        </aside>
       </div>
     </div>
   );

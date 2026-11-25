@@ -2,8 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useRouter } from "nextjs-toploader/app";
-import { Button } from "@/components/ui/button";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 
 interface Category {
   id: string;
@@ -27,26 +26,35 @@ export function PetitionsFilter({
     if (categoryId !== "all") {
       params.set("category", categoryId);
     }
-    router.push(`${pathname}?${params.toString()}`);
+    const query = params.toString();
+    router.push(query ? `${pathname}?${query}` : pathname);
   };
 
   return (
-    <div className="relative">
-      <ScrollArea className="pb-4 w-full">
-        <div className="flex flex-wrap gap-2">
-          {categories.map((category) => (
-            <Button
-              key={category.id}
-              variant={selectedCategory === category.id ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleCategoryChange(category.id)}
-            >
-              {category.name}
-            </Button>
-          ))}
-        </div>
-        <ScrollBar orientation="horizontal" />
-      </ScrollArea>
+    <div
+      role="group"
+      aria-label="Filter petitions by category"
+      className="flex flex-wrap gap-2"
+    >
+      {[{ id: "all", name: "All" }, ...categories].map((category) => {
+        const active = selectedCategory === category.id;
+        return (
+          <button
+            key={category.id}
+            type="button"
+            aria-pressed={active}
+            onClick={() => handleCategoryChange(category.id)}
+            className={cn(
+              "h-9 rounded-full border px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2",
+              active
+                ? "border-ink bg-ink text-ink-foreground"
+                : "border-hairline bg-surface text-ink hover:border-ink/40 hover:bg-bone",
+            )}
+          >
+            {category.name}
+          </button>
+        );
+      })}
     </div>
   );
 }

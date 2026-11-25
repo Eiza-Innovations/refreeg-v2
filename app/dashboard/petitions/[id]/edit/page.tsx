@@ -5,7 +5,9 @@ import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const EditPetitionForm = dynamic(() => import("./edit-petition-form"), {
-  loading: () => <Skeleton className="h-[600px] w-full" />,
+  loading: () => (
+    <Skeleton className="mx-auto mt-12 h-[600px] w-full max-w-3xl rounded-xl" />
+  ),
 });
 
 export default async function EditPetitionPage({
@@ -32,11 +34,5 @@ export default async function EditPetitionPage({
     redirect("/dashboard/petitions");
   }
 
-  return (
-    <div className="">
-      <div className="md:mx-auto">
-        <EditPetitionForm petition={petition} />
-      </div>
-    </div>
-  );
+  return <EditPetitionForm petition={petition} />;
 }

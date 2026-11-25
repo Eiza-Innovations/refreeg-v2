@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MAX_PETITION_DURATION_DAYS } from "@/lib/schemas/petition.schema";
 import { FieldError } from "@/components/ui/field-error";
+import { StepHeading } from "./step-heading";
 import type { PetitionCopy } from "./petition-copy";
 import type { PetitionFormApi } from "@/hooks/use-petition-form";
 
@@ -43,19 +44,12 @@ export function PetitionTimelineStep({
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="space-y-2">
-        <h3 className="text-xl font-bold text-gradient">
-          {copy.timelineTitle}
-        </h3>
-        <p className="text-sm text-gray-500">{copy.timelineText}</p>
-      </div>
+      <StepHeading title={copy.timelineTitle} text={copy.timelineText} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="space-y-4">
-          <Label className="text-base font-semibold text-gray-700 block mb-2">
-            {copy.startLabel}
-          </Label>
-          <div className="glass-panel p-4 rounded-2xl border-brand/5">
+          <Label className="mb-2 block">{copy.startLabel}</Label>
+          <div className="rounded-xl border border-hairline bg-surface p-4">
             <Calendar
               mode="single"
               selected={startDate}
@@ -68,10 +62,8 @@ export function PetitionTimelineStep({
         </div>
 
         <div className="space-y-4">
-          <Label className="text-base font-semibold text-gray-700 block mb-2">
-            End Date
-          </Label>
-          <div className="glass-panel p-4 rounded-2xl border-brand/5">
+          <Label className="mb-2 block">End date</Label>
+          <div className="rounded-xl border border-hairline bg-surface p-4">
             <Calendar
               mode="single"
               selected={endDate}
@@ -85,15 +77,15 @@ export function PetitionTimelineStep({
       </div>
 
       {startDate && endDate && (
-        <div className="bg-brand/5 p-4 rounded-xl border border-brand/10 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-brand/10 flex items-center justify-center text-brand">
-            <CalendarIcon className="w-5 h-5" />
+        <div className="flex items-center gap-3 rounded-xl border border-sand bg-sand/30 p-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface text-ink">
+            <CalendarIcon className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-brand">
-              Campaign Duration: {differenceInDays(endDate, startDate)} Days
+            <p className="text-sm font-semibold text-ink">
+              Open for {differenceInDays(endDate, startDate)} days
             </p>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-ink/60">
               Running from {format(startDate, "PPP")} to{" "}
               {format(endDate, "PPP")}
             </p>
