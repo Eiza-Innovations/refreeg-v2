@@ -48,7 +48,9 @@ CREATE TABLE IF NOT EXISTS "public"."wishlist_contributions" (
     CONSTRAINT "wishlist_contributions_pkey" PRIMARY KEY ("id")
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS "wishlists_slug_key" ON "public"."wishlists"("slug");
+-- Slug is unique per owner: the share URL is /<username>/<slug>.
+DROP INDEX IF EXISTS "wishlists_slug_key";
+CREATE UNIQUE INDEX IF NOT EXISTS "uq_wishlists_user_slug" ON "public"."wishlists"("user_id","slug");
 CREATE INDEX IF NOT EXISTS "idx_wishlists_user_id" ON "public"."wishlists"("user_id");
 CREATE INDEX IF NOT EXISTS "idx_wishlists_status" ON "public"."wishlists"("status");
 CREATE INDEX IF NOT EXISTS "idx_wishlist_items_wishlist_id" ON "public"."wishlist_items"("wishlist_id");
