@@ -151,6 +151,7 @@ export function UserNav() {
         <DropdownMenuGroup>
           <MenuLink href="/dashboard">Dashboard</MenuLink>
           <MenuLink href="/dashboard/settings/profile">Your profile</MenuLink>
+          <MenuLink href="/dashboard/causes">Your causes</MenuLink>
           <MenuLink href="/dashboard/settings/kyc">
             Verification
             <span
