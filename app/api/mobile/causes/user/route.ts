@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
-import { getUserCausesWithStatus } from "@/actions/causes/cause-actions";
+import { listUserCausesWithStatus } from "@/lib/causes/user-causes";
 
 export async function OPTIONS() {
   return handleCorsPreflight();
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status") || "all";
 
-    const causes = await getUserCausesWithStatus(user!.id, status);
+    const causes = await listUserCausesWithStatus(user!.id, status);
 
     return apiSuccess(causes);
   } catch (error: any) {

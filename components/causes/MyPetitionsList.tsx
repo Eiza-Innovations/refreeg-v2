@@ -1,9 +1,7 @@
-import Link from "next/link";
-import { FileSignature, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/empty-state";
+import { FileSignature } from "lucide-react";
+import { MyItemsEmptyState } from "@/components/dashboard/MyItemsEmptyState";
 import { MyPetitionCard } from "@/components/petitions/MyPetitionCard";
-import { getUserPetitionsWithStatus } from "@/actions/petitions/petition-actions";
+import { listUserPetitionsWithStatus } from "@/lib/petitions/user-petitions";
 import { getPetitionSignatureTotals } from "@/actions/petitions/signature-actions";
 
 const emptyCopy: Record<string, string> = {
@@ -20,23 +18,17 @@ export async function MyPetitionsList({
   status: string;
   userId: string;
 }) {
-  const petitions = await getUserPetitionsWithStatus(userId, status);
+  const petitions = await listUserPetitionsWithStatus(userId, status);
   const totals = await getPetitionSignatureTotals(petitions.map((p) => p.id));
 
   if (petitions.length === 0) {
     return (
-      <EmptyState
+      <MyItemsEmptyState
         icon={<FileSignature className="h-6 w-6 text-ink/60" />}
         title="No petitions here"
         description={emptyCopy[status] ?? emptyCopy.all}
-        action={
-          <Button asChild variant="ink" className="rounded-xl">
-            <Link href="/dashboard/petitions/create">
-              <Plus className="mr-2 h-4 w-4" />
-              Start a petition
-            </Link>
-          </Button>
-        }
+        createHref="/dashboard/petitions/create"
+        createLabel="Start a petition"
       />
     );
   }

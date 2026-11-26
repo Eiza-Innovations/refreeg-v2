@@ -4,6 +4,14 @@ export const causeCurrencyOptions = [
   { label: "Naira (₦)", value: "NGN" },
 ] as const satisfies readonly Option[];
 
+export const myCauseStatusOptions = [
+  { label: "All", value: "all" },
+  { label: "Active", value: "approved" },
+  { label: "Suspended", value: "suspended" },
+  { label: "Under review", value: "pending" },
+  { label: "Needs revision", value: "rejected" },
+] as const satisfies readonly Option[];
+
 export const causeSteps = [
   "Basic Info",
   "Story",

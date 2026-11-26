@@ -19,11 +19,7 @@ import {
   funnelStepOptions,
   leaveReasonOptions,
 } from "@/lib/options/campaign-analytics.options";
-
-const labelOf = (
-  options: readonly { label: string; value: string }[],
-  value: string,
-) => options.find((option) => option.value === value)?.label ?? value;
+import { optionLabel } from "@/lib/options/option-label";
 
 export function DropOffClient() {
   const { period, compare } = useAnalyticsPeriod();
@@ -49,19 +45,19 @@ export function DropOffClient() {
       [
         ...steps.map((row) => [
           "Funnel",
-          labelOf(funnelStepOptions, row.step),
+          optionLabel(funnelStepOptions, row.step),
           row.sessions,
           row.previous,
         ]),
         ...(report?.reasons ?? []).map((row) => [
           "Left at payment",
-          labelOf(leaveReasonOptions, row.reason),
+          optionLabel(leaveReasonOptions, row.reason),
           row.sessions,
           null,
         ]),
         ...(report?.segments ?? []).map((row) => [
           "Where it's worst",
-          `${row.segment} at ${labelOf(funnelStepOptions, row.step)}`,
+          `${row.segment} at ${optionLabel(funnelStepOptions, row.step)}`,
           `${Math.round(row.dropVsAverage)}%`,
           null,
         ]),
@@ -147,7 +143,7 @@ export function DropOffClient() {
                       <Span className="text-ink/70">{row.segment}</Span>
                       <Span className="text-right font-medium text-rust">
                         {signedPercent(row.dropVsAverage)} at{" "}
-                        {labelOf(funnelStepOptions, row.step).toLowerCase()}
+                        {optionLabel(funnelStepOptions, row.step).toLowerCase()}
                       </Span>
                     </li>
                   ))}
@@ -157,7 +153,7 @@ export function DropOffClient() {
                 <CalloutBanner
                   variant="blue"
                   icon={<Lightbulb className="mt-0.5 h-4 w-4 shrink-0" />}
-                  title={`Biggest leak: ${labelOf(funnelStepOptions, leak.step).toLowerCase()}`}
+                  title={`Biggest leak: ${optionLabel(funnelStepOptions, leak.step).toLowerCase()}`}
                   description={`${Math.round(leak.lost * 100)}% of people who reach the step before it don't continue. Fixes here move the most gifts.`}
                 />
               )}

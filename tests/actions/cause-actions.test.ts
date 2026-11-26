@@ -27,6 +27,11 @@ jest.mock("@/lib/prisma", () => ({
   },
 }));
 
+jest.mock("@/lib/causes/remove-cause", () => {
+  class CauseDeleteBlockedError extends Error {}
+  return { CauseDeleteBlockedError, removeCause: jest.fn() };
+});
+
 jest.mock("@/actions/users/auth-actions", () => ({
   getCurrentUser: jest.fn(),
 }));
@@ -73,6 +78,10 @@ import { isAdminOrManager } from "@/actions/admin/role-actions";
 import { sendCauseRejectedEmailForUser } from "@/services/mail";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import {
+  CauseDeleteBlockedError,
+  removeCause,
+} from "@/lib/causes/remove-cause";
 import { warmCauseImage } from "@/lib/media/cause-image-render";
 import {
   getCause,
@@ -586,14 +595,62 @@ describe("cause-actions", () => {
   });
 
   describe("deleteCause", () => {
-    it("deletes the cause by id", async () => {
-      mockPrisma.cause.delete.mockResolvedValue({ id: VALID_UUID });
+    beforeEach(() => {
+      mockGetCurrentUser.mockResolvedValue({ id: "owner-1" });
+      mockPrisma.cause.findUnique.mockResolvedValue({ userId: "owner-1" });
+      (removeCause as jest.Mock).mockResolvedValue(undefined);
+    });
+
+    it("lets the owner delete a cause", async () => {
+      await deleteCause(VALID_UUID);
+
+      expect(removeCause).toHaveBeenCalledWith(VALID_UUID);
+      expect(revalidatePath).toHaveBeenCalledWith("/dashboard/causes");
+    });
+
+    it("lets an admin delete someone else's cause", async () => {
+      mockGetCurrentUser.mockResolvedValue({ id: "admin-1" });
+      mockIsAdminOrManager.mockResolvedValue(true);
 
       await deleteCause(VALID_UUID);
 
-      expect(mockPrisma.cause.delete).toHaveBeenCalledWith({
-        where: { id: VALID_UUID },
-      });
+      expect(removeCause).toHaveBeenCalled();
+    });
+
+    it("rejects other users", async () => {
+      mockGetCurrentUser.mockResolvedValue({ id: "stranger-1" });
+
+      await expect(deleteCause(VALID_UUID)).rejects.toThrow(
+        "You can only delete your own campaigns",
+      );
+      expect(removeCause).not.toHaveBeenCalled();
+    });
+
+    it("rejects signed-out callers", async () => {
+      mockGetCurrentUser.mockResolvedValue(null);
+
+      await expect(deleteCause(VALID_UUID)).rejects.toThrow(
+        "Not authenticated",
+      );
+      expect(removeCause).not.toHaveBeenCalled();
+    });
+
+    it("shows the reason when a campaign cannot be deleted", async () => {
+      (removeCause as jest.Mock).mockRejectedValue(
+        new CauseDeleteBlockedError("Has donations"),
+      );
+
+      await expect(deleteCause(VALID_UUID)).rejects.toThrow("Has donations");
+    });
+
+    it("hides database errors behind a stable message", async () => {
+      (removeCause as jest.Mock).mockRejectedValue(new Error("P2003 raw"));
+      const log = jest.spyOn(console, "error").mockImplementation(() => {});
+
+      await expect(deleteCause(VALID_UUID)).rejects.toThrow(
+        "Could not delete this campaign. Please try again.",
+      );
+      log.mockRestore();
     });
   });
 

@@ -5,7 +5,7 @@ import {
   invalidateMobileCachePrefix,
 } from "@/lib/api/mobile-cache";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
-import { deletePetition } from "@/actions/petitions/petition-actions";
+import { removePetition } from "@/lib/petitions/remove-petition";
 import { isOwnUploadKey } from "@/lib/s3/owned-key";
 import { isUuid } from "@/lib/uuid";
 import { prisma } from "@/lib/prisma";
@@ -228,7 +228,7 @@ export async function DELETE(
       return apiError("Unauthorized to delete this petition", 403);
     }
 
-    await deletePetition(id);
+    await removePetition(id);
     invalidateMobileCachePrefix("petitions:");
 
     return apiSuccess({ message: "Petition deleted successfully" });
