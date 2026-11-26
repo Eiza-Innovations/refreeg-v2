@@ -5,6 +5,7 @@ import { logAdminActivity } from "@/actions/admin/database-actions";
 import { getUserRole } from "@/actions/admin/role-actions";
 import { executeUserAccountDeletion } from "@/lib/auth/account-deletion";
 import { auth } from "@/lib/auth/auth";
+import { isStoreReviewDemoAccount } from "@/lib/auth/store-review-demo";
 import { prisma } from "@/lib/prisma";
 
 export async function blockUser(userId: string): Promise<boolean> {
@@ -109,6 +110,11 @@ export async function deleteUserAccount(
 
     if (session.user.id !== userId) {
       return { error: "You can only delete your own account" };
+    }
+
+    if (isStoreReviewDemoAccount(session.user.email)) {
+      revalidatePath("/dashboard/settings");
+      return { error: null };
     }
 
     const result = await executeUserAccountDeletion(userId);
