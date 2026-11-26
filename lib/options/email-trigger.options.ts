@@ -65,7 +65,7 @@ export const emailTriggerEvents = [
     label: "Partner credits issued, low (20%) or expiring",
     audience: "Partner admins",
     required: false,
-    templates: [],
+    templates: ["partner-credits-issued"],
   },
   {
     key: "mint_burn",
