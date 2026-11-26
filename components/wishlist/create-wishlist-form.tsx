@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Gift } from "lucide-react";
+import { ArrowLeft, Gift, Plus, Trash2 } from "lucide-react";
 
 import {
   addWishlistItem,
@@ -11,8 +11,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import {
+  WISHLIST_ITEM_CAP,
   wishlistCreateSchema,
-  wishlistItemSchema,
+  wishlistItemsSchema,
 } from "@/lib/schemas/wishlist.schema";
 import { slugifyWishlistTitle } from "@/lib/wishlist/slug";
 import { useValidator } from "@/hooks/use-validator";
@@ -23,6 +24,14 @@ const fieldLabel =
   "text-[11px] font-semibold uppercase tracking-[0.12em] text-ink/55";
 const fieldInput =
   "h-12 w-full rounded-md border border-hairline bg-surface px-4 text-[15px] text-ink outline-none transition-colors focus:border-ink/40";
+
+type ItemRow = { name: string; price: string; note: string };
+type RowErrors = Record<number, Partial<Record<"name" | "price", string>>>;
+
+const emptyRow = (): ItemRow => ({ name: "", price: "", note: "" });
+
+const isRowBlank = (row: ItemRow) =>
+  !row.name.trim() && !row.price.trim() && !row.note.trim();
 
 export function CreateWishlistForm({
   seasonal,
@@ -37,20 +46,31 @@ export function CreateWishlistForm({
   const [serverError, setServerError] = useState<string | null>(null);
 
   const [wishlist, setWishlist] = useState({ title: "", message: "" });
-  const [item, setItem] = useState({ name: "", price: "", note: "" });
+  // The server keeps an 8-item cap per wishlist; the form lets the owner
+  // fill all 8 slots during creation, or just one and the rest later.
+  const [items, setItems] = useState<ItemRow[]>([emptyRow()]);
+  const [rowErrors, setRowErrors] = useState<RowErrors>({});
 
   const wishlistValidator = useValidator({
     store: wishlist,
     schema: wishlistCreateSchema,
   });
-  const itemValidator = useValidator({
-    store: { ...item, price: Number(item.price) || 0 },
-    schema: wishlistItemSchema,
-  });
 
   const slugPreview = wishlist.title.trim()
     ? slugifyWishlistTitle(wishlist.title)
     : null;
+
+  const updateRow = (index: number, patch: Partial<ItemRow>) => {
+    setItems((rows) =>
+      rows.map((row, i) => (i === index ? { ...row, ...patch } : row)),
+    );
+    setRowErrors((errors) => {
+      if (!errors[index]) return errors;
+      const next = { ...errors };
+      delete next[index];
+      return next;
+    });
+  };
 
   const goToItems = () => {
     setServerError(null);
@@ -58,9 +78,41 @@ export function CreateWishlistForm({
     setStep(2);
   };
 
+  const validateRows = (rows: ItemRow[]): ItemRow[] | null => {
+    const kept = rows.filter((row) => !isRowBlank(row));
+    if (kept.length === 0) return null;
+
+    const parsed = wishlistItemsSchema.safeParse(
+      kept.map((row) => ({
+        name: row.name,
+        price: Number(row.price) || 0,
+        note: row.note.trim() || undefined,
+      })),
+    );
+    if (parsed.success) return kept;
+
+    const errors: RowErrors = {};
+    for (const issue of parsed.error.issues) {
+      const rowIndex = issue.path[0] as number | undefined;
+      const field = issue.path[1] as "name" | "price" | undefined;
+      if (rowIndex === undefined || field === undefined) continue;
+      if (!errors[rowIndex]) errors[rowIndex] = {};
+      errors[rowIndex][field] = issue.message;
+    }
+    setRowErrors(errors);
+    return null;
+  };
+
   const create = async () => {
     setServerError(null);
-    if (!itemValidator.validate()) return;
+
+    const rows = validateRows(items);
+    if (!rows) {
+      if (items.every(isRowBlank)) {
+        setServerError("Add at least one item before creating your wishlist.");
+      }
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -74,17 +126,31 @@ export function CreateWishlistForm({
         return;
       }
 
-      const added = await addWishlistItem(created.data.id, {
-        name: item.name,
-        price: Number(item.price),
-        note: item.note || undefined,
-      });
-      if (!added.success) {
+      let added = 0;
+      let firstError: string | null = null;
+      for (const row of rows) {
+        const result = await addWishlistItem(created.data.id, {
+          name: row.name,
+          price: Number(row.price),
+          note: row.note.trim() || undefined,
+        });
+        if (result.success) {
+          added += 1;
+        } else if (!firstError) {
+          firstError = result.error || null;
+        }
+      }
+
+      if (added === 0 && firstError) {
         // The wishlist exists; send the owner there to finish the list.
         toast({
           title: "Wishlist created",
-          description:
-            added.error || "Your first item could not be saved. Add it below.",
+          description: `${firstError} Add your items below.`,
+        });
+      } else if (firstError) {
+        toast({
+          title: "Wishlist created",
+          description: `${added} of ${rows.length} items saved. ${firstError} Add the rest below.`,
         });
       }
       router.push(`/${username}/${created.data.slug}`);
@@ -97,15 +163,15 @@ export function CreateWishlistForm({
   return (
     <div>
       <Eyebrow className="text-forest">
-        {step === 1 ? "Step 1 of 2 · Name it" : "Step 2 of 2 · First gift"}
+        {step === 1 ? "Step 1 of 2 · Name it" : "Step 2 of 2 · Add gifts"}
       </Eyebrow>
       <h1 className="mt-3 font-fraunces text-3xl tracking-tight text-ink">
-        {step === 1 ? "Name your wishlist" : "Add your first item"}
+        {step === 1 ? "Name your wishlist" : "Add your gifts"}
       </h1>
       <p className="mt-2 text-sm leading-6 text-ink/60">
         {step === 1
           ? "This is the title givers see at the top of your share page."
-          : "You can add up to eight items now or any time later, so start with one."}
+          : `Add up to ${WISHLIST_ITEM_CAP} items now, or start with one and add the rest any time later.`}
       </p>
 
       {step === 1 ? (
@@ -190,60 +256,109 @@ export function CreateWishlistForm({
             </button>
           </div>
 
-          <label htmlFor="item-name" className={cn(fieldLabel, "mt-6 block")}>
-            Item name
-          </label>
-          <input
-            id="item-name"
-            value={item.name}
-            maxLength={140}
-            onChange={(e) => setItem({ ...item, name: e.target.value })}
-            placeholder="A new study desk"
-            className={cn(fieldInput, "mt-2")}
-          />
-          {itemValidator.errors.name && (
-            <p className="mt-2 text-sm font-medium text-rust" role="alert">
-              {itemValidator.errors.name}
-            </p>
-          )}
+          {items.map((row, index) => (
+            <div
+              key={index}
+              className="mt-4 rounded-xl border border-hairline p-4 sm:p-5"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <span className={fieldLabel}>Item {index + 1}</span>
+                {items.length > 1 ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setItems((rows) => rows.filter((_, i) => i !== index))
+                    }
+                    className="flex items-center gap-1 text-[13px] font-medium text-rust transition-colors hover:text-rust/80"
+                    aria-label={`Remove item ${index + 1}`}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Remove
+                  </button>
+                ) : null}
+              </div>
 
-          <label htmlFor="item-price" className={cn(fieldLabel, "mt-6 block")}>
-            Price (₦)
-          </label>
-          <input
-            id="item-price"
-            type="number"
-            inputMode="numeric"
-            min={100}
-            value={item.price}
-            onChange={(e) => setItem({ ...item, price: e.target.value })}
-            placeholder="80000"
-            className={cn(fieldInput, "mt-2")}
-          />
-          {itemValidator.errors.price && (
-            <p className="mt-2 text-sm font-medium text-rust" role="alert">
-              {itemValidator.errors.price}
-            </p>
-          )}
+              <label
+                htmlFor={`item-name-${index}`}
+                className={cn(fieldLabel, "mt-3 block")}
+              >
+                Item name
+              </label>
+              <input
+                id={`item-name-${index}`}
+                value={row.name}
+                maxLength={140}
+                aria-label={`Item name ${index + 1}`}
+                onChange={(e) => updateRow(index, { name: e.target.value })}
+                placeholder="A new study desk"
+                className={cn(fieldInput, "mt-2")}
+              />
+              {rowErrors[index]?.name && (
+                <p className="mt-2 text-sm font-medium text-rust" role="alert">
+                  {rowErrors[index].name}
+                </p>
+              )}
 
-          <label htmlFor="item-note" className={cn(fieldLabel, "mt-6 block")}>
-            Note about this item{" "}
-            <span className="normal-case text-ink/40">(optional)</span>
-          </label>
-          <textarea
-            id="item-note"
-            value={item.note}
-            maxLength={280}
-            rows={2}
-            onChange={(e) => setItem({ ...item, note: e.target.value })}
-            placeholder="Say why you'd love it, or anything givers should know."
-            className="mt-2 w-full rounded-md border border-hairline bg-surface px-4 py-3 text-[15px] text-ink outline-none transition-colors focus:border-ink/40"
-          />
-          {itemValidator.errors.note && (
-            <p className="mt-2 text-sm font-medium text-rust" role="alert">
-              {itemValidator.errors.note}
-            </p>
-          )}
+              <label
+                htmlFor={`item-price-${index}`}
+                className={cn(fieldLabel, "mt-4 block")}
+              >
+                Price (₦)
+              </label>
+              <input
+                id={`item-price-${index}`}
+                type="number"
+                inputMode="numeric"
+                min={100}
+                value={row.price}
+                aria-label={`Price (₦) ${index + 1}`}
+                onChange={(e) => updateRow(index, { price: e.target.value })}
+                placeholder="80000"
+                className={cn(fieldInput, "mt-2")}
+              />
+              {rowErrors[index]?.price && (
+                <p className="mt-2 text-sm font-medium text-rust" role="alert">
+                  {rowErrors[index].price}
+                </p>
+              )}
+
+              <label
+                htmlFor={`item-note-${index}`}
+                className={cn(fieldLabel, "mt-4 block")}
+              >
+                Note about this item{" "}
+                <span className="normal-case text-ink/40">(optional)</span>
+              </label>
+              <textarea
+                id={`item-note-${index}`}
+                value={row.note}
+                maxLength={280}
+                rows={2}
+                onChange={(e) => updateRow(index, { note: e.target.value })}
+                placeholder="Say why you'd love it, or anything givers should know."
+                className="mt-2 w-full rounded-md border border-hairline bg-surface px-4 py-3 text-[15px] text-ink outline-none transition-colors focus:border-ink/40"
+              />
+            </div>
+          ))}
+
+          <div className="mt-4 flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => setItems((rows) => [...rows, emptyRow()])}
+              disabled={items.length >= WISHLIST_ITEM_CAP}
+              className={cn(
+                "flex items-center gap-2 rounded-full border border-dashed border-ink/30 px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-ink/60 hover:bg-ink/5",
+                items.length >= WISHLIST_ITEM_CAP &&
+                  "cursor-not-allowed opacity-50 hover:border-ink/30 hover:bg-transparent",
+              )}
+            >
+              <Plus className="h-4 w-4" />
+              Add another item
+            </button>
+            <span className="text-[13px] text-ink/50">
+              {items.length} of {WISHLIST_ITEM_CAP}
+            </span>
+          </div>
 
           {serverError && (
             <p className="mt-4 text-sm font-medium text-rust" role="alert">

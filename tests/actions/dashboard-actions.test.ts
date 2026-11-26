@@ -21,6 +21,10 @@ jest.mock("@/lib/prisma", () => ({
     pledges: {
       count: jest.fn(),
     },
+    wishlist_contributions: {
+      aggregate: jest.fn(),
+      count: jest.fn(),
+    },
   },
 }));
 
@@ -60,6 +64,10 @@ const mockPrisma = prisma as unknown as {
     groupBy: jest.Mock;
   };
   pledges: {
+    count: jest.Mock;
+  };
+  wishlist_contributions: {
+    aggregate: jest.Mock;
     count: jest.Mock;
   };
 };
@@ -363,22 +371,29 @@ describe("dashboard-actions", () => {
   });
 
   describe("getUserDonorGivingStats", () => {
-    it("returns zero stats when user has no donations or pledges", async () => {
+    it("returns zero stats when user has no donations, pledges or wishlist gifts", async () => {
       mockPrisma.donation.aggregate.mockResolvedValue({
         _sum: { amount: null },
       });
       mockPrisma.donation.findMany.mockResolvedValue([]);
       mockPrisma.pledges.count.mockResolvedValue(0);
+      mockPrisma.wishlist_contributions.aggregate.mockResolvedValue({
+        _sum: { amount: null },
+      });
+      mockPrisma.wishlist_contributions.count.mockResolvedValue(0);
 
       const stats = await getUserDonorGivingStats("user-1");
       expect(stats).toEqual({
         givenSoFar: 0,
+        causesGiven: 0,
+        wishlistsGiven: 0,
         campaignsBacked: 0,
+        wishlistGifts: 0,
         livePledges: 0,
       });
     });
 
-    it("aggregates donor statistics correctly", async () => {
+    it("appends wishlist gifts to the giving total and breaks them out", async () => {
       mockPrisma.donation.aggregate.mockResolvedValue({
         _sum: { amount: 50000 },
       });
@@ -387,11 +402,18 @@ describe("dashboard-actions", () => {
         { causeId: "cause-2" },
       ]);
       mockPrisma.pledges.count.mockResolvedValue(3);
+      mockPrisma.wishlist_contributions.aggregate.mockResolvedValue({
+        _sum: { amount: 2500 },
+      });
+      mockPrisma.wishlist_contributions.count.mockResolvedValue(1);
 
       const stats = await getUserDonorGivingStats("user-1");
       expect(stats).toEqual({
-        givenSoFar: 50000,
+        givenSoFar: 52500,
+        causesGiven: 50000,
+        wishlistsGiven: 2500,
         campaignsBacked: 2,
+        wishlistGifts: 1,
         livePledges: 3,
       });
     });

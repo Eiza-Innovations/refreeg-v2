@@ -2,6 +2,7 @@ import Hero from "@/components/home/hero";
 
 import LiveCampaigns from "@/components/home/LiveCampaigns";
 import { LiveSpotlight } from "@/components/home/LiveSpotlight";
+import { WishlistBand } from "@/components/home/WishlistBand";
 
 import { AnnouncementMarquee } from "@/components/ui/announcement-marquee";
 
@@ -24,6 +25,8 @@ export default function Home() {
       <Hero />
       <LiveSpotlight />
       <LiveCampaigns />
+
+      <WishlistBand />
 
       <div className="mx-8">
         <RoutedOnChain />
