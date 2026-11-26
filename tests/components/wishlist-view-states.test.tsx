@@ -119,6 +119,45 @@ describe("WishlistView states", () => {
     ).toBeInTheDocument();
   });
 
+  it("hides the payout callout once payout setup is complete", () => {
+    renderView({ viewerIsOwner: true, viewer, ownerPayoutState: "ready" });
+
+    expect(
+      screen.queryByText("Identity verification isn't finished"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Your bank account isn't added yet"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("points an unverified owner at identity verification", () => {
+    renderView({
+      viewerIsOwner: true,
+      viewer,
+      ownerPayoutState: "kyc_pending",
+    });
+
+    expect(
+      screen.getByText("Identity verification isn't finished"),
+    ).toBeInTheDocument();
+    const link = screen.getByRole("link", { name: "Finish verification" });
+    expect(link).toHaveAttribute("href", "/dashboard/settings/kyc");
+  });
+
+  it("points a verified owner without bank details at the bank form", () => {
+    renderView({
+      viewerIsOwner: true,
+      viewer,
+      ownerPayoutState: "bank_missing",
+    });
+
+    expect(
+      screen.getByText("Your bank account isn't added yet"),
+    ).toBeInTheDocument();
+    const link = screen.getByRole("link", { name: "Add your bank account" });
+    expect(link).toHaveAttribute("href", "/dashboard/settings/bank");
+  });
+
   it("pauses giving on an archived wishlist without breaking the link", () => {
     renderView({
       wishlist: {

@@ -32,7 +32,7 @@ describe("wishlist email templates seasonal voice", () => {
 
     const seasonal = render({ ...baseContext, seasonal: true });
     expect(seasonal).toContain(
-      "It&rsquo;s the season &mdash; this gift counts toward a Christmas wish on your list.",
+      "It&rsquo;s the season, and this gift counts toward a Christmas wish on your list.",
     );
     // The seasonal line never displaces the substantive copy.
     expect(seasonal).toContain("Adaeze just gave towards");
@@ -48,7 +48,7 @@ describe("wishlist email templates seasonal voice", () => {
 
     const seasonal = render({ ...baseContext, seasonal: true });
     expect(seasonal).toContain(
-      "A Christmas wish, fully paid for &mdash; just like that.",
+      "A Christmas wish, fully paid for. Just like that.",
     );
     expect(seasonal).toContain("just added up to its full price");
   });

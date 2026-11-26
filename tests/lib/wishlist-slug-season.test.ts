@@ -1,39 +1,28 @@
 /**
  * tests/lib/wishlist-slug-season.test.ts
  *
- * Unit tests for wishlist slug allocation and the season window: slugs stay
- * unique under collisions, and the festive layer follows the Dec 1 - Jan 6
- * window with the WISHLIST_SEASON override.
+ * Unit tests for wishlist slug building and the season window: slugs read
+ * cleanly (apostrophes stripped, never "-s-"), and the festive layer follows
+ * the Dec 1 - Jan 6 window with the WISHLIST_SEASON override.
  */
 
-import {
-  allocateUniqueWishlistSlug,
-  slugifyWishlistTitle,
-} from "@/lib/wishlist/slug";
+import { slugifyWishlistTitle } from "@/lib/wishlist/slug";
 import { isWishlistSeasonActive } from "@/lib/wishlist/season";
 
 describe("wishlist slug", () => {
   it("slugifies titles and falls back to 'wishlist' on symbols", () => {
     expect(slugifyWishlistTitle("Nomso's Christmas Wishlist")).toBe(
-      "nomso-s-christmas-wishlist",
+      "nomsos-christmas-wishlist",
     );
     expect(slugifyWishlistTitle("   ")).toBe("wishlist");
   });
 
-  it("appends numeric suffixes while the base is taken", async () => {
-    const taken = new Set(["christmas"]);
-    const slug = await allocateUniqueWishlistSlug("Christmas", {
-      isTaken: (s) => Promise.resolve(taken.has(s)),
-    });
-    expect(slug).toBe("christmas-2");
-  });
-
-  it("falls back to a random id suffix after 50 collisions", async () => {
-    const slug = await allocateUniqueWishlistSlug("Christmas", {
-      isTaken: () => Promise.resolve(true),
-      shortId: "abcd1234-5678",
-    });
-    expect(slug).toMatch(/^christmas-abcd1234$|^wishlist-abcd1234$/);
+  it("strips apostrophes and quotes instead of hyphenating them", () => {
+    expect(slugifyWishlistTitle("Nomso's Wishlist")).toBe("nomsos-wishlist");
+    expect(slugifyWishlistTitle("The Adaezes’ gifts")).toBe(
+      "the-adaezes-gifts",
+    );
+    expect(slugifyWishlistTitle('A "small" wish')).toBe("a-small-wish");
   });
 });
 

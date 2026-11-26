@@ -25,13 +25,22 @@ import { getWishlistByUsernameAndSlug } from "@/actions/wishlists/wishlist-actio
 const owner = {
   id: "owner-1",
   username: "nomso",
+  isVerified: true,
   subAccountCode: "ACCT_paystack_1",
 };
 
-const unverifiedOwner = {
+const ownerWithoutBank = {
   id: "owner-1",
   username: "nomso",
+  isVerified: true,
   subAccountCode: null,
+};
+
+const ownerWithoutKyc = {
+  id: "owner-1",
+  username: "nomso",
+  isVerified: false,
+  subAccountCode: "ACCT_paystack_1",
 };
 
 const wishlistRow = {
@@ -101,20 +110,33 @@ describe("getWishlistByUsernameAndSlug (public share lookup)", () => {
     expect(result.success).toBe(true);
     expect(result.data!.ownerUsername).toBe("nomso");
     expect(result.data!.viewerIsOwner).toBe(false);
-    // Payout readiness is a boolean only — never the details themselves.
+    // Payout readiness is a state flag only, never the details themselves.
     expect(result.data!.ownerPayoutReady).toBe(true);
+    expect(result.data!.ownerPayoutState).toBe("ready");
     expect(result.data!.wishlist.items[0].price).toBe(80000);
     expect(typeof result.data!.wishlist.created_at).toBe("string");
   });
 
-  it("reports an owner without bank details as not payout-ready", async () => {
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue(unverifiedOwner);
+  it("names a verified owner without bank details as bank_missing", async () => {
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue(ownerWithoutBank);
     (prisma.wishlists.findFirst as jest.Mock).mockResolvedValue(wishlistRow);
     (auth as jest.Mock).mockResolvedValue(null);
 
     const result = await getWishlistByUsernameAndSlug("nomso", "christmas");
 
     expect(result.data!.ownerPayoutReady).toBe(false);
+    expect(result.data!.ownerPayoutState).toBe("bank_missing");
+  });
+
+  it("names an unverified owner with bank details as kyc_pending", async () => {
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue(ownerWithoutKyc);
+    (prisma.wishlists.findFirst as jest.Mock).mockResolvedValue(wishlistRow);
+    (auth as jest.Mock).mockResolvedValue(null);
+
+    const result = await getWishlistByUsernameAndSlug("nomso", "christmas");
+
+    expect(result.data!.ownerPayoutReady).toBe(false);
+    expect(result.data!.ownerPayoutState).toBe("kyc_pending");
   });
 
   it("flags the owner session so the page can render owner state", async () => {

@@ -39,7 +39,7 @@ export async function MyWishlists() {
         </h3>
         <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600">
           Name the gifts you&apos;d actually love and share one link with family
-          and friends — they give together, anonymously if they prefer.
+          and friends. They give together, anonymously if they prefer.
         </p>
         <Link href="/wishlist/new" className="inline-block">
           <Button className="mt-6 h-11 rounded-xl bg-blue-600 px-5 text-white hover:bg-blue-700">
@@ -126,7 +126,7 @@ export async function MyWishlists() {
               {wishlist.items.length === 0 && (
                 <p className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
                   <PackageOpen className="h-3.5 w-3.5" />
-                  No items yet — add what you&apos;d love.
+                  No items yet. Add what you&apos;d love.
                 </p>
               )}
 

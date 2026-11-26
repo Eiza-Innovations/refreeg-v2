@@ -84,7 +84,7 @@ export function CreateWishlistForm({
         toast({
           title: "Wishlist created",
           description:
-            added.error || "Your first item could not be saved — add it below.",
+            added.error || "Your first item could not be saved. Add it below.",
         });
       }
       router.push(`/${username}/${created.data.slug}`);
@@ -105,7 +105,7 @@ export function CreateWishlistForm({
       <p className="mt-2 text-sm leading-6 text-ink/60">
         {step === 1
           ? "This is the title givers see at the top of your share page."
-          : "You can add up to eight items now or any time later — start with one."}
+          : "You can add up to eight items now or any time later, so start with one."}
       </p>
 
       {step === 1 ? (
@@ -236,7 +236,7 @@ export function CreateWishlistForm({
             maxLength={280}
             rows={2}
             onChange={(e) => setItem({ ...item, note: e.target.value })}
-            placeholder="Size, colour, where to buy it — anything that helps."
+            placeholder="Say why you'd love it, or anything givers should know."
             className="mt-2 w-full rounded-md border border-hairline bg-surface px-4 py-3 text-[15px] text-ink outline-none transition-colors focus:border-ink/40"
           />
           {itemValidator.errors.note && (

@@ -30,15 +30,22 @@ import { WishlistItemCard } from "@/components/wishlist/wishlist-item-card";
 import { WishlistSummaryPanel } from "@/components/wishlist/wishlist-summary-panel";
 import { toast } from "@/hooks/use-toast";
 import { formatNaira } from "@/components/giving/format";
-import type { Wishlist, WishlistItem, WishlistWithItems } from "@/types";
+import type {
+  Wishlist,
+  WishlistItem,
+  WishlistOwnerPayoutState,
+  WishlistWithItems,
+} from "@/types";
 
 export interface WishlistViewProps {
   wishlist: WishlistWithItems;
   /** Owner's username; the share URL is /<ownerUsername>/<slug>. */
   ownerUsername: string;
   viewerIsOwner: boolean;
-  /** Owner's bank details are on file, so gifts split straight to them. */
+  /** Owner's payout setup is complete, so gifts split straight to them. */
   ownerPayoutReady?: boolean;
+  /** Why gifts would collect on the platform: KYC or bank details pending. */
+  ownerPayoutState?: WishlistOwnerPayoutState;
   /** Signed-in giver prefill for the give sheet; null for guests. */
   viewer: { id: string; name: string; email: string } | null;
   seasonal: boolean;
@@ -51,6 +58,7 @@ export function WishlistView({
   ownerUsername,
   viewerIsOwner,
   ownerPayoutReady = true,
+  ownerPayoutState,
   viewer,
   seasonal,
   givers,
@@ -63,6 +71,26 @@ export function WishlistView({
   const [deleteItem, setDeleteItem] = useState<WishlistItem | null>(null);
 
   const archived = wishlist.status === "archived";
+  // The state flag is authoritative; the boolean is the back-compat path
+  // for callers that have not been taught the state yet.
+  const payoutState: WishlistOwnerPayoutState =
+    ownerPayoutState ?? (ownerPayoutReady ? "ready" : "bank_missing");
+  const payoutNotice =
+    payoutState === "kyc_pending"
+      ? {
+          title: "Identity verification isn't finished",
+          description:
+            "Your gifts still come through and collect on RefreeG for now. Finish verification in Settings and they split straight to your bank account.",
+          href: "/dashboard/settings/kyc",
+          label: "Finish verification",
+        }
+      : {
+          title: "Your bank account isn't added yet",
+          description:
+            "Your verification is done, so this is the last step. Gifts collect on RefreeG until you add a bank account in Settings, then they split straight to it.",
+          href: "/dashboard/settings/bank",
+          label: "Add your bank account",
+        };
   const totalContributed = items.reduce(
     (sum, item) => sum + item.contributed,
     0,
@@ -139,21 +167,21 @@ export function WishlistView({
           </div>
         )}
 
-        {/* Gold means waiting, not error: without bank details on file the
-            gifts still collect, they just land on the platform account. */}
-        {viewerIsOwner && !ownerPayoutReady && (
+        {/* Gold means waiting, not error: gifts still collect, they just
+            land on the platform account until payout setup is complete. */}
+        {viewerIsOwner && payoutState !== "ready" && (
           <div className="mt-5">
             <CalloutBanner
               variant="gold"
               icon={<Landmark className="mt-0.5 h-5 w-5 shrink-0" />}
-              title="Payout details aren't finished"
-              description="Gifts still come through — they collect on RefreeG until you finish verification in Settings. After that, they split straight to your bank account."
+              title={payoutNotice.title}
+              description={payoutNotice.description}
               action={
                 <Link
-                  href="/dashboard/settings/kyc"
+                  href={payoutNotice.href}
                   className="mt-0.5 shrink-0 text-sm font-semibold text-blue-accent hover:underline"
                 >
-                  Finish
+                  {payoutNotice.label}
                 </Link>
               }
             />
@@ -188,7 +216,7 @@ export function WishlistView({
                 title="No gifts listed yet"
                 description={
                   viewerIsOwner
-                    ? "Add the things you'd actually love — each with its price — then share the link."
+                    ? "Add the things you'd actually love, each with its price, then share the link."
                     : "Check back soon; the wishlist owner is still picking gifts."
                 }
                 action={
@@ -274,7 +302,7 @@ export function WishlistView({
               {deleteItem && deleteItem.contributed > 0 ? (
                 <>
                   {formatNaira(deleteItem.contributed)} has already been given
-                  toward this item, so it can&apos;t be deleted — the money
+                  toward this item, so it can&apos;t be deleted: the money
                   ledger must keep resolving. You can still edit its name and
                   note.
                 </>

@@ -212,9 +212,9 @@ export function ContributeSheet({
             </div>
             {remaining < WISHLIST_CONTRIBUTION_MIN && (
               <p className="mt-2 text-[13px] leading-5 text-ink/55">
-                Only ₦{remaining.toLocaleString()} of this goal is left —
-                smaller than the ₦{WISHLIST_CONTRIBUTION_MIN} minimum, so this
-                item can&apos;t take another gift.
+                Only ₦{remaining.toLocaleString()} of this goal is left, smaller
+                than the ₦{WISHLIST_CONTRIBUTION_MIN} minimum, so this item
+                can&apos;t take another gift.
               </p>
             )}
             {form.preset === "other" && (

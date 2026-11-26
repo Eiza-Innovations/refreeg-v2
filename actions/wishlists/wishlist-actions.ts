@@ -10,6 +10,7 @@ import type {
   WishlistContributionData,
   WishlistGiftSummary,
   WishlistItem,
+  WishlistOwnerPayoutState,
   WishlistWithItems,
   PaymentProviderType,
 } from "@/types";
@@ -19,7 +20,7 @@ import {
   wishlistItemSchema,
   wishlistUpdateSchema,
 } from "@/lib/schemas/wishlist.schema";
-import { allocateUniqueWishlistSlug } from "@/lib/wishlist/slug";
+import { slugifyWishlistTitle } from "@/lib/wishlist/slug";
 import {
   sendWishlistContributionEmail,
   sendWishlistItemFundedEmail,
@@ -53,6 +54,17 @@ function isSlugTakenForUser(userId: string, slug: string) {
   return prisma.wishlists
     .findFirst({ where: { user_id: userId, slug }, select: { id: true } })
     .then((row) => row !== null);
+}
+
+// Identity verification first, then a bank account: both live in Settings,
+// and gifts only split straight to the owner once both are done.
+function resolveOwnerPayoutState(user: {
+  isVerified: boolean | null;
+  subAccountCode: string | null;
+}): WishlistOwnerPayoutState {
+  if (!user.isVerified) return "kyc_pending";
+  if (!user.subAccountCode) return "bank_missing";
+  return "ready";
 }
 
 async function requireOwnedWishlist(wishlistId: string, userId: string) {
@@ -101,7 +113,7 @@ export async function createWishlist(input: {
     // The share URL carries the owner's username, so it must exist first.
     const owner = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { username: true },
+      select: { username: true, isVerified: true, subAccountCode: true },
     });
     if (!owner?.username) {
       return {
@@ -110,9 +122,28 @@ export async function createWishlist(input: {
       };
     }
 
-    const slug = await allocateUniqueWishlistSlug(parsed.data.title, {
-      isTaken: (candidate) => isSlugTakenForUser(session.user.id, candidate),
-    });
+    // A wishlist collects real money for its owner, so payout setup comes
+    // before the first list exists, not after the first gift lands.
+    const payoutState = resolveOwnerPayoutState(owner);
+    if (payoutState !== "ready") {
+      return {
+        success: false,
+        error:
+          payoutState === "kyc_pending"
+            ? "Verify your identity in Settings before creating a wishlist"
+            : "Add your bank account in Settings before creating a wishlist",
+      };
+    }
+
+    const slug = slugifyWishlistTitle(parsed.data.title);
+    // Same name, same slug: say so instead of quietly spawning "-2" links.
+    if (await isSlugTakenForUser(session.user.id, slug)) {
+      return {
+        success: false,
+        error:
+          "You already have a wishlist with this name. Pick a different name.",
+      };
+    }
     const wishlist = await prisma.wishlists.create({
       data: {
         user_id: session.user.id,
@@ -393,12 +424,18 @@ export async function getWishlistByUsernameAndSlug(
     ownerUsername: string;
     viewerIsOwner: boolean;
     ownerPayoutReady: boolean;
+    ownerPayoutState: WishlistOwnerPayoutState;
   };
 }> {
   try {
     const user = await prisma.user.findUnique({
       where: { username },
-      select: { id: true, username: true, subAccountCode: true },
+      select: {
+        id: true,
+        username: true,
+        isVerified: true,
+        subAccountCode: true,
+      },
     });
     if (!user) return { success: false, error: "Wishlist not found" };
 
@@ -411,6 +448,7 @@ export async function getWishlistByUsernameAndSlug(
     if (!wishlist) return { success: false, error: "Wishlist not found" };
 
     const session = await auth();
+    const ownerPayoutState = resolveOwnerPayoutState(user);
     return {
       success: true,
       data: {
@@ -422,16 +460,60 @@ export async function getWishlistByUsernameAndSlug(
         // owner's username (the column is nullable, the lookup is not).
         ownerUsername: username,
         viewerIsOwner: session?.user?.id === wishlist.user_id,
-        // Bank details on file (the paystack subaccount exists), so gifts
+        // Ready means identity verified AND bank details on file, so gifts
         // split straight to the owner instead of collecting on the
-        // platform. A boolean only — never the payout details themselves.
-        ownerPayoutReady: Boolean(user.subAccountCode),
+        // platform. A state flag only, never the payout details themselves.
+        ownerPayoutReady: ownerPayoutState === "ready",
+        ownerPayoutState,
       },
     };
   } catch (error) {
     console.error("Error loading wishlist:", error);
     return { success: false, error: "Could not load the wishlist" };
   }
+}
+
+/** Gates the creation flow: no wishlist until payout setup is complete. */
+export async function getWishlistCreationReadiness(): Promise<{
+  signedIn: boolean;
+  username: string | null;
+  payoutState: WishlistOwnerPayoutState;
+  /** Boolean flags only, never the payout details themselves. */
+  kycVerified: boolean;
+  bankAdded: boolean;
+}> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return {
+      signedIn: false,
+      username: null,
+      payoutState: "kyc_pending",
+      kycVerified: false,
+      bankAdded: false,
+    };
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { username: true, isVerified: true, subAccountCode: true },
+  });
+  if (!user) {
+    return {
+      signedIn: false,
+      username: null,
+      payoutState: "kyc_pending",
+      kycVerified: false,
+      bankAdded: false,
+    };
+  }
+
+  return {
+    signedIn: true,
+    username: user.username,
+    payoutState: resolveOwnerPayoutState(user),
+    kycVerified: Boolean(user.isVerified),
+    bankAdded: Boolean(user.subAccountCode),
+  };
 }
 
 export async function listUserWishlists(): Promise<{

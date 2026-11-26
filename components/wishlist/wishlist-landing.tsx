@@ -10,7 +10,7 @@ const STEPS = [
   {
     icon: Gift,
     title: "Name your gifts",
-    body: "List what you actually want, each with its price — a study desk, a wig, fuel for the year. It takes about a minute.",
+    body: "List what you actually want, each with its price: a study desk, a wig, fuel for the year. It takes about a minute.",
   },
   {
     icon: Link2,
@@ -41,8 +41,8 @@ export function WishlistLanding() {
           </h1>
           <p className="mt-4 text-base leading-7 text-ink/60 sm:text-lg">
             {seasonal
-              ? "This Christmas, skip the guesswork. Name the gifts you'd love, share one link, and let the people who care give together — anonymously if they choose."
-              : "Name the gifts you'd love, share one link, and let the people who care give together — anonymously if they choose."}
+              ? "This Christmas, skip the guesswork. Name the gifts you'd love, share one link, and let the people who care give together, anonymously if they choose."
+              : "Name the gifts you'd love, share one link, and let the people who care give together, anonymously if they choose."}
           </p>
           <div className="mt-7 flex flex-col items-center gap-3">
             <Button

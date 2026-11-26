@@ -47,12 +47,16 @@ const SENDERS = {
 type SenderKey = keyof typeof SENDERS;
 
 // Template name -> sender; anything not listed sends as support@.
+// Wishlist gift alerts are one-way notifications, so they go from noreply@;
+// the footer still points at support@ for anyone who needs help.
 const SENDER_BY_TEMPLATE: Partial<Record<string, SenderKey>> = {
   "otp-verification": "noreply",
   "password-reset": "noreply",
   "email-change-confirm": "noreply",
   "login-notification": "noreply",
   "bank-account-added": "noreply",
+  "wishlist-contribution-received": "noreply",
+  "wishlist-item-funded": "noreply",
   "welcome-email": "hello",
   announcement: "hello",
   "organization-invitation": "hello",

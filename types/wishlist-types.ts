@@ -42,6 +42,12 @@ export interface WishlistWithItems extends Wishlist {
   items: WishlistItem[];
 }
 
+/** Why a wishlist would collect on the platform instead of splitting
+ * straight to the owner: identity verification pending, or no bank account
+ * on file yet. Drives the owner callout and the creation gate; the payout
+ * details themselves never leave the server. */
+export type WishlistOwnerPayoutState = "ready" | "kyc_pending" | "bank_missing";
+
 /** One row of the owner-only givers panel (delivery coordination). */
 export interface WishlistContributor {
   id: string;

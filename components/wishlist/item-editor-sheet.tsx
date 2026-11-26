@@ -170,7 +170,7 @@ export function ItemEditorSheet({
             maxLength={280}
             rows={2}
             onChange={(e) => setForm({ ...form, note: e.target.value })}
-            placeholder="Size, colour, where to buy it — anything that helps."
+            placeholder="Say why you'd love it, or anything givers should know."
             className="mt-2 w-full rounded-md border border-hairline bg-surface px-4 py-3 text-[15px] text-ink outline-none focus:border-ink/40"
           />
           {errors.note && (
