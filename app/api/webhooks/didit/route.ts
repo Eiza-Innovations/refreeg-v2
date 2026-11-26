@@ -252,6 +252,7 @@ export async function POST(request: Request) {
       where: { id: kyc.id },
       data: {
         status: newStatus,
+        updated_at: new Date(),
         verification_notes: `Automated Didit result: ${status}${isRejected || isResubmitted ? ` - ${rejectionReason}` : ""}`,
         ...(cached.faceMatchScore != null && {
           face_match_score: cached.faceMatchScore,
