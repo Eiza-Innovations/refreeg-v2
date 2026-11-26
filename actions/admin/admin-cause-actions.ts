@@ -7,12 +7,12 @@ import { isAdminOrManager } from "./role-actions";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { DISCOVER_CACHE_TAG } from "@/lib/causes/discover-constants";
 import { sendCauseRejectedEmailForUser } from "@/services/mail";
+import { recordReviewDecision } from "@/lib/admin/review-decisions";
 import {
   allocateUniqueCauseSlug,
   shouldRefreshCauseSlug,
 } from "@/lib/causes/slug";
-
-export type CauseStatus = "pending" | "approved" | "rejected" | "expired";
+import type { CauseStatus } from "@/types/common-types";
 
 const requireApprovalLocation = (location?: string | null) => {
   const normalizedLocation = location?.trim();
@@ -247,6 +247,11 @@ export async function updateCauseStatus(
     throw new Error("Unauthorized: Admin or Manager role required");
   }
 
+  const editReview =
+    (await prisma.cause_edits.count({
+      where: { original_cause_id: causeId, status: "pending" },
+    })) > 0;
+
   if (status === "approved") {
     const pendingEdit = await prisma.cause_edits.findFirst({
       where: {
@@ -418,6 +423,14 @@ export async function updateCauseStatus(
       console.error("Email send failed:", err);
     }
   }
+
+  await recordReviewDecision({
+    actorId: session.user.id,
+    kind: "cause",
+    targetId: causeId,
+    decision: status,
+    editReview,
+  });
 
   revalidatePath("/dashboard/admin/causes");
   revalidateTag(DISCOVER_CACHE_TAG);

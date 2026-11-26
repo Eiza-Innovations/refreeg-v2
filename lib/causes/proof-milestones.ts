@@ -62,8 +62,11 @@ export async function assertCauseAcceptingDonations(
 ): Promise<void> {
   const cause = await prisma.cause.findUnique({
     where: { id: causeId },
-    select: { compliance_paused: true },
+    select: { compliance_paused: true, status: true },
   });
+  if (cause?.status === "removed") {
+    throw new Error("This campaign was removed after review.");
+  }
   if (cause?.compliance_paused) {
     throw new Error(
       "This campaign is not currently accepting donations. The organizer needs to post a fund-use update.",

@@ -1,12 +1,14 @@
 /**
  * @jest-environment node
  */
+jest.mock("@/lib/auth/auth", () => ({ auth: jest.fn() }));
+jest.mock("@/lib/prisma", () => ({ prisma: {} }));
 jest.mock("@/actions/admin/role-actions", () => ({
   listUsersWithRoles: jest.fn(),
 }));
 
 import { listUsersWithRoles } from "@/actions/admin/role-actions";
-import { exportUsersToCSV } from "@/app/dashboard/admin/users/actions/export-csv";
+import { exportUsersToCSV } from "@/actions/admin/admin-user-actions";
 
 const mockListUsersWithRoles = listUsersWithRoles as jest.Mock;
 
