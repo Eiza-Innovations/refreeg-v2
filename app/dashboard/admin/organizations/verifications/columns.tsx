@@ -2,6 +2,7 @@
 
 import { createColumnHelper } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
+import { Small, Span } from "@/components/marketing/Typography";
 import { getMediaUrl } from "@/lib/s3/media";
 import { formatRelativeTime } from "@/lib/format-date";
 import {
@@ -23,62 +24,80 @@ export const verificationColumns = (
       id: "organisation",
       header: "Organisation",
       cell: ({ row }) => (
-        <span className="flex flex-col">
-          <span className="font-medium text-ink">
+        <Span className="flex flex-col">
+          <Span className="font-medium text-ink">
             {row.original.organizationName}
-          </span>
-          <span className="text-xs text-ink/50">
+          </Span>
+          <Small className="text-ink/50">
             {[row.original.registrationNumber, row.original.country]
               .filter(Boolean)
               .join(" · ") || "No registration number"}
-          </span>
-        </span>
+          </Small>
+        </Span>
       ),
     }),
     columnHelper.accessor("adminEmail", {
       header: "Contact",
       cell: (info) => (
-        <span className="text-sm text-ink/70">{info.getValue()}</span>
+        <Span className="text-sm text-ink/70">{info.getValue()}</Span>
       ),
     }),
     columnHelper.accessor("submittedAt", {
       header: "Submitted",
       cell: ({ row }) => (
-        <span className="text-sm text-ink/70">
+        <Span className="text-sm text-ink/70">
           {formatRelativeTime(row.original.submittedAt)}
-        </span>
+        </Span>
       ),
     }),
     columnHelper.display({
       id: "documents",
       header: "Documents",
-      cell: ({ row }) => (
-        <span className="flex flex-col gap-1 text-sm">
-          <a
-            className="font-medium text-blue-accent hover:underline"
-            href={getMediaUrl(row.original.registrationDocKey)}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Registration doc
-          </a>
-          <span className="text-xs text-ink/50">
-            {row.original.directorIdKeys.length} director{" "}
-            {row.original.directorIdKeys.length === 1 ? "ID" : "IDs"}:{" "}
-            {row.original.directorIdKeys.map((key, index) => (
-              <a
-                key={key}
-                className="text-blue-accent hover:underline"
-                href={getMediaUrl(key)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                {index + 1}
-              </a>
-            ))}
+      cell: ({ row }) => {
+        const companyDocs = [
+          { label: "CAC Cert", key: row.original.registrationDocKey },
+          { label: "Status Report", key: row.original.statusReportDocKey },
+          { label: "MEMART", key: row.original.memartDocKey },
+          { label: "SCUML", key: row.original.scumlDocKey },
+          { label: "TIN", key: row.original.tinDocKey },
+          { label: "Address", key: row.original.addressProofDocKey },
+        ].filter((doc): doc is { label: string; key: string } =>
+          Boolean(doc.key),
+        );
+
+        return (
+          <span className="flex flex-col gap-1 text-sm">
+            <span className="flex flex-wrap gap-x-2 gap-y-0.5">
+              {companyDocs.map((doc) => (
+                <a
+                  key={doc.label}
+                  className="font-medium text-blue-accent hover:underline"
+                  href={getMediaUrl(doc.key)}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {doc.label}
+                </a>
+              ))}
+            </span>
+            <Small className="text-ink/50">
+              {row.original.directorIdKeys.length} director{" "}
+              {row.original.directorIdKeys.length === 1 ? "ID" : "IDs"}:{" "}
+              {row.original.directorIdKeys.map((key, index) => (
+                <a
+                  key={key}
+                  className="mr-1.5 text-blue-accent hover:underline"
+                  href={getMediaUrl(key)}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {index + 1}
+                </a>
+              ))}
+            </Small>
           </span>
-        </span>
-      ),
+        );
+      },
     }),
     columnHelper.display({
       id: "actions",

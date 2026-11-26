@@ -249,7 +249,7 @@ model OrganizationInvitation {
   @@map("organization_invitations")
 }
 
-/// Organisation verification submissions: CAC registration document plus
+/// Organisation verification submissions: Nigerian KYB company documents plus
 /// director IDs, reviewed by admins (about 2 working days). Gates payouts
 /// and CSR giving via Organization.verificationStatus.
 model OrganizationVerification {
@@ -257,6 +257,11 @@ model OrganizationVerification {
   organizationId     String       @map("organization_id") @db.Uuid
   status             String       @default("pending")
   registrationDocKey String       @map("registration_doc_key")
+  statusReportDocKey String?      @map("status_report_doc_key")
+  memartDocKey       String?      @map("memart_doc_key")
+  scumlDocKey        String?      @map("scuml_doc_key")
+  tinDocKey          String?      @map("tin_doc_key")
+  addressProofDocKey String?      @map("address_proof_doc_key")
   directorIdKeys     String[]     @default([]) @map("director_id_keys")
   note               String?
   reviewedById       String?      @map("reviewed_by_id")

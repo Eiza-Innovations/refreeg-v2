@@ -3,6 +3,32 @@ import { prisma } from "@/lib/prisma";
 export async function requireKycAndProfile(
   userId: string,
 ): Promise<string | null> {
+  const profile = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      accountType: true,
+      fullName: true,
+      profilePhoto: true,
+      ownedOrganization: {
+        select: { verificationStatus: true },
+      },
+    },
+  });
+
+  if (profile?.accountType === "organization") {
+    if (!profile.ownedOrganization) {
+      return "/onboarding";
+    }
+    const status = profile.ownedOrganization.verificationStatus;
+    if (status !== "approved") {
+      if (status === "pending" || status === "rejected") {
+        return `/dashboard/settings/kyc?error=kyc_${status}`;
+      }
+      return "/dashboard/settings/kyc?error=kyc_required";
+    }
+    return null;
+  }
+
   const kycVerification = await prisma.kyc_verifications.findFirst({
     where: { user_id: userId },
     orderBy: { created_at: "desc" },
@@ -15,16 +41,6 @@ export async function requireKycAndProfile(
   if (kycVerification.status !== "approved") {
     return `/dashboard/settings/kyc?error=kyc_${kycVerification.status}`;
   }
-
-  // 2. Check profile completeness (fullName + profilePhoto)
-  // Note: The model name is 'User' in Prisma, mapping to 'profiles' table.
-  const profile = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      fullName: true,
-      profilePhoto: true,
-    },
-  });
 
   const hasFullName = !!(profile?.fullName && profile.fullName.trim() !== "");
   const hasPhoto = !!profile?.profilePhoto;

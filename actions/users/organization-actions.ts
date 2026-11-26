@@ -846,23 +846,47 @@ export async function saveCsrSetup(input: {
   }
 }
 
-export async function createOrganizationVerification(input: {
-  registrationDocKey: string;
-  directorIdKeys: string[];
-}) {
+import { organizationVerificationSchema } from "@/lib/schemas/organization-verification.schema";
+import type { OrganizationVerificationInput } from "@/lib/schemas/organization-verification.schema";
+
+export async function createOrganizationVerification(
+  input: OrganizationVerificationInput,
+) {
   try {
     const { user, organization } = await requireOrganizationAccess(true);
 
     if (organization.verificationStatus === "approved") {
       throw new Error("This organisation is already verified.");
     }
-    if (!input.registrationDocKey) {
-      throw new Error("Upload the CAC registration document.");
+
+    const parsed = organizationVerificationSchema.safeParse(input);
+    if (!parsed.success) {
+      throw new Error(
+        parsed.error.issues[0]?.message || "Invalid verification documents.",
+      );
     }
-    if (!input.directorIdKeys.length) {
-      throw new Error("Upload at least one director ID.");
-    }
-    for (const key of [input.registrationDocKey, ...input.directorIdKeys]) {
+
+    const {
+      registrationDocKey,
+      statusReportDocKey,
+      memartDocKey,
+      scumlDocKey,
+      tinDocKey,
+      addressProofDocKey,
+      directorIdKeys,
+    } = parsed.data;
+
+    const allKeys = [
+      registrationDocKey,
+      statusReportDocKey,
+      memartDocKey,
+      scumlDocKey,
+      tinDocKey,
+      addressProofDocKey,
+      ...directorIdKeys,
+    ].filter(Boolean);
+
+    for (const key of allKeys) {
       if (!isOwnUploadKey(key, "organizations", user.id)) {
         throw new Error("Invalid document upload.");
       }
@@ -880,8 +904,13 @@ export async function createOrganizationVerification(input: {
       prisma.organizationVerification.create({
         data: {
           organizationId: organization.id,
-          registrationDocKey: input.registrationDocKey,
-          directorIdKeys: input.directorIdKeys,
+          registrationDocKey,
+          statusReportDocKey,
+          memartDocKey: memartDocKey || null,
+          scumlDocKey: scumlDocKey || null,
+          tinDocKey: tinDocKey || null,
+          addressProofDocKey: addressProofDocKey || null,
+          directorIdKeys,
         },
       }),
       prisma.organization.update({
@@ -891,6 +920,7 @@ export async function createOrganizationVerification(input: {
     ]);
 
     revalidatePath("/organization/verification");
+    revalidatePath("/dashboard/settings/kyc");
     revalidatePath("/onboarding");
     return { success: true as const };
   } catch (error) {

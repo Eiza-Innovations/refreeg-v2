@@ -16,6 +16,11 @@ export type OrganizationVerificationRow = {
   adminEmail: string;
   country: string;
   registrationDocKey: string;
+  statusReportDocKey: string | null;
+  memartDocKey: string | null;
+  scumlDocKey: string | null;
+  tinDocKey: string | null;
+  addressProofDocKey: string | null;
   directorIdKeys: string[];
   submittedAt: string;
 };

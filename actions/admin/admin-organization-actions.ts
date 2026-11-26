@@ -42,6 +42,11 @@ export async function getOrganizationVerificationQueue() {
         adminEmail: submission.organization.adminEmail,
         country: submission.organization.country || "",
         registrationDocKey: submission.registrationDocKey,
+        statusReportDocKey: submission.statusReportDocKey,
+        memartDocKey: submission.memartDocKey,
+        scumlDocKey: submission.scumlDocKey,
+        tinDocKey: submission.tinDocKey,
+        addressProofDocKey: submission.addressProofDocKey,
         directorIdKeys: submission.directorIdKeys,
         submittedAt: submission.createdAt.toISOString(),
       })),
@@ -67,6 +72,9 @@ export async function reviewOrganizationVerification(input: {
     const admin = await requireAdmin();
     const submission = await prisma.organizationVerification.findUnique({
       where: { id: input.id },
+      include: {
+        organization: { select: { ownerId: true } },
+      },
     });
     if (!submission) {
       throw new Error("Verification submission not found.");
@@ -91,10 +99,15 @@ export async function reviewOrganizationVerification(input: {
         where: { id: submission.organizationId },
         data: { verificationStatus: status },
       }),
+      prisma.user.update({
+        where: { id: submission.organization.ownerId },
+        data: { isVerified: status === "approved" },
+      }),
     ]);
 
     revalidatePath("/dashboard/admin/organizations/verifications");
     revalidatePath("/organization/verification");
+    revalidatePath("/dashboard/settings/kyc");
     revalidatePath("/onboarding");
     return { success: true as const };
   } catch (error) {
