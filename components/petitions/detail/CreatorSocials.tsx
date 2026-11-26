@@ -1,5 +1,5 @@
 import { Facebook, Instagram, Linkedin, Twitter } from "lucide-react";
-import type { SocialLinks } from "@/lib/petitions/social-links";
+import type { SocialLinks } from "@/types/petition-types";
 
 const networks = [
   { key: "twitter", label: "Twitter", Icon: Twitter },

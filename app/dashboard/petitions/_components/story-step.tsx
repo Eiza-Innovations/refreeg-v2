@@ -6,7 +6,7 @@ import { Eyebrow } from "@/components/ui/eyebrow";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { StepHeading } from "./step-heading";
+import { StepHeading } from "./StepHeading";
 import type { PetitionCopy } from "./petition-copy";
 import type { PetitionFormApi } from "@/hooks/use-petition-form";
 
@@ -29,8 +29,8 @@ export function PetitionStoryStep({
         <Button
           type="button"
           onClick={addSection}
-          variant="outline"
-          className="rounded-xl border-ink bg-surface text-ink hover:bg-bone"
+          variant="surface"
+          className="rounded-xl"
         >
           Add Section
         </Button>

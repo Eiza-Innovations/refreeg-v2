@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { Progress } from "@/components/ui/progress";
+import { goalPercent } from "@/lib/progress";
 import type { Signature } from "@/types";
 
 interface SignersListProps {
@@ -15,8 +16,7 @@ export function SignersList({
   goal,
 }: SignersListProps) {
   const total = signers.reduce((sum, signer) => sum + (signer.amount || 0), 0);
-  const percent =
-    goal > 0 ? Math.min(Math.round((total / goal) * 100), 100) : 0;
+  const percent = goalPercent(total, goal);
 
   return (
     <Card variant="surface" className="p-6">

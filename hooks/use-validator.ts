@@ -9,7 +9,8 @@ type FieldErrors<T extends z.ZodTypeAny> = Partial<
 
 /**
  * Validates one form-state object against a zod schema and keeps the first
- * message per field. `validate()` returns true when the store is valid.
+ * message per field. `validate()` returns true when the store is valid; pass
+ * `only` to check and show errors for just those fields.
  */
 export function useValidator<T extends z.ZodTypeAny>({
   store,
@@ -20,7 +21,7 @@ export function useValidator<T extends z.ZodTypeAny>({
 }) {
   const [errors, setErrors] = useState<FieldErrors<T>>({});
 
-  const validate = () => {
+  const validate = (only?: readonly string[]) => {
     const result = schema.safeParse(store);
     if (result.success) {
       setErrors({});
@@ -29,10 +30,12 @@ export function useValidator<T extends z.ZodTypeAny>({
     const next: Record<string, string> = {};
     for (const issue of result.error.issues) {
       const key = String(issue.path[0] ?? "");
-      if (key && !next[key]) next[key] = issue.message;
+      if (!key || next[key]) continue;
+      if (only && !only.includes(key)) continue;
+      next[key] = issue.message;
     }
     setErrors(next as FieldErrors<T>);
-    return false;
+    return only ? Object.keys(next).length === 0 : false;
   };
 
   const clearError = (key: keyof FieldErrors<T>) =>

@@ -1,3 +1,4 @@
+import { Eyebrow } from "@/components/ui/eyebrow";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -16,7 +17,7 @@ import {
   selectTriggerClass,
 } from "@/components/petitions/field-styles";
 import { FieldError } from "@/components/ui/field-error";
-import { StepHeading } from "./step-heading";
+import { StepHeading } from "./StepHeading";
 import type { PetitionCopy } from "./petition-copy";
 import type { PetitionFormApi } from "@/hooks/use-petition-form";
 
@@ -108,9 +109,9 @@ export function PetitionBasicsStep({
                   errors.goal && "border-rust",
                 )}
               />
-              <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-wider text-ink/40">
+              <Eyebrow className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[10px] text-ink/40">
                 Signatures
-              </div>
+              </Eyebrow>
             </div>
             <FieldError message={errors.goal} />
           </div>

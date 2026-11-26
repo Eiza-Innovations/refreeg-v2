@@ -2,7 +2,7 @@
 
 import type { FormEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { Icons } from "@/components/layout/Icons";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -13,8 +13,11 @@ import { useAuth } from "@/hooks/use-auth";
 import { usePetition } from "@/hooks/use-petition";
 import { usePetitionDraft } from "@/hooks/use-petition-draft";
 import { LAST_PETITION_STEP, usePetitionForm } from "@/hooks/use-petition-form";
-import type { PetitionFormFields } from "@/lib/schemas/petition.schema";
 import { sendPetitionUnderReviewEmail } from "@/services/mail";
+import {
+  emptyPetitionValues,
+  petitionToFormValues,
+} from "@/lib/petitions/form-values";
 import type { Petition } from "@/types";
 import { PetitionBasicsStep } from "./basics-step";
 import { PetitionMediaStep } from "./media-step";
@@ -22,36 +25,6 @@ import { petitionCopy } from "./petition-copy";
 import { PetitionReviewStep } from "./review-step";
 import { PetitionStoryStep } from "./story-step";
 import { PetitionTimelineStep } from "./timeline-step";
-
-const emptyValues: PetitionFormFields = {
-  title: "",
-  category: "",
-  goal: "",
-  coverImage: null,
-  image: "",
-  sections: [{ heading: "", description: "" }],
-  startDate: undefined,
-  endDate: undefined,
-  multimedia: [],
-  videoLinks: [],
-};
-
-function valuesFromPetition(petition: Petition): PetitionFormFields {
-  const startDate = petition.days_active ? new Date() : undefined;
-  return {
-    ...emptyValues,
-    title: petition.title,
-    category: petition.category,
-    goal: petition.goal.toString(),
-    image: petition.image || "",
-    sections: petition.sections || emptyValues.sections,
-    startDate,
-    endDate: startDate
-      ? new Date(Date.now() + petition.days_active! * 24 * 60 * 60 * 1000)
-      : undefined,
-    videoLinks: petition.video_links || [],
-  };
-}
 
 type Props =
   | { mode: "create"; petition?: undefined }
@@ -62,10 +35,11 @@ export function PetitionWizard({ mode, petition }: Props) {
   const copy = petitionCopy[mode];
   const { user } = useAuth();
   const { isLoading, createPetition, updatePetition } = usePetition();
-  const [submitting, setSubmitting] = useState(false);
   const wizard = usePetitionForm({
     mode,
-    initialValues: petition ? valuesFromPetition(petition) : emptyValues,
+    initialValues: petition
+      ? petitionToFormValues(petition)
+      : emptyPetitionValues,
   });
   const { form, currentStep } = wizard;
   const { clearDraft } = usePetitionDraft({
@@ -75,54 +49,51 @@ export function PetitionWizard({ mode, petition }: Props) {
     isSignedIn: Boolean(user),
   });
 
-  const submit = async () => {
-    if (!user || !wizard.validate()) return;
+  const submitMutation = useMutation({
+    mutationFn: async () => {
+      if (!user) return;
+      const data = {
+        title: form.title,
+        category: form.category,
+        goal: form.goal,
+        coverImage: form.coverImage,
+        sections: form.sections,
+        startDate: form.startDate,
+        endDate: form.endDate,
+        multimedia: form.multimedia,
+        video_links: form.videoLinks.map((link) => link.trim()).filter(Boolean),
+      };
 
-    const data = {
-      title: form.title,
-      category: form.category,
-      goal: form.goal,
-      coverImage: form.coverImage,
-      sections: form.sections,
-      startDate: form.startDate,
-      endDate: form.endDate,
-      multimedia: form.multimedia,
-      video_links: form.videoLinks.map((link) => link.trim()).filter(Boolean),
-    };
-
-    setSubmitting(true);
-    try {
       if (petition) {
         await updatePetition(petition.id, user.id, {
           ...data,
           image: form.coverImage ? undefined : petition.image || undefined,
         });
-      } else {
-        await sendPetitionUnderReviewEmail({
-          petitionName: form.title,
-          reviewTimeframe: "3-5 business days",
-        });
-        await createPetition(user.id, { ...data, description: "" });
-        clearDraft();
+        return;
       }
-    } catch (error) {
-      console.error(
-        `Error ${petition ? "updating" : "submitting"} petition:`,
-        error,
-      );
-    } finally {
-      setSubmitting(false);
-    }
+      await sendPetitionUnderReviewEmail({
+        petitionName: form.title,
+        reviewTimeframe: "3-5 business days",
+      });
+      await createPetition(user.id, { ...data, description: "" });
+      clearDraft();
+    },
+    onError: (error) => console.error("Petition submit failed:", error),
+  });
+
+  const submit = () => {
+    if (!user || !wizard.validate() || submitMutation.isPending) return;
+    submitMutation.mutate();
   };
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     if (!user) return;
     if (currentStep < LAST_PETITION_STEP) wizard.nextStep();
-    else void submit();
+    else submit();
   };
 
-  const busy = isLoading || submitting;
+  const busy = isLoading || submitMutation.isPending;
   const steps = copy.steps.map((label, i) => ({
     label,
     status:
@@ -188,6 +159,7 @@ export function PetitionWizard({ mode, petition }: Props) {
           </Button>
           {currentStep < LAST_PETITION_STEP ? (
             <Button
+              key="next"
               type="button"
               variant="ink"
               onClick={wizard.nextStep}
@@ -197,6 +169,7 @@ export function PetitionWizard({ mode, petition }: Props) {
             </Button>
           ) : (
             <Button
+              key="submit"
               type="submit"
               variant="lime"
               disabled={busy}

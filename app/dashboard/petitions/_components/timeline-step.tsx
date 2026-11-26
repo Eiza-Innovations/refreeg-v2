@@ -8,11 +8,13 @@ import {
   startOfDay,
 } from "date-fns";
 import { CalendarIcon } from "lucide-react";
+import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { calendarClassNames } from "@/components/petitions/field-styles";
 import { MAX_PETITION_DURATION_DAYS } from "@/lib/schemas/petition.schema";
 import { FieldError } from "@/components/ui/field-error";
-import { StepHeading } from "./step-heading";
+import { StepHeading } from "./StepHeading";
 import type { PetitionCopy } from "./petition-copy";
 import type { PetitionFormApi } from "@/hooks/use-petition-form";
 
@@ -49,29 +51,31 @@ export function PetitionTimelineStep({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="space-y-4">
           <Label className="mb-2 block">{copy.startLabel}</Label>
-          <div className="rounded-xl border border-hairline bg-surface p-4">
+          <Card variant="surface" className="p-4">
             <Calendar
               mode="single"
+              classNames={calendarClassNames}
               selected={startDate}
               onSelect={(date) => setFormFields("startDate", date)}
               disabled={(date) => isBefore(date, today)}
               initialFocus
             />
-          </div>
+          </Card>
           <FieldError message={errors.startDate} />
         </div>
 
         <div className="space-y-4">
           <Label className="mb-2 block">End date</Label>
-          <div className="rounded-xl border border-hairline bg-surface p-4">
+          <Card variant="surface" className="p-4">
             <Calendar
               mode="single"
+              classNames={calendarClassNames}
               selected={endDate}
               onSelect={(date) => setFormFields("endDate", date)}
               disabled={isEndDateDisabled}
               initialFocus
             />
-          </div>
+          </Card>
           <FieldError message={errors.endDate} />
         </div>
       </div>

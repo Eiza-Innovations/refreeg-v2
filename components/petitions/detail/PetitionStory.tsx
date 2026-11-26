@@ -18,7 +18,7 @@ export function PetitionStory({ description, sections, videoLinks }: Props) {
 
       {sections?.map((section, index) => (
         <section key={index} className="space-y-2">
-          <Heading as="h3" size="subsection" className="text-2xl md:text-2xl">
+          <Heading as="h3" size="panel">
             {section.heading}
           </Heading>
           <P className="whitespace-pre-line leading-7 text-ink/70">
@@ -29,7 +29,7 @@ export function PetitionStory({ description, sections, videoLinks }: Props) {
 
       {videoLinks.length > 0 && (
         <section className="space-y-2">
-          <Heading as="h3" size="subsection" className="text-2xl md:text-2xl">
+          <Heading as="h3" size="panel">
             Watch
           </Heading>
           <ul className="space-y-1.5">

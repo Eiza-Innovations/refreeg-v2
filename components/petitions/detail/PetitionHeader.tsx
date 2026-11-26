@@ -3,8 +3,9 @@ import { Flag } from "lucide-react";
 import { Heading, Small } from "@/components/marketing/Typography";
 import { Badge } from "@/components/ui/badge";
 import { Eyebrow } from "@/components/ui/eyebrow";
-import { CreatorSocials } from "./creator-socials";
-import type { SocialLinks } from "@/lib/petitions/social-links";
+import { CreatorSocials } from "./CreatorSocials";
+import { formatDate } from "@/lib/format-date";
+import type { SocialLinks } from "@/types/petition-types";
 
 type Props = {
   title: string;
@@ -32,12 +33,6 @@ export function PetitionHeader({
   status,
   socials,
 }: Props) {
-  const started = new Date(createdAt).toLocaleDateString("en-GB", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-
   return (
     <header className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
@@ -65,7 +60,7 @@ export function PetitionHeader({
               on{" "}
             </>
           )}
-          {started}
+          {formatDate(createdAt)}
         </Small>
         <CreatorSocials links={socials} />
       </div>
