@@ -23,6 +23,7 @@ import {
 import { slugifyWishlistTitle } from "@/lib/wishlist/slug";
 import {
   sendWishlistContributionEmail,
+  sendWishlistGiftReceiptEmail,
   sendWishlistItemFundedEmail,
 } from "@/services/mail";
 
@@ -690,15 +691,36 @@ export async function recordWishlistContribution(
     }
 
     const owner = itemWithWishlist?.wishlist.user;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com";
+    // The public page lives at /<username>/<slug>; an owner still onboarding
+    // has no public URL, so emails point at the dashboard section.
+    const wishlistUrl = owner?.username
+      ? `${appUrl}/${owner.username}/${itemWithWishlist?.wishlist.slug}`
+      : `${appUrl}/dashboard/wishlists`;
+
+    // The giver's own receipt, independent of whether the owner has an
+    // email on file. A replayed reference returned above, so this fires
+    // exactly once per gift.
+    if (itemWithWishlist && data.email) {
+      sendWishlistGiftReceiptEmail({
+        to: data.email,
+        giverName: data.name || null,
+        wishlistTitle: itemWithWishlist.wishlist.title,
+        itemName: itemWithWishlist.name,
+        amount,
+        wishlistUrl,
+        reference:
+          result.contribution.paystack_reference ?? paystackReference ?? null,
+        giftNote: data.message,
+        isAnonymous: data.isAnonymous,
+      }).catch((err) =>
+        console.error("Error sending wishlist gift receipt email:", err),
+      );
+    }
+
     if (!owner?.email || !itemWithWishlist)
       return mapPrismaToWishlistContribution(result.contribution);
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com";
-    // The public page lives at /<username>/<slug>; an owner still onboarding
-    // has no public URL, so their email points at the dashboard section.
-    const wishlistUrl = owner.username
-      ? `${appUrl}/${owner.username}/${itemWithWishlist.wishlist.slug}`
-      : `${appUrl}/dashboard/wishlists`;
     const giverName = data.isAnonymous
       ? "An anonymous giver"
       : data.name || "A giver";

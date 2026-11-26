@@ -22,6 +22,60 @@ const baseContext = {
   currentYear: 2026,
 };
 
+describe("wishlist gift receipt template", () => {
+  const base = {
+    ...baseContext,
+    giverName: "Adaeze",
+    reference: "PSK_abc123",
+    isAnonymous: false,
+  };
+
+  it("addresses the giver, shows the amount, reference and wishlist link", () => {
+    const html = load("wishlist-gift-receipt")(base);
+
+    expect(html).toContain("Your gift went through, thank you");
+    expect(html).toContain("Hi Adaeze");
+    expect(html).toContain("&#8358;2,500");
+    expect(html).toContain("Reference: PSK_abc123");
+    expect(html).toContain("View the wishlist");
+    expect(html).toContain("Keep this email for your records");
+    // An anonymous line would be wrong for a named giver.
+    expect(html).not.toContain("give anonymously");
+  });
+
+  it("tells anonymous givers their name stays hidden", () => {
+    const html = load("wishlist-gift-receipt")({ ...base, isAnonymous: true });
+
+    expect(html).toContain("the owner won&rsquo;t see your name");
+  });
+
+  it("echoes the giver's own note when there is one", () => {
+    const html = load("wishlist-gift-receipt")({
+      ...base,
+      showNote: true,
+      giftNote: "Merry Christmas, Nomso!",
+    });
+
+    expect(html).toContain("Your note: &ldquo;Merry Christmas, Nomso!&rdquo;");
+  });
+
+  it("hides the reference row when no reference exists", () => {
+    const html = load("wishlist-gift-receipt")({ ...base, reference: null });
+
+    expect(html).not.toContain("Reference:");
+  });
+
+  it("carries the seasonal line in season and stays plain otherwise", () => {
+    const everyday = load("wishlist-gift-receipt")({ ...base });
+    expect(everyday).not.toContain("Christmas");
+
+    const seasonal = load("wishlist-gift-receipt")({ ...base, seasonal: true });
+    expect(seasonal).toContain(
+      "your gift counts toward a Christmas wish on this list",
+    );
+  });
+});
+
 describe("wishlist email templates seasonal voice", () => {
   it("adds the one seasonal line to the contribution email only in season", () => {
     const render = load("wishlist-contribution-received");

@@ -1143,6 +1143,50 @@ export async function sendWishlistItemFundedEmail({
   });
 }
 
+// Receipts are money mail a giver might answer (wrong amount, refund
+// request), so per the policy table above this one stays on support@.
+export async function sendWishlistGiftReceiptEmail({
+  to,
+  giverName,
+  wishlistTitle,
+  itemName,
+  amount,
+  wishlistUrl,
+  reference,
+  giftNote,
+  isAnonymous,
+}: {
+  to: string;
+  giverName: string | null;
+  wishlistTitle: string;
+  itemName: string;
+  amount: number;
+  wishlistUrl: string;
+  reference?: string | null;
+  giftNote?: string | null;
+  isAnonymous?: boolean;
+}) {
+  const note = giftNote?.trim();
+  return sendMail({
+    to,
+    subject: `💚 Your gift to "${wishlistTitle}" went through`,
+    templateName: "wishlist-gift-receipt",
+    context: {
+      giverName: giverName?.trim() || "there",
+      wishlistTitle,
+      itemName,
+      amount: amount.toLocaleString(),
+      wishlistUrl,
+      reference: reference?.trim() || null,
+      showNote: Boolean(note),
+      giftNote: note,
+      isAnonymous: Boolean(isAnonymous),
+      seasonal: isWishlistSeasonActive(),
+      currentYear: new Date().getFullYear(),
+    },
+  });
+}
+
 const COMMENT_EXCERPT_MAX_LENGTH = 200;
 
 export async function sendNewCommentEmail({
