@@ -8,6 +8,7 @@ import { Dialog, DialogClose, DialogTitle } from "@/components/ui/dialog";
 import { ResponsiveDialogContent } from "@/components/ui/responsive-dialog-content";
 import { Button } from "@/components/ui/button";
 import { CalloutBanner } from "@/components/ui/callout-banner";
+import { P, Small, Span } from "@/components/marketing/Typography";
 import { Icons } from "@/components/layout/Icons";
 import { getQuickDonateProps } from "@/actions/causes/cause-actions";
 import { usePayment } from "@/hooks/use-payment";
@@ -15,6 +16,7 @@ import { useValidator } from "@/hooks/use-validator";
 import { MIN_DONATION_AMOUNT, giveSchema } from "@/lib/schemas/donation.schema";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { calculateProviderFee, calculateServiceFee, cn } from "@/lib/utils";
+import { trackFunnelStep } from "@/lib/campaign-analytics/track-funnel";
 
 type QuickDonateProps = NonNullable<
   Awaited<ReturnType<typeof getQuickDonateProps>>
@@ -116,13 +118,13 @@ function GiveForm({ props }: { props: QuickDonateProps }) {
           />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold leading-snug text-ink">
+          <P className="font-semibold leading-snug text-ink md:text-base">
             {props.causeTitle}
-          </p>
-          <p className="mt-0.5 text-[13px] text-ink/55">
+          </P>
+          <Small className="mt-0.5 block text-[13px] text-ink/55">
             {props.orgName}
             {props.orgVerified ? " · Verified NGO" : ""}
-          </p>
+          </Small>
           <Link
             href={causeHref}
             className="mt-1.5 inline-block text-[13px] font-semibold text-blue-accent hover:underline"
@@ -138,12 +140,14 @@ function GiveForm({ props }: { props: QuickDonateProps }) {
         </DialogClose>
       </div>
 
-      <p className={cn(label, "mt-5")}>Amount</p>
+      <P className={cn(label, "mt-5 md:text-[13px]")}>Amount</P>
       <div className="mt-3 grid grid-cols-4 gap-2.5">
         {[...PRESETS, "other" as const].map((value) => (
-          <button
+          <Button
             key={value}
             type="button"
+            variant="bare"
+            size="bare"
             onClick={() => {
               setFormFields("preset", value);
               clearError("amount");
@@ -157,7 +161,7 @@ function GiveForm({ props }: { props: QuickDonateProps }) {
             )}
           >
             {value === "other" ? "Other" : `₦${value / 1000}k`}
-          </button>
+          </Button>
         ))}
       </div>
       {preset === "other" && (
@@ -194,14 +198,16 @@ function GiveForm({ props }: { props: QuickDonateProps }) {
         </div>
       )}
 
-      <p className={cn(label, "mt-5")}>Pay with</p>
+      <P className={cn(label, "mt-5 md:text-[13px]")}>Pay with</P>
       <div className="mt-3 space-y-2.5" role="radiogroup" aria-label="Pay with">
         {PROVIDERS.map(({ id, label: title, detail, Icon }) => {
           const selected = provider === id;
           return (
-            <button
+            <Button
               key={id}
               type="button"
+              variant="bare"
+              size="bare"
               role="radio"
               aria-checked={selected}
               onClick={() => setFormFields("provider", id)}
@@ -223,8 +229,10 @@ function GiveForm({ props }: { props: QuickDonateProps }) {
                 <Icon className="h-4 w-4" />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block font-semibold text-ink">{title}</span>
-                <span className="block text-[13px] text-ink/55">{detail}</span>
+                <Span className="block font-semibold text-ink">{title}</Span>
+                <Small className="block text-[13px] text-ink/55">
+                  {detail}
+                </Small>
               </span>
               <span
                 className={cn(
@@ -236,15 +244,15 @@ function GiveForm({ props }: { props: QuickDonateProps }) {
               >
                 {selected && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
               </span>
-            </button>
+            </Button>
           );
         })}
       </div>
 
       {error && (
-        <p className="mt-4 text-sm font-medium text-rust" role="alert">
-          {error}
-        </p>
+        <div role="alert">
+          <P className="mt-4 font-medium text-rust md:text-sm">{error}</P>
+        </div>
       )}
 
       <Button
@@ -263,14 +271,14 @@ function GiveForm({ props }: { props: QuickDonateProps }) {
         )}
       </Button>
       {amount >= MIN_AMOUNT && fees > 0 && (
-        <p className="mt-2 text-center text-xs text-ink/55">
+        <Small className="mt-2 block text-center text-ink/55">
           {naira(amount + fees)} total, including {naira(fees)} in fees
-        </p>
+        </Small>
       )}
-      <p className="mt-4 text-center text-[13px] text-ink/55">
+      <Small className="mt-4 block text-center text-[13px] text-ink/55">
         Your gift goes to {props.orgName}, who post proof of how it&apos;s
         spent.
-      </p>
+      </Small>
     </div>
   );
 }
@@ -289,6 +297,8 @@ export function GiveModal({
 
   useEffect(() => {
     if (!open) return;
+    trackFunnelStep(causeId, "view");
+    trackFunnelStep(causeId, "give");
     let cancelled = false;
     setLoading(true);
     getQuickDonateProps(causeId).then((result) => {
