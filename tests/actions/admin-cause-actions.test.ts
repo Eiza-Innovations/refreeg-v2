@@ -13,6 +13,7 @@ jest.mock("@/lib/prisma", () => ({
   prisma: {
     $queryRaw: jest.fn(),
     cause_edits: {
+      count: jest.fn().mockResolvedValue(0),
       findFirst: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
@@ -30,11 +31,16 @@ jest.mock("@/services/mail", () => ({
   sendCauseRejectedEmailForUser: jest.fn(),
 }));
 
+jest.mock("@/lib/admin/review-decisions", () => ({
+  recordReviewDecision: jest.fn(),
+}));
+
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth/auth";
 import { isAdminOrManager } from "@/actions/admin/role-actions";
 import { prisma } from "@/lib/prisma";
 import { sendCauseRejectedEmailForUser } from "@/services/mail";
+import { recordReviewDecision } from "@/lib/admin/review-decisions";
 import {
   listAdminCauses,
   getCauseEdits,
@@ -169,6 +175,13 @@ describe("admin-cause-actions", () => {
           data: expect.objectContaining({ status: "approved" }),
         }),
       );
+      expect(recordReviewDecision).toHaveBeenCalledWith({
+        actorId: "admin-1",
+        kind: "cause",
+        targetId: "cause-1",
+        decision: "approved",
+        editReview: false,
+      });
       expect(revalidatePath).toHaveBeenCalledWith("/dashboard/admin/causes");
     });
 

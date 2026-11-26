@@ -23,6 +23,7 @@ const badgeVariants = cva(
         pending: "border-transparent bg-gold text-gold-foreground",
         held: "border border-ink/20 bg-transparent text-ink",
         critical: "border border-rust/30 bg-rust/10 text-rust",
+        gold: "border border-gold/50 bg-gold/20 text-ink",
         forest: "border border-forest/30 bg-forest/10 text-forest",
         cyan: "border border-cyan/30 bg-cyan/15 text-cyan-800",
         blue: "border border-blue-accent/30 bg-blue-accent/10 text-blue-accent",

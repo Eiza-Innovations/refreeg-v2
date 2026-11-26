@@ -8,7 +8,6 @@ import {
   Globe,
   FlaskConical,
 } from "lucide-react";
-import { redirect } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Card,
@@ -29,8 +28,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getApiCampaigns } from "@/actions/admin/admin-analytics-actions";
-import { getUserRole } from "@/lib/auth/admin-auth";
-import { auth } from "@/lib/auth/auth";
 
 const AdminAnalytics = dynamic(
   () => import("@/components/admin/AdminAnalytics"),
@@ -69,27 +66,6 @@ export default async function AdminAnalyticsPage({
 }) {
   const params = await searchParams;
   const search = params?.search?.trim() || "";
-
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    redirect("/auth/signin");
-  }
-
-  const role = await getUserRole(session.user.id);
-
-  if (role !== "admin" && role !== "manager") {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Access Denied</CardTitle>
-          <CardDescription>
-            You do not have permission to access this page.
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
 
   const { campaigns, stats } = await getApiCampaigns(search);
 

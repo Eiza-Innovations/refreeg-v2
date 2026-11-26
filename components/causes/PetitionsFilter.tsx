@@ -3,7 +3,6 @@
 import { usePathname } from "next/navigation";
 import { useRouter } from "nextjs-toploader/app";
 import { Button } from "@/components/ui/button";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 interface Category {
   id: string;
@@ -27,26 +26,31 @@ export function PetitionsFilter({
     if (categoryId !== "all") {
       params.set("category", categoryId);
     }
-    router.push(`${pathname}?${params.toString()}`);
+    const query = params.toString();
+    router.push(query ? `${pathname}?${query}` : pathname);
   };
 
   return (
-    <div className="relative">
-      <ScrollArea className="pb-4 w-full">
-        <div className="flex flex-wrap gap-2">
-          {categories.map((category) => (
-            <Button
-              key={category.id}
-              variant={selectedCategory === category.id ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleCategoryChange(category.id)}
-            >
-              {category.name}
-            </Button>
-          ))}
-        </div>
-        <ScrollBar orientation="horizontal" />
-      </ScrollArea>
+    <div
+      role="group"
+      aria-label="Filter petitions by category"
+      className="flex flex-wrap gap-2"
+    >
+      {[{ id: "all", name: "All" }, ...categories].map((category) => {
+        const active = selectedCategory === category.id;
+        return (
+          <Button
+            key={category.id}
+            type="button"
+            variant={active ? "ink" : "surface"}
+            aria-pressed={active}
+            onClick={() => handleCategoryChange(category.id)}
+            className="h-9 rounded-full px-4"
+          >
+            {category.name}
+          </Button>
+        );
+      })}
     </div>
   );
 }

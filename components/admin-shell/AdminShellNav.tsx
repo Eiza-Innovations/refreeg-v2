@@ -14,6 +14,7 @@ import {
   Megaphone,
   Receipt,
   ScrollText,
+  TrendingUp,
   TriangleAlert,
   Users,
 } from "lucide-react";
@@ -43,6 +44,11 @@ const navGroups: { label: string; items: NavItem[] }[] = [
         title: "Analytics",
         href: "/dashboard/admin/analytics",
         icon: BarChart3,
+      },
+      {
+        title: "Campaign analytics",
+        href: "/dashboard/admin/campaign-analytics",
+        icon: TrendingUp,
       },
       {
         title: "API monitoring",

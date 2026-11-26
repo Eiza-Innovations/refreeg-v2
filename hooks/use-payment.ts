@@ -2,6 +2,7 @@
 import { useState, useCallback } from "react";
 import { TransactionData, PaymentProviderType } from "@/types";
 import { toast } from "@/hooks/use-toast";
+import { trackFunnelStep } from "@/lib/campaign-analytics/track-funnel";
 
 interface UsePaymentReturn {
   initializePayment: (data: TransactionData) => Promise<void>;
@@ -26,6 +27,7 @@ export const usePayment = (): UsePaymentReturn => {
     try {
       setIsLoading(true);
       setError(null);
+      trackFunnelStep(data.causeId, "amount", { amount: Number(data.amount) });
 
       const response = await fetch("/api/payments/initialize", {
         method: "POST",
@@ -41,6 +43,10 @@ export const usePayment = (): UsePaymentReturn => {
         throw new Error(result.error || "Failed to initialize payment");
       }
 
+      trackFunnelStep(data.causeId, "payment", {
+        amount: Number(data.amount),
+        reference: result.data.reference,
+      });
       localStorage.setItem("payment_reference", result.data.reference);
       localStorage.setItem(
         "payment_provider",
