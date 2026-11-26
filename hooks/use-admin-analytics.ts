@@ -10,15 +10,17 @@ import {
   getPaymentAnalytics,
   getCauseLifecycleAnalytics,
   getAlerts,
-  type AnalyticsData,
-  type DonationTrend,
-  type UserGrowth,
-  type CauseCategory,
-  type KycAnalytics,
-  type PaymentAnalytics,
-  type CauseLifecycle,
-  type Alert,
 } from "@/actions/admin/admin-analytics-actions";
+import type {
+  Alert,
+  AnalyticsData,
+  CauseCategory,
+  CauseLifecycle,
+  DonationTrend,
+  KycAnalytics,
+  PaymentAnalytics,
+  UserGrowth,
+} from "@/types/admin-analytics-types";
 
 interface UseAdminAnalyticsReturn {
   data: AnalyticsData | null;
