@@ -3,6 +3,7 @@ import { formatCount } from "@/lib/campaign-analytics/format";
 import { funnelStepOptions } from "@/lib/options/campaign-analytics.options";
 import { cn } from "@/lib/utils";
 import type { FunnelStepRow } from "@/types/campaign-analytics-types";
+import { optionLabel } from "@/lib/options/option-label";
 
 const barTones = [
   "bg-blue-accent",
@@ -11,9 +12,6 @@ const barTones = [
   "bg-blue-accent/55",
   "bg-blue-accent/40",
 ];
-
-const stepLabel = (step: string) =>
-  funnelStepOptions.find((option) => option.value === step)?.label ?? step;
 
 /** Each step shows conversion from the step before; a loss over half reads as a drop. */
 function conversion(current: number, before: number) {
@@ -47,7 +45,9 @@ export function FunnelBars({
             key={row.step}
             className="grid grid-cols-[7.5rem_1fr_3.5rem_3rem] items-center gap-3 text-sm sm:grid-cols-[9rem_1fr_4rem_3.5rem]"
           >
-            <Span className="truncate text-ink/70">{stepLabel(row.step)}</Span>
+            <Span className="truncate text-ink/70">
+              {optionLabel(funnelStepOptions, row.step)}
+            </Span>
             <span
               className={cn(
                 "overflow-hidden rounded-md bg-cream-muted",

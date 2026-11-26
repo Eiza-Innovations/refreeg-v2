@@ -158,7 +158,7 @@ export function ProofUploadDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger ?? (
-          <Button className="rounded-xl bg-blue-600 text-white hover:bg-blue-700">
+          <Button variant="ink" className="rounded-xl">
             <Upload className="mr-2 h-4 w-4" /> Post fund-use update
           </Button>
         )}

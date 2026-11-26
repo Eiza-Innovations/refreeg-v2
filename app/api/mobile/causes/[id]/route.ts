@@ -5,7 +5,7 @@ import {
   invalidateMobileCachePrefix,
 } from "@/lib/api/mobile-cache";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
-import { deleteCause } from "@/actions/causes/cause-actions";
+import { removeCause } from "@/lib/causes/remove-cause";
 import { listCommentsForCause } from "@/actions/causes/comment-actions";
 import { getApprovedProofUpdates } from "@/actions/causes/proof-update-actions";
 import { isOwnUploadKey } from "@/lib/s3/owned-key";
@@ -365,7 +365,7 @@ export async function DELETE(
       return apiError("Unauthorized to delete this cause", 403);
     }
 
-    await deleteCause(id);
+    await removeCause(id);
     invalidateMobileCachePrefix("causes:");
 
     return apiSuccess({ message: "Cause deleted successfully" });

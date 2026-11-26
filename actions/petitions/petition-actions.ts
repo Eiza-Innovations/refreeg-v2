@@ -22,6 +22,7 @@ import {
 import { sendPetitionSubmissionAdminNotification } from "@/services/mail";
 import { cache } from "react";
 import { isUuid } from "@/lib/uuid";
+import { removePetition } from "@/lib/petitions/remove-petition";
 
 export async function getPetition(
   petitionId: string,
@@ -696,34 +697,26 @@ export async function getUserPetitions(userId: string): Promise<Petition[]> {
   })) as unknown as Petition[];
 }
 
-export async function getUserPetitionsWithStatus(
-  userId: string,
-  status?: string,
-): Promise<Petition[]> {
-  const where: any = { user_id: userId };
+export async function deletePetition(petitionId: string): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user?.id) throw new Error("Not authenticated");
 
-  if (status && status !== "all") {
-    where.status = status;
+  const petition = await prisma.petitions.findUnique({
+    where: { id: petitionId },
+    select: { user_id: true },
+  });
+  if (!petition) throw new Error("Petition not found");
+  if (petition.user_id !== user.id && !(await isAdminOrManager(user.id))) {
+    throw new Error("You can only delete your own petitions");
   }
 
-  const petitions = await prisma.petitions.findMany({
-    where,
-    orderBy: { created_at: "desc" },
-  });
-
-  return petitions.map((p) => ({
-    ...p,
-    goal: Number(p.goal),
-    raised: Number(p.raised),
-    created_at: p.created_at.toISOString(),
-    updated_at: p.updated_at.toISOString(),
-  })) as unknown as Petition[];
-}
-
-export async function deletePetition(petitionId: string): Promise<void> {
-  await prisma.petitions.delete({
-    where: { id: petitionId },
-  });
+  try {
+    await removePetition(petitionId);
+  } catch (error) {
+    console.error("Error deleting petition:", error);
+    throw new Error("Could not delete this petition. Please try again.");
+  }
+  revalidatePath("/dashboard/petitions");
 }
 
 export async function savePetitionShare(petitionId: string): Promise<void> {
