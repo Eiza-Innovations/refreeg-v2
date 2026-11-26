@@ -7,7 +7,6 @@ import { reviewQueueWhere as where } from "@/lib/admin/review-queues";
 import { getReportingWindow } from "@/lib/admin-analytics/period";
 import {
   campaignStatus,
-  displayName,
   giftSeries,
   giftTotals,
 } from "@/lib/admin-analytics/workspace-data";
@@ -19,36 +18,182 @@ import type {
 
 const WAITING_LIMIT = 6;
 
-async function waitingItems() {
+type RawWaitingItem = Omit<WaitingRow, "owner"> & { ownerId: string | null };
+
+async function waitingItems(): Promise<WaitingRow[]> {
   try {
-    return await prisma.$queryRaw<WaitingRow[]>`
-      SELECT w.type, w.ref, w.title, w.detail, ${displayName} AS owner,
-        w.created_at, w.due_at
-      FROM (
-        SELECT 'Campaign' AS type, id::text AS ref, title::text AS title,
-          NULL::text AS detail, user_id AS owner_id, created_at,
-          NULL::timestamptz AS due_at
-        FROM causes WHERE status = 'pending'
-        UNION ALL
-        SELECT 'KYC', user_id::text, COALESCE(NULLIF(trim(full_name), ''), 'KYC review'),
-          document_type::text, user_id, created_at, NULL
-        FROM kyc_verifications WHERE status IN ('pending', 'in_progress')
-        UNION ALL
-        SELECT 'Receipt', u.id::text, COALESCE(NULLIF(u.receipt_title, ''), 'Fund-use proof'),
-          c.title::text, u.user_id, u.created_at, NULL
-        FROM campaign_proof_updates u JOIN causes c ON c.id = u.cause_id
-        WHERE u.status = 'pending'
-        UNION ALL
-        SELECT 'Petition', id::text, title::text, NULL, user_id, created_at, NULL
-        FROM petitions WHERE status = 'pending'
-        UNION ALL
-        SELECT 'Report', id::text, reason::text, target_type::text, reporter_id,
-          created_at, due_at
-        FROM content_reports WHERE status = 'pending'
-      ) w
-      LEFT JOIN profiles p ON p.id = w.owner_id
-      ORDER BY w.created_at ASC
-      LIMIT ${WAITING_LIMIT}`;
+    const [causes, kycs, receipts, petitions, reports] = await Promise.all([
+      prisma.cause?.findMany
+        ? prisma.cause.findMany({
+            where: where.campaigns,
+            orderBy: { createdAt: "asc" },
+            take: WAITING_LIMIT,
+            select: {
+              id: true,
+              title: true,
+              userId: true,
+              createdAt: true,
+            },
+          })
+        : Promise.resolve([]),
+      (prisma as any).kyc_verifications?.findMany
+        ? (prisma as any).kyc_verifications.findMany({
+            where: where.kyc,
+            orderBy: { created_at: "asc" },
+            take: WAITING_LIMIT,
+            select: {
+              user_id: true,
+              full_name: true,
+              document_type: true,
+              created_at: true,
+            },
+          })
+        : Promise.resolve([]),
+      (prisma as any).campaign_proof_updates?.findMany
+        ? (prisma as any).campaign_proof_updates.findMany({
+            where: where.receipts,
+            orderBy: { created_at: "asc" },
+            take: WAITING_LIMIT,
+            select: {
+              id: true,
+              receipt_title: true,
+              user_id: true,
+              created_at: true,
+              cause: { select: { title: true } },
+            },
+          })
+        : Promise.resolve([]),
+      (prisma as any).petitions?.findMany
+        ? (prisma as any).petitions.findMany({
+            where: where.petitions,
+            orderBy: { created_at: "asc" },
+            take: WAITING_LIMIT,
+            select: {
+              id: true,
+              title: true,
+              user_id: true,
+              created_at: true,
+            },
+          })
+        : Promise.resolve([]),
+      (prisma as any).content_reports?.findMany
+        ? (prisma as any).content_reports.findMany({
+            where: where.reports,
+            orderBy: { created_at: "asc" },
+            take: WAITING_LIMIT,
+            select: {
+              id: true,
+              reason: true,
+              target_type: true,
+              reporter_id: true,
+              created_at: true,
+              due_at: true,
+            },
+          })
+        : Promise.resolve([]),
+    ]);
+
+    const combined: RawWaitingItem[] = [
+      ...causes.flatMap((c: any) =>
+        c.createdAt
+          ? [
+              {
+                type: "Campaign" as const,
+                ref: c.id,
+                title: c.title,
+                detail: null,
+                ownerId: c.userId,
+                created_at: c.createdAt,
+                due_at: null,
+              },
+            ]
+          : [],
+      ),
+      ...kycs.flatMap((k: any) =>
+        k.created_at
+          ? [
+              {
+                type: "KYC" as const,
+                ref: k.user_id,
+                title: k.full_name?.trim() || "KYC review",
+                detail: k.document_type ?? null,
+                ownerId: k.user_id,
+                created_at: k.created_at,
+                due_at: null,
+              },
+            ]
+          : [],
+      ),
+      ...receipts.flatMap((r: any) =>
+        r.created_at
+          ? [
+              {
+                type: "Receipt" as const,
+                ref: r.id,
+                title: r.receipt_title?.trim() || "Fund-use proof",
+                detail: r.cause?.title ?? null,
+                ownerId: r.user_id,
+                created_at: r.created_at,
+                due_at: null,
+              },
+            ]
+          : [],
+      ),
+      ...petitions.flatMap((p: any) =>
+        p.created_at
+          ? [
+              {
+                type: "Petition" as const,
+                ref: p.id,
+                title: p.title,
+                detail: null,
+                ownerId: p.user_id,
+                created_at: p.created_at,
+                due_at: null,
+              },
+            ]
+          : [],
+      ),
+      ...reports.flatMap((rep: any) =>
+        rep.created_at
+          ? [
+              {
+                type: "Report" as const,
+                ref: rep.id,
+                title: rep.reason,
+                detail: rep.target_type ?? null,
+                ownerId: rep.reporter_id ?? null,
+                created_at: rep.created_at,
+                due_at: rep.due_at ?? null,
+              },
+            ]
+          : [],
+      ),
+    ]
+      .sort((a, b) => a.created_at.getTime() - b.created_at.getTime())
+      .slice(0, WAITING_LIMIT);
+
+    const ownerIds = Array.from(
+      new Set(combined.flatMap((item) => (item.ownerId ? [item.ownerId] : []))),
+    );
+    const owners =
+      ownerIds.length > 0 && prisma.user?.findMany
+        ? await prisma.user.findMany({
+            where: { id: { in: ownerIds } },
+            select: { id: true, fullName: true, username: true, email: true },
+          })
+        : [];
+    const ownerMap = new Map(
+      owners.map((u) => [
+        u.id,
+        u.fullName?.trim() || u.username?.trim() || u.email || null,
+      ]),
+    );
+
+    return combined.map(({ ownerId, ...row }) => ({
+      ...row,
+      owner: ownerId ? (ownerMap.get(ownerId) ?? null) : null,
+    }));
   } catch (err) {
     console.error("waitingItems query error:", err);
     return [];
