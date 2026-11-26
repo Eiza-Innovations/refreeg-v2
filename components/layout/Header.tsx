@@ -472,18 +472,18 @@ export function Header() {
                     Start a Cause
                   </Link>
                   <Link
-                    href="/dashboard/petitions/create"
-                    className="flex h-11 items-center justify-center gap-2 rounded-full border border-ink text-sm font-medium text-ink transition-colors hover:bg-black/5"
-                  >
-                    <FileText className="h-4 w-4" />
-                    Launch Petition
-                  </Link>
-                  <Link
                     href="/wishlist/new"
                     className="flex h-11 items-center justify-center gap-2 rounded-full border border-ink text-sm font-medium text-ink transition-colors hover:bg-black/5 sm:col-span-2"
                   >
                     <Gift className="h-4 w-4" />
                     Create a Wishlist
+                  </Link>
+                  <Link
+                    href="/dashboard/petitions/create"
+                    className="flex h-11 items-center justify-center gap-2 rounded-full border border-ink text-sm font-medium text-ink transition-colors hover:bg-black/5"
+                  >
+                    <FileText className="h-4 w-4" />
+                    Launch Petition
                   </Link>
                 </div>
               </div>
