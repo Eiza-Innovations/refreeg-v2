@@ -115,6 +115,8 @@ const stepFields: Record<number, string[]> = {
   4: ["coverImage"],
 };
 
+export const fieldsForStep = (step: number) => stepFields[step] ?? [];
+
 export function stepHasErrors(
   values: PetitionFormFields,
   mode: PetitionFormMode,

@@ -62,3 +62,10 @@ export interface PetitionFilterOptions {
   sortBy?: "recommended" | "latest" | "most-funded" | "ending-soon";
   verifiedOnly?: boolean;
 }
+
+export type SocialLinks = {
+  twitter: string;
+  facebook: string;
+  instagram: string;
+  linkedin: string;
+};

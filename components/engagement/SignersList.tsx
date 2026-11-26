@@ -1,32 +1,39 @@
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Signature } from "@/types";
+import { Card } from "@/components/ui/card";
+import { Eyebrow } from "@/components/ui/eyebrow";
+import { Progress } from "@/components/ui/progress";
+import { goalPercent } from "@/lib/progress";
+import type { Signature } from "@/types";
 
 interface SignersListProps {
   signers: Signature[];
   petitionTitle: string;
+  goal: number;
 }
 
-export function SignersList({ signers, petitionTitle }: SignersListProps) {
-  const totalAmount = signers.reduce(
-    (sum, signer) => sum + (signer.amount || 0),
-    0,
-  );
+export function SignersList({
+  signers,
+  petitionTitle,
+  goal,
+}: SignersListProps) {
+  const total = signers.reduce((sum, signer) => sum + (signer.amount || 0), 0);
+  const percent = goalPercent(total, goal);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg font-semibold">
-          {totalAmount.toLocaleString()} raised for {petitionTitle}
-        </CardTitle>
-        <CardDescription>
-          <p>Share the petition to help us reach our goal</p>
-        </CardDescription>
-      </CardHeader>
+    <Card variant="surface" className="p-6">
+      <Eyebrow>Support so far</Eyebrow>
+      <p className="mt-2 font-fraunces text-3xl text-ink">
+        {total.toLocaleString()} {total === 1 ? "person has" : "people have"}{" "}
+        signed
+      </p>
+      <p className="mt-1 text-sm text-ink/60">
+        Help {petitionTitle} reach {goal.toLocaleString()} signatures.
+      </p>
+      <Progress
+        value={percent}
+        aria-label={`${percent}% of signature goal`}
+        className="mt-4 h-1.5 bg-ink/10"
+        indicatorVariant="forest"
+      />
     </Card>
   );
 }

@@ -26,6 +26,7 @@ interface ShareModalProps {
   title: string;
   entityId: string;
   entityType: "cause" | "petition";
+  triggerVariant?: React.ComponentProps<typeof Button>["variant"];
 }
 
 type Tab = "share" | "qr";
@@ -35,6 +36,7 @@ export function ShareModal({
   title,
   entityId,
   entityType,
+  triggerVariant = "outline",
 }: ShareModalProps) {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -247,7 +249,11 @@ export function ShareModal({
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="flex items-center gap-2">
+        <Button
+          variant={triggerVariant}
+          size="sm"
+          className="flex items-center gap-2"
+        >
           <Share2 className="h-6 w-6" />
           Share
         </Button>

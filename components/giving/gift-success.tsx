@@ -9,9 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { formatNairaShort } from "@/lib/causes/discover-summary";
 import type { GiftCause, GiftDetails } from "@/actions/donations/gift-actions";
-
-const percentOf = (c: GiftCause) =>
-  c.goal > 0 ? Math.min(Math.round((c.raised / c.goal) * 100), 100) : 0;
+import { goalPercent } from "@/lib/progress";
 
 function RelatedCard({ cause }: { cause: GiftCause }) {
   return (
@@ -23,9 +21,9 @@ function RelatedCard({ cause }: { cause: GiftCause }) {
         {cause.title}
       </h3>
       <Progress
-        value={percentOf(cause)}
+        value={goalPercent(cause.raised, cause.goal)}
         indicatorVariant="cyan"
-        aria-label={`${percentOf(cause)}% funded`}
+        aria-label={`${goalPercent(cause.raised, cause.goal)}% funded`}
         className="mt-3 h-1.5 bg-cream-muted"
       />
       <p className="mt-2.5 text-xs text-ink/55">
@@ -39,7 +37,7 @@ function RelatedCard({ cause }: { cause: GiftCause }) {
 export function GiftSuccess({ gift }: { gift: GiftDetails }) {
   const [shared, setShared] = useState(false);
   const { cause } = gift;
-  const percent = percentOf(cause);
+  const percent = goalPercent(cause.raised, cause.goal);
   const toGo = Math.max(cause.goal - cause.raised, 0);
   const others = gift.giftCount - 1;
   const paidAt = new Date(gift.paidAt).toLocaleTimeString("en-GB", {

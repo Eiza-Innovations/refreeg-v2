@@ -133,6 +133,7 @@ describe("petition-comment-actions", () => {
       mockPrisma.petition_comments.findMany.mockResolvedValue([
         {
           id: "comment-1",
+          petition_id: "petition-1",
           content: "Top level",
           created_at: createdAt,
           user: mockUser,
@@ -147,6 +148,8 @@ describe("petition-comment-actions", () => {
       expect(result).toEqual([
         expect.objectContaining({
           id: "comment-1",
+          cause_id: "petition-1",
+          updated_at: createdAt.toISOString(),
           replies_count: 2,
           user: {
             full_name: "Jane Doe",

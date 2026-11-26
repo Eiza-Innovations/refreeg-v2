@@ -7,6 +7,7 @@ import {
   MAX_PETITION_MEDIA_BYTES,
   mediaBytes,
   petitionSchemas,
+  fieldsForStep,
   stepHasErrors,
   type PetitionFormFields,
   type PetitionFormMode,
@@ -39,9 +40,9 @@ export function usePetitionForm({
 
   const errors = { ...fieldErrors, ...mediaErrors };
 
-  const validate = () => {
+  const validate = (only?: readonly string[]) => {
     setMediaErrors({});
-    return validateFields();
+    return validateFields(only);
   };
 
   const setFormFields = <K extends keyof PetitionFormFields>(
@@ -154,7 +155,7 @@ export function usePetitionForm({
     );
 
   const nextStep = () => {
-    validate();
+    validate(fieldsForStep(currentStep));
     if (
       currentStep < LAST_PETITION_STEP &&
       !stepHasErrors(form, mode, currentStep)
