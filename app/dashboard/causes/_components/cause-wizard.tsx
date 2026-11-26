@@ -87,9 +87,16 @@ export function CauseWizard({
         </header>
 
         <div ref={flowTopRef} className="scroll-mt-28 space-y-6">
-          <div className="overflow-x-auto pb-1">
+          {/* Wide flows (the 5-step cause builder) scroll on phones; the
+              2-step wishlist flow fits any screen, so no min-width and no
+              swipe chrome. */}
+          <div
+            className={
+              stepperLabels.length > 2 ? "overflow-x-auto pb-1" : undefined
+            }
+          >
             <Stepper
-              className="min-w-[520px]"
+              className={stepperLabels.length > 2 ? "min-w-[520px]" : undefined}
               steps={stepperLabels.map((label, i) => ({
                 label,
                 status:

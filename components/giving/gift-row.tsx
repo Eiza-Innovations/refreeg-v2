@@ -10,10 +10,16 @@ const STATUS = {
   delivered: { label: "Delivered", variant: "forest" },
   "in-progress": { label: "In progress", variant: "cyan" },
   pledge: { label: "Pledged", variant: "pending" },
+  given: { label: "Given", variant: "verified" },
 } as const;
 
+// Wishlist gifts arrive with status "given"; anything else unknown still
+// has to render instead of crashing the giving page (reading .variant of
+// undefined was the /dashboard/donations crash).
+const FALLBACK_STATUS = { label: "Gift", variant: "pending" } as const;
+
 export function GiftRow({ gift }: { gift: Gift }) {
-  const status = STATUS[gift.status];
+  const status = STATUS[gift.status] ?? FALLBACK_STATUS;
   const imageUrl = getMediaUrl(gift.image) || "/icons/placeholder.svg";
   const isPledge = gift.kind === "pledge";
 

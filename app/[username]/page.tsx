@@ -1,10 +1,8 @@
-import {
-  getProfile,
-  getProfileByUsername,
-} from "@/actions/users/profile-actions";
+import { getProfileByUsername } from "@/actions/users/profile-actions";
 import { getUserCauses } from "@/actions/causes/cause-actions";
 import { listUserDonations } from "@/actions/donations/donation-actions";
 import { getUserPetitions } from "@/actions/petitions/petition-actions";
+import { listPublicWishlistsByUsername } from "@/actions/wishlists/wishlist-actions";
 import { getSessionUser } from "@/lib/auth/session-user";
 import { getOrganizationPublicProfile } from "@/actions/users/organization-actions";
 import PublicProfile from "@/components/profile/PublicProfile";
@@ -40,12 +38,18 @@ export default async function PublicProfilePage({
   const userId = profile.id;
   const isOwner = currentUser?.id === userId;
 
-  const [causes, petitions] = await Promise.all([
+  const [causes, petitions, wishlists] = await Promise.all([
     getUserCauses(userId).then((items) =>
       items.filter((cause) => cause.status === "approved"),
     ),
     getUserPetitions(userId).then((items) =>
       items.filter((petition) => petition.status === "approved"),
+    ),
+    // Published wishlists for this profile, aggregated for display. The
+    // action resolves the user by the exact URL username, so the lists
+    // always belong to the profile being viewed.
+    listPublicWishlistsByUsername(username).then((result) =>
+      result.success && result.data ? result.data : [],
     ),
   ]);
 
@@ -83,7 +87,9 @@ export default async function PublicProfilePage({
         causes={causes}
         donations={donations}
         petitions={petitions}
+        wishlists={wishlists}
         userId={userId}
+        username={username}
         isOwner={isOwner}
       />
     </div>

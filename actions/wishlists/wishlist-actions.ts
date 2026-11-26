@@ -592,6 +592,67 @@ export async function listUserWishlists(): Promise<{
   }
 }
 
+/** Shape returned for public profile listings — no payout or giver data. */
+export type PublicWishlistSummary = {
+  id: string;
+  title: string;
+  slug: string;
+  created_at: string | null;
+  item_count: number;
+  funded_count: number;
+  contributed_total: number;
+  target_total: number;
+};
+
+/**
+ * Public wishlists for a profile page: ACTIVE lists only, aggregate
+ * progress only. The share page already shows per-item contributed
+ * amounts publicly, so the aggregates below expose nothing new — and
+ * unlike the owner dashboard this returns no payout state, notes on
+ * contributions, or giver identity.
+ */
+export async function listPublicWishlistsByUsername(
+  username: string,
+): Promise<{
+  success: boolean;
+  error?: string;
+  data?: PublicWishlistSummary[];
+}> {
+  try {
+    const owner = await prisma.user.findUnique({
+      where: { username },
+      select: { id: true },
+    });
+    if (!owner) return { success: true, data: [] };
+
+    const wishlists = await prisma.wishlists.findMany({
+      where: { user_id: owner.id, status: "active" },
+      include: { items: { orderBy: { sort_order: "asc" } } },
+      orderBy: { created_at: "desc" },
+    });
+
+    return {
+      success: true,
+      data: wishlists.map((w) => ({
+        id: w.id,
+        title: w.title,
+        slug: w.slug,
+        created_at: toIso(w.created_at),
+        item_count: w.items.length,
+        funded_count: w.items.filter((i) => i.funded_at).length,
+        contributed_total: w.items.reduce(
+          (sum, i) => sum + Number(i.contributed),
+          0,
+        ),
+        target_total: w.items.reduce((sum, i) => sum + Number(i.price), 0),
+      })),
+    };
+  } catch (error) {
+    console.error("Error listing public wishlists:", error);
+    return { success: false, error: "Could not load wishlists" };
+  }
+}
+
 /**
  * Owner-only contributor list for delivery coordination: the one place
  * giver NAMES are visible (decision 9). Giver emails are not returned:

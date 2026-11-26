@@ -48,6 +48,12 @@ export const faqCategories: FaqCategory[] = [
           "Curious about what you can crowdfund for? Here are some ideas. Businesses launch CSR campaigns, support community-driven causes, and connect with customers who care about impact. Nonprofits raise more and reach more with transparent fundraising tools designed to help them thrive and grow their donor communities. Disaster relief campaigns rally urgent support for communities hit by disasters and get aid to those who need it, quickly and securely. Healthcare fundraising gives hope a platform, covering medical bills, healthcare projects and critical treatments with transparency and community support. Creators fund their next project, tour or release with a page their audience can find, share and trust. You can also create a wishlist: name the specific gifts you want and let family and friends give toward them together. Read the full guide with examples for each on the What can I crowdfund? page at refreeg.com/crowdfund.",
       },
       {
+        id: "cause-legit",
+        question: "How do I know a cause is legitimate?",
+        answer:
+          "Every campaign is reviewed by our moderation team before it becomes publicly visible, and every fundraiser is identity-verified (KYC) first. Approved causes also carry trust indicators, and because every donation is recorded on the blockchain you can follow the money from wallet to milestone yourself.",
+      },
+      {
         id: "what-is-a-wishlist",
         question: "What is a wishlist?",
         answer:
@@ -95,6 +101,12 @@ export const faqCategories: FaqCategory[] = [
     id: "campaigns",
     name: "Campaigns",
     items: [
+      {
+        id: "kyc-before-launch",
+        question: "Do I need KYC before launching a cause?",
+        answer:
+          "Yes. Creating a cause or petition requires an approved identity verification (KYC) and a complete profile. It keeps fundraising safer for donors, cuts down on fraud, and is also what unlocks payout setup for wishlists.",
+      },
       {
         id: "start-a-cause",
         question: "How do I start a cause?",
