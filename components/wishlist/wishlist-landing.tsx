@@ -35,7 +35,9 @@ export function WishlistLanding() {
             {seasonal ? "The Refreeg holiday wishlist" : "The Refreeg wishlist"}
           </Eyebrow>
           <h1 className="mt-4 font-fraunces text-4xl leading-tight tracking-tight text-ink sm:text-5xl">
-            Show them what would actually make you smile.
+            {seasonal
+              ? "This Christmas, ask for the gifts you'd actually love."
+              : "Show them what would actually make you smile."}
           </h1>
           <p className="mt-4 text-base leading-7 text-ink/60 sm:text-lg">
             {seasonal

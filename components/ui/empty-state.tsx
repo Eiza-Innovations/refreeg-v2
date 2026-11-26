@@ -12,6 +12,11 @@ export interface EmptyStateProps extends Omit<
   action?: React.ReactNode;
   /** `page` fills an otherwise empty screen: no border, larger type. */
   variant?: "inline" | "page";
+  /**
+   * Heading level of the page-variant title. Pages that already own an h1
+   * (like the wishlist share page) pass 2 to keep the outline in order.
+   */
+  headingLevel?: 1 | 2;
 }
 
 const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
@@ -22,6 +27,7 @@ const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
       description,
       action,
       variant = "inline",
+      headingLevel = 1,
       className,
       ...props
     },
@@ -38,9 +44,15 @@ const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
             {icon}
           </div>
         ) : null}
-        <h1 className="mt-6 font-fraunces text-3xl tracking-tight text-ink">
-          {title}
-        </h1>
+        {headingLevel === 2 ? (
+          <h2 className="mt-6 font-fraunces text-3xl tracking-tight text-ink">
+            {title}
+          </h2>
+        ) : (
+          <h1 className="mt-6 font-fraunces text-3xl tracking-tight text-ink">
+            {title}
+          </h1>
+        )}
         {description ? (
           <p className="mt-3 max-w-[430px] text-sm leading-[22px] text-ink/60">
             {description}

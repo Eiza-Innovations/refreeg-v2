@@ -1,7 +1,11 @@
 jest.mock("@/hooks/use-payment", () => {
   const initializePayment = jest.fn();
+  const state = { isLoading: false };
   return {
-    usePayment: () => ({ initializePayment, isLoading: false }),
+    usePayment: () => ({ initializePayment, isLoading: state.isLoading }),
+    __setLoading: (value: boolean) => {
+      state.isLoading = value;
+    },
   };
 });
 
@@ -58,7 +62,7 @@ describe("ContributeSheet", () => {
       viewer: { id: "u-1", name: "Adaeze", email: "adaeze@example.com" },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Other" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Other" }));
     fireEvent.change(screen.getByLabelText("Amount in naira"), {
       target: { value: "50" },
     });
@@ -128,7 +132,7 @@ describe("ContributeSheet", () => {
     });
 
     // Exactly the ₦100 minimum passes review.
-    fireEvent.click(screen.getByRole("button", { name: "Other" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Other" }));
     fireEvent.change(screen.getByLabelText("Amount in naira"), {
       target: { value: "100" },
     });
@@ -146,10 +150,10 @@ describe("ContributeSheet", () => {
       viewer: { id: "u-1", name: "Adaeze", email: "adaeze@example.com" },
     });
 
-    expect(screen.getByRole("button", { name: "₦1k" })).toBeEnabled();
-    expect(screen.getByRole("button", { name: "₦2.5k" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "₦5k" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "₦10k" })).toBeDisabled();
+    expect(screen.getByRole("radio", { name: "₦1k" })).toBeEnabled();
+    expect(screen.getByRole("radio", { name: "₦2.5k" })).toBeDisabled();
+    expect(screen.getByRole("radio", { name: "₦5k" })).toBeDisabled();
+    expect(screen.getByRole("radio", { name: "₦10k" })).toBeDisabled();
   });
 
   it("blocks a gift that would overshoot the goal and states what is left", () => {
@@ -158,7 +162,7 @@ describe("ContributeSheet", () => {
       viewer: { id: "u-1", name: "Adaeze", email: "adaeze@example.com" },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Other" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Other" }));
     fireEvent.change(screen.getByLabelText("Amount in naira"), {
       target: { value: "5000" },
     });
@@ -179,7 +183,7 @@ describe("ContributeSheet", () => {
       viewer: { id: "u-1", name: "Adaeze", email: "adaeze@example.com" },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Other" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Other" }));
     fireEvent.change(screen.getByLabelText("Amount in naira"), {
       target: { value: "2000" },
     });
@@ -203,5 +207,55 @@ describe("ContributeSheet", () => {
     expect(
       screen.getByText("This item only needs ₦50 more."),
     ).toBeInTheDocument();
+  });
+
+  it("exposes the amount presets as one labelled radiogroup", () => {
+    renderSheet();
+
+    const group = screen.getByRole("radiogroup", { name: "Choose an amount" });
+    expect(group).toBeInTheDocument();
+
+    // The ₦2,500 preset starts selected; picking another moves the state.
+    const defaultPreset = screen.getByRole("radio", { name: "₦2.5k" });
+    expect(defaultPreset).toHaveAttribute("aria-checked", "true");
+
+    fireEvent.click(screen.getByRole("radio", { name: "₦5k" }));
+
+    expect(screen.getByRole("radio", { name: "₦5k" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    expect(defaultPreset).toHaveAttribute("aria-checked", "false");
+  });
+
+  it("marks the confirm button busy while the payment opens", () => {
+    const { __setLoading } = jest.requireMock("@/hooks/use-payment") as {
+      __setLoading: (value: boolean) => void;
+    };
+    try {
+      const props = {
+        item,
+        wishlistTitle: "Nomso's Wishlist",
+        wishlistSlug: "nomsos-wishlist",
+        ownerUsername: "nomso",
+        open: true,
+        onOpenChange: jest.fn(),
+        viewer: { id: "u-1", name: "Adaeze", email: "adaeze@example.com" },
+      };
+      const view = render(<ContributeSheet {...props} />);
+      fireEvent.click(screen.getByRole("button", { name: "Review gift" }));
+      expect(screen.getByRole("button", { name: /Give ₦2,500/ })).toBeEnabled();
+
+      // The provider handoff flips the hook's loading flag; the confirm
+      // button goes inert ("Opening payment…") and announces it to
+      // assistive tech via aria-busy.
+      __setLoading(true);
+      view.rerender(<ContributeSheet {...props} />);
+      const give = screen.getByRole("button", { name: /Opening payment/ });
+      expect(give).toBeDisabled();
+      expect(give).toHaveAttribute("aria-busy", "true");
+    } finally {
+      __setLoading(false);
+    }
   });
 });

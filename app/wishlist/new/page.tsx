@@ -6,7 +6,7 @@ import { CreateWishlistForm } from "@/components/wishlist/create-wishlist-form";
 import { isWishlistSeasonActive } from "@/lib/wishlist/season";
 
 export const metadata: Metadata = {
-  title: "Create a wishlist | Refreeg",
+  title: "Create a wishlist",
   robots: { index: false },
 };
 

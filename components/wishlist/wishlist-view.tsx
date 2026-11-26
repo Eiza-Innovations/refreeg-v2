@@ -182,6 +182,7 @@ export function WishlistView({
             {items.length === 0 ? (
               <EmptyState
                 variant="page"
+                headingLevel={2}
                 className="py-10"
                 icon={<Gift className="h-7 w-7" />}
                 title="No gifts listed yet"

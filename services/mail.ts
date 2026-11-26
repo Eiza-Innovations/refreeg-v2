@@ -10,6 +10,7 @@ import { getClientIp } from "@/lib/api/client-ip";
 import { getCurrentUser } from "@/actions/users/auth-actions";
 import { getProfile } from "@/actions/users/profile-actions";
 import { isTemplateEnabled } from "@/lib/email/triggers";
+import { isWishlistSeasonActive } from "@/lib/wishlist/season";
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.gmail.com",
@@ -1101,6 +1102,7 @@ export async function sendWishlistContributionEmail({
       wishlistUrl,
       showNote: Boolean(note),
       giftNote: note,
+      seasonal: isWishlistSeasonActive(),
       currentYear: new Date().getFullYear(),
     },
   });
@@ -1131,6 +1133,7 @@ export async function sendWishlistItemFundedEmail({
       itemName,
       amount: amount.toLocaleString(),
       wishlistUrl,
+      seasonal: isWishlistSeasonActive(),
       currentYear: new Date().getFullYear(),
     },
   });

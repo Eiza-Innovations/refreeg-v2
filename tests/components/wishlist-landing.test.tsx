@@ -39,6 +39,18 @@ describe("WishlistLanding", () => {
     expect(
       screen.getByText(/This Christmas, skip the guesswork/),
     ).toBeInTheDocument();
+    // The hero variant swaps with the season, per the seasonal contract:
+    // eyebrow, hero headline, body copy and placeholder all read the helper.
+    expect(
+      screen.getByRole("heading", {
+        name: "This Christmas, ask for the gifts you'd actually love.",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", {
+        name: "Show them what would actually make you smile.",
+      }),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps exactly one create CTA and the sample item card visible", () => {

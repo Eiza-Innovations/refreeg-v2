@@ -175,13 +175,19 @@ export function ContributeSheet({
             </div>
 
             <p className={cn(label, "mt-5")}>Amount</p>
-            <div className="mt-3 grid grid-cols-5 gap-2">
+            <div
+              className="mt-3 grid grid-cols-5 gap-2"
+              role="radiogroup"
+              aria-label="Choose an amount"
+            >
               {[...PRESETS, "other" as const].map((value) => {
                 const over = value !== "other" && value > remaining;
                 return (
                   <button
                     key={value}
                     type="button"
+                    role="radio"
+                    aria-checked={form.preset === value}
                     disabled={over}
                     onClick={() => {
                       setField("preset", value);
@@ -443,6 +449,7 @@ export function ContributeSheet({
               variant="lime"
               onClick={give}
               disabled={isLoading}
+              aria-busy={isLoading}
               className="mt-6 h-14 w-full rounded-2xl text-base font-semibold text-ink shadow-[0_10px_24px_-10px_hsl(var(--forest)/0.6)]"
             >
               {isLoading ? (
