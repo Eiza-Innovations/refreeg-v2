@@ -21,6 +21,10 @@ jest.mock("@/services/mail", () => ({
   sendPetitionRejectedEmailForUser: jest.fn(),
 }));
 
+jest.mock("@/lib/admin/review-decisions", () => ({
+  recordReviewDecision: jest.fn(),
+}));
+
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth/auth";
 import { isAdminOrManager } from "@/actions/admin/role-actions";
