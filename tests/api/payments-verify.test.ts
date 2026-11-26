@@ -14,7 +14,11 @@ jest.mock("next/server", () => ({
 
 jest.mock("@/services/paystack", () => ({
   __esModule: true,
-  default: { verifyTransaction: jest.fn() },
+  default: { verifyTransactionFull: jest.fn() },
+}));
+
+jest.mock("@/lib/campaign-analytics/funnel-server", () => ({
+  recordPaymentOutcome: jest.fn().mockResolvedValue(undefined),
 }));
 
 jest.mock("@/lib/payments/paystack-charge-processing", () => ({
