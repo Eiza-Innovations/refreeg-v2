@@ -1,111 +1,57 @@
 import type React from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import Link from "next/link";
+import { Shield } from "lucide-react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Shield,
-  UserCheck,
-  UserX,
-  MoreHorizontal,
-  Search,
-  UserCog,
-  User,
-} from "lucide-react";
-import { format } from "date-fns";
-import { auth } from "@/lib/auth/auth";
-import { redirect } from "next/navigation";
-import { UserActions } from "./user-actions";
+import { CalloutBanner } from "@/components/ui/callout-banner";
+import { EmptyState } from "@/components/ui/empty-state";
+import { WorkspaceFrame } from "@/components/admin/workspace/workspace-frame";
+import { PageHeading } from "@/components/admin/workspace/page-heading";
+import { Heading } from "@/components/marketing/Typography";
 import { UserSearch } from "@/components/engagement/Search";
-import { CopyEmail } from "@/components/engagement/CopyEmail";
-import type { UserWithRole } from "@/types";
-import type { UsersWithRolesPage } from "@/actions/admin/role-actions";
+import { auth } from "@/lib/auth/auth";
 import {
-  getUserRole,
   listUsersWithRolesPage,
   getPendingKycSummary,
 } from "@/actions/admin/role-actions";
-import { PaginationButton } from "@/components/engagement/PaginationButton";
-import Link from "next/link";
+import type { UsersWithRolesPage } from "@/actions/admin/role-actions";
 import { ExportCSVButton } from "./components/export-csv-button";
 import { SendKycReminderButton } from "./components/send-kyc-reminder-button";
+import { UsersTable } from "./users-table";
 
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams:
-    | Promise<{ search?: string; page?: string }>
-    | { search?: string; page?: string };
+  searchParams: Promise<{ search?: string; page?: string }>;
 }) {
   const params = await searchParams;
-
   const session = await auth();
-  const userId = session?.user?.id;
-
-  if (!userId) {
-    redirect("/auth/signin");
-  }
+  const currentUserRole =
+    (session?.user as { role?: string } | undefined)?.role ?? "admin";
 
   const requestedPage = Math.max(Number.parseInt(params.page || "1") || 1, 1);
   let usersPage: UsersWithRolesPage;
   let pendingKyc: { count: number; firstUserId: string | null };
-  let userRole: string | null = null;
 
   try {
-    [usersPage, pendingKyc, userRole] = await Promise.all([
+    [usersPage, pendingKyc] = await Promise.all([
       listUsersWithRolesPage({
         page: requestedPage,
         search: params.search,
       }),
       getPendingKycSummary(params.search),
-      getUserRole(userId),
     ]);
   } catch (err) {
     console.error("AdminUsersPage data fetch error:", err);
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Unable to load users</CardTitle>
-          <CardDescription>
-            Couldn&apos;t load users. Check the server logs for details.
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
-
-  if (!userRole || (userRole !== "admin" && userRole !== "manager")) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Access Denied</CardTitle>
-          <CardDescription>
-            You do not have permission to access this page.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <WorkspaceFrame className="mx-auto max-w-xl py-12">
+        <EmptyState
+          variant="page"
+          icon={<Shield className="h-8 w-8 text-rust" />}
+          title="Unable to load users"
+          description="Couldn't load users. Check the server logs for details."
+        />
+      </WorkspaceFrame>
     );
   }
 
@@ -113,169 +59,54 @@ export default async function AdminUsersPage({
   const kycAttentionCount = pendingKyc.count;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Manage Users</h1>
-        <p className="text-muted-foreground">
-          View and manage user accounts and permissions.
-        </p>
-      </div>
+    <WorkspaceFrame className="mx-auto max-w-[1440px] space-y-6">
+      <PageHeading
+        title="Manage Users"
+        subtitle="View and manage user accounts and permissions."
+      />
 
       {kycAttentionCount > 0 && pendingKyc.firstUserId && (
-        <div className="rounded-md bg-yellow-50 border border-yellow-300 p-4 flex items-center gap-4">
-          <Shield className="h-6 w-6 text-yellow-600" />
-          <div className="flex-1">
-            <span className="font-medium text-yellow-800">
-              {kycAttentionCount} KYC submission
-              {kycAttentionCount > 1 ? "s" : ""} require review
-            </span>
-            <span className="block text-yellow-700 text-sm">
-              There {kycAttentionCount === 1 ? "is" : "are"} {kycAttentionCount}{" "}
-              user
-              {kycAttentionCount > 1 ? "s" : ""} with new or edited KYC
-              submissions awaiting your attention.
-            </span>
-          </div>
-          <Link
-            href={`/dashboard/admin/users/kyc/${pendingKyc.firstUserId}`}
-            className="ml-4 px-3 py-1 rounded bg-yellow-200 text-yellow-900 font-medium hover:bg-yellow-300 transition"
-          >
-            Review Now
-          </Link>
-        </div>
+        <CalloutBanner
+          variant="gold"
+          icon={<Shield className="mt-0.5 h-5 w-5 text-amber" />}
+          title={`${kycAttentionCount} KYC submission${kycAttentionCount > 1 ? "s" : ""} require review`}
+          description={`There ${kycAttentionCount === 1 ? "is" : "are"} ${kycAttentionCount} user${kycAttentionCount > 1 ? "s" : ""} with new or edited KYC submissions awaiting your attention.`}
+          action={
+            <Button variant="ink" size="sm" asChild>
+              <Link
+                href={`/dashboard/admin/users/kyc/${pendingKyc.firstUserId}`}
+              >
+                Review Now
+              </Link>
+            </Button>
+          }
+        />
       )}
 
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <CardTitle>Users</CardTitle>
-            <div className="flex items-center gap-2">
+      <Card className="border border-hairline bg-surface shadow-flat">
+        <CardHeader className="border-b border-hairline pb-4">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <Heading as="h2" size="subsection" className="text-xl md:text-xl">
+              Users
+            </Heading>
+            <div className="flex flex-wrap items-center gap-2">
               <SendKycReminderButton />
               <ExportCSVButton />
               <UserSearch defaultValue={params.search} />
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Joined</TableHead>
-                  <TableHead>KYC</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={6}
-                      className="text-center py-8 text-muted-foreground"
-                    >
-                      No users found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  users.map((userItem: UserWithRole) => (
-                    <TableRow key={userItem.id}>
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <Link
-                            href={`/${userItem.username || userItem.id}`}
-                            className="font-medium hover:underline"
-                          >
-                            {userItem.full_name || "Unnamed User"}
-                          </Link>
-                          <CopyEmail email={userItem.email} />
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {userItem.role === "admin" ? (
-                          <Badge variant="default" className="bg-red-500">
-                            <Shield className="mr-1 h-3 w-3" />
-                            Admin
-                          </Badge>
-                        ) : userItem.role === "manager" ? (
-                          <Badge variant="default" className="bg-blue-500">
-                            <UserCog className="mr-1 h-3 w-3" />
-                            Manager
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline">
-                            <User className="mr-1 h-3 w-3" />
-                            User
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {userItem.is_blocked ? (
-                          <Badge variant="destructive">Blocked</Badge>
-                        ) : (
-                          <Badge
-                            variant="outline"
-                            className="bg-green-500/10 text-green-500 border-green-500/20"
-                          >
-                            Active
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(userItem.created_at), "MMM d, yyyy")}
-                      </TableCell>
-                      <TableCell>
-                        <a
-                          href={`/dashboard/admin/users/kyc/${userItem.id}`}
-                          className="inline-block relative group"
-                          title="Review KYC"
-                        >
-                          {userItem.kyc_status === "approved" ? (
-                            <Shield className="h-6 w-6 text-green-500" />
-                          ) : userItem.kyc_status === "rejected" ? (
-                            <Shield className="h-6 w-6 text-red-500" />
-                          ) : userItem.kyc_status === "pending" ? (
-                            <Shield className="h-6 w-6 text-black" />
-                          ) : (
-                            <Shield className="h-6 w-6 text-gray-400" />
-                          )}
-
-                          {userItem.kyc_status === "pending" && (
-                            <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 border-2 border-white" />
-                          )}
-                        </a>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <UserActions
-                          user={userItem}
-                          currentUserRole={userRole}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-          <div className="mt-4 flex flex-col items-center justify-between gap-3 sm:flex-row">
-            <p className="text-sm text-muted-foreground">
-              {usersPage.total === 0
-                ? "0 users"
-                : `Showing ${(usersPage.page - 1) * usersPage.pageSize + 1}–${
-                    (usersPage.page - 1) * usersPage.pageSize + users.length
-                  } of ${usersPage.total} users`}
-            </p>
-            {usersPage.totalPages > 1 && (
-              <PaginationButton
-                currentPage={usersPage.page}
-                totalPages={usersPage.totalPages}
-              />
-            )}
-          </div>
+        <CardContent className="pt-6">
+          <UsersTable
+            users={users}
+            currentUserRole={currentUserRole}
+            page={usersPage.page}
+            pageSize={usersPage.pageSize}
+            total={usersPage.total}
+            totalPages={usersPage.totalPages}
+          />
         </CardContent>
       </Card>
-    </div>
+    </WorkspaceFrame>
   );
 }
