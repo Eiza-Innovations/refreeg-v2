@@ -26,6 +26,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import Image from "next/image";
+import { goalPercent } from "@/lib/progress";
 
 const PRESETS = [500, 1000, 5000, 10000];
 
@@ -91,8 +92,7 @@ export default function QuickDonateForm({
   // This form always pays through Paystack, whose fee the server adds too.
   const processingFee = calculateProviderFee(donationAmount, "paystack");
   const total = donationAmount + serviceFee + processingFee;
-  const percent =
-    goal > 0 ? Math.min(Math.round((raised / goal) * 100), 100) : 0;
+  const percent = goalPercent(raised, goal);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

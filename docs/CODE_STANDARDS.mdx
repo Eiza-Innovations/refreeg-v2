@@ -143,6 +143,10 @@ When the same expression, lookup or type-based branch appears twice in a file, c
 
 ## 9. Use what exists
 
+Before writing a function, component, hook, schema or Prisma query, search the repo for one that already does the job (`grep` the verb and the table) and use it. Do not write a second copy.
+
+If the same logic appears (or you are about to write it) in two or more files, extract it once and have every place import it: a function in `lib/`, a component in `components/<domain>/`, a hook in `hooks/`, a query in the domain action or a `lib/` loader. Update the existing copies in the same change; do not leave them behind. Typical repeats: percent of a goal (`goalPercent` in `lib/progress.ts`), days left and end dates (`lib/duration.ts`), form state plus schema for the same form (`hooks/use-petition-sign-form.ts`), the same field markup (`components/petitions/sign-form-fields.tsx`), and the same Prisma `findMany` or `groupBy` called from several pages.
+
 Before writing raw HTML, check `components/ui/` and the shared components. Look for existing pieces first: `EmptyState`, `CalloutBanner`, `Eyebrow`, `Card`, `Button`, `Badge`, `AlertDialog`.
 
 - Empty list: render the one list component and vary its empty message by state. Do not wrap it in a ternary with a second empty component.

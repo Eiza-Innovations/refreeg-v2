@@ -15,6 +15,7 @@ import type { Cause } from "@/types/cause-types";
 import type { Petition } from "@/types/petition-types";
 import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { goalPercent } from "@/lib/progress";
 import {
   filterChips,
   withoutChip,
@@ -112,7 +113,7 @@ function causeToItem(cause: Cause): DiscoverItem {
     verified: !!cause.profiles?.is_verified,
     raised,
     goal,
-    percent: goal > 0 ? Math.min(100, Math.round((raised / goal) * 100)) : 0,
+    percent: goalPercent(raised, goal),
     daysLeft,
     urgent: daysLeft != null && daysLeft <= 7,
     location: cause.location || null,
@@ -134,7 +135,7 @@ function petitionToItem(petition: Petition): DiscoverItem {
     verified: !!petition.profiles?.is_verified,
     raised,
     goal,
-    percent: goal > 0 ? Math.min(100, Math.round((raised / goal) * 100)) : 0,
+    percent: goalPercent(raised, goal),
     daysLeft: null,
     urgent: false,
     location: null,

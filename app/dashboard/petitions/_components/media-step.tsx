@@ -1,7 +1,9 @@
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { fieldClass } from "@/components/petitions/field-styles";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -11,7 +13,7 @@ import { useObjectUrl } from "@/hooks/use-object-urls";
 import { isProxyMediaUrl } from "@/lib/s3/media";
 import { MAX_PETITION_FILES } from "@/lib/schemas/petition.schema";
 import { FieldError } from "@/components/ui/field-error";
-import { StepHeading } from "./step-heading";
+import { StepHeading } from "./StepHeading";
 import type { PetitionCopy } from "./petition-copy";
 import type { PetitionFormApi } from "@/hooks/use-petition-form";
 
@@ -63,8 +65,8 @@ export function PetitionMediaStep({
       <div className="space-y-6">
         <div className="space-y-4">
           <Label className="block">Cover image</Label>
-          <div className="rounded-xl border border-hairline bg-surface p-6">
-            <ImageUpload onUpload={uploadCover} maxFiles={1} />
+          <Card variant="surface" className="p-6">
+            <ImageUpload onUpload={uploadCover} maxFiles={1} tone="new" />
             {coverSrc && (
               <div className="group relative mt-4 aspect-video overflow-hidden rounded-xl border border-hairline">
                 <Image
@@ -78,7 +80,7 @@ export function PetitionMediaStep({
                   className="object-cover transition-transform duration-300 group-hover:scale-105"
                 />
                 {form.coverImage && (
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <div className="absolute inset-0 bg-ink/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <Button
                       type="button"
                       variant="destructive"
@@ -93,18 +95,17 @@ export function PetitionMediaStep({
               </div>
             )}
             <FieldError message={errors.coverImage} className="mt-2" />
-          </div>
+          </Card>
         </div>
 
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <Label className="block">{copy.galleryLabel}</Label>
-            <span className="rounded-full border border-hairline bg-bone px-2.5 py-1 text-xs font-medium text-ink/70">
-              Max {MAX_PETITION_FILES} files
-            </span>
+            <Badge variant="held">Max {MAX_PETITION_FILES} files</Badge>
           </div>
-          <div className="rounded-xl border border-hairline bg-surface p-6">
+          <Card variant="surface" className="p-6">
             <ImageUpload
+              tone="new"
               onUpload={uploadGallery}
               maxFiles={MAX_PETITION_FILES - form.multimedia.length}
               description={`Upload up to ${MAX_PETITION_FILES} files`}
@@ -118,7 +119,7 @@ export function PetitionMediaStep({
                 />
               </div>
             )}
-          </div>
+          </Card>
         </div>
 
         <div className="space-y-4">

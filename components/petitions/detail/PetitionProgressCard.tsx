@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { Progress } from "@/components/ui/progress";
 import { ShareModal } from "@/components/engagement/ShareModal";
+import { goalPercent } from "@/lib/progress";
 
 type Props = {
   petitionId: string;
@@ -21,8 +22,7 @@ export function PetitionProgressCard({
   goal,
   daysLeft,
 }: Props) {
-  const percent =
-    goal > 0 ? Math.min(Math.round((signatures / goal) * 100), 100) : 0;
+  const percent = goalPercent(signatures, goal);
 
   return (
     <Card variant="parchment" className="p-6">
@@ -57,6 +57,7 @@ export function PetitionProgressCard({
           title={title}
           entityId={petitionId}
           entityType="petition"
+          triggerVariant="surface"
         />
       </div>
     </Card>

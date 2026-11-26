@@ -6,26 +6,8 @@ import { Eyebrow } from "@/components/ui/eyebrow";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Heading, Lead } from "@/components/marketing/Typography";
 import { MyPetitionsList } from "@/components/causes/MyPetitionsList";
+import { myPetitionStatusOptions } from "@/lib/options/petition.options";
 import { getSessionUser } from "@/lib/auth/session-user";
-
-const tabs = [
-  { value: "all", label: "All", href: "/dashboard/petitions" },
-  {
-    value: "approved",
-    label: "Live",
-    href: "/dashboard/petitions?status=approved",
-  },
-  {
-    value: "pending",
-    label: "Under review",
-    href: "/dashboard/petitions?status=pending",
-  },
-  {
-    value: "rejected",
-    label: "Needs revision",
-    href: "/dashboard/petitions?status=rejected",
-  },
-];
 
 export default async function MyPetitionsPage({
   searchParams,
@@ -36,9 +18,9 @@ export default async function MyPetitionsPage({
   if (!user) redirect("/auth/signin");
 
   const param = await searchParams;
-  const status = tabs.some((tab) => tab.value === param.status)
-    ? param.status!
-    : "all";
+  const status =
+    myPetitionStatusOptions.find((option) => option.value === param.status)
+      ?.value ?? "all";
 
   return (
     <section className="mx-auto w-full max-w-[1200px] px-4 py-8 sm:px-6 lg:py-10">
@@ -63,14 +45,22 @@ export default async function MyPetitionsPage({
 
       <Tabs defaultValue={status} className="mt-6 space-y-6">
         <TabsList variant="pill" className="h-auto max-w-full overflow-x-auto">
-          {tabs.map((tab) => (
+          {myPetitionStatusOptions.map((option) => (
             <TabsTrigger
-              key={tab.value}
-              value={tab.value}
+              key={option.value}
+              value={option.value}
               variant="pill"
               asChild
             >
-              <Link href={tab.href}>{tab.label}</Link>
+              <Link
+                href={
+                  option.value === "all"
+                    ? "/dashboard/petitions"
+                    : `/dashboard/petitions?status=${option.value}`
+                }
+              >
+                {option.label}
+              </Link>
             </TabsTrigger>
           ))}
         </TabsList>

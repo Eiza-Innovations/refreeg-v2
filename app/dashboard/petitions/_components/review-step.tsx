@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Heading, P, Small, Strong } from "@/components/marketing/Typography";
-import { StepHeading } from "./step-heading";
+import { StepHeading } from "./StepHeading";
 import { useObjectUrl, useObjectUrls } from "@/hooks/use-object-urls";
 import { petitionCategoryOptions } from "@/lib/options/petition.options";
 import type { PetitionFormFields } from "@/lib/schemas/petition.schema";
@@ -31,7 +31,7 @@ export function PetitionReviewStep({ form }: { form: PetitionFormFields }) {
       <Card variant="parchment" className="space-y-5 p-6">
         <div className="space-y-1">
           <Eyebrow>{category?.label}</Eyebrow>
-          <Heading as="h3" size="subsection" className="text-3xl md:text-3xl">
+          <Heading as="h3" size="block">
             {form.title}
           </Heading>
         </div>

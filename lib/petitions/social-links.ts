@@ -1,9 +1,4 @@
-export type SocialLinks = {
-  twitter: string;
-  facebook: string;
-  instagram: string;
-  linkedin: string;
-};
+import type { SocialLinks } from "@/types/petition-types";
 
 /** Reads a profile's social_media field, a JSON string or an object. */
 export function parseSocialLinks(raw: unknown): SocialLinks {

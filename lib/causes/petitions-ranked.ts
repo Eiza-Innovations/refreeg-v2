@@ -1,4 +1,5 @@
 import { unstable_cache } from "next/cache";
+import { goalPercent } from "@/lib/progress";
 import { listPetitions } from "@/actions/petitions/petition-actions";
 import { getPetitionSignatureTotals } from "@/actions/petitions/signature-actions";
 import {
@@ -19,10 +20,7 @@ async function rankPetitions(category: string) {
     .map((petition) => {
       const { signerCount = 0, totalAmount = 0 } = totals[petition.id] ?? {};
 
-      const percentRaised =
-        petition.goal > 0
-          ? Math.min(Math.round((totalAmount / petition.goal) * 100), 100)
-          : 0;
+      const percentRaised = goalPercent(totalAmount, petition.goal);
 
       // These objects are handed to client components, so drop the owner's
       // email rather than shipping it in the public page payload.

@@ -10,6 +10,9 @@ const headingSizes = {
     "text-4xl leading-[1.05] tracking-tight sm:text-5xl md:text-6xl lg:text-7xl",
   section: "text-4xl leading-[1.05] tracking-tight md:text-5xl",
   subsection: "text-3xl leading-[1.05] md:text-4xl",
+  block: "text-3xl leading-tight",
+  panel: "text-2xl leading-tight",
+  card: "text-[22px] leading-tight",
 } as const;
 
 type HeadingProps = HTMLAttributes<HTMLHeadingElement> & {

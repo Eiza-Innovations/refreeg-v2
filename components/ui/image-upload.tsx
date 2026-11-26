@@ -29,6 +29,8 @@ interface ImageUploadProps {
   cropOutputWidth?: number;
   cropOutputHeight?: number;
   autoNormalize?: boolean;
+  /** `new` uses the current design system styling. */
+  tone?: "default" | "new";
 }
 
 function toDropzoneAccept(
@@ -296,7 +298,9 @@ export function ImageUpload({
   cropOutputWidth,
   cropOutputHeight,
   autoNormalize = false,
+  tone = "default",
 }: ImageUploadProps) {
+  const isNew = tone === "new";
   const [pendingFile, setPendingFile] = React.useState<File | null>(null);
   const [cropSource, setCropSource] = React.useState<string | null>(null);
   const [zoom, setZoom] = React.useState([1]);
@@ -621,10 +625,16 @@ export function ImageUpload({
     <>
       <div
         {...getRootProps()}
-        className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+        className={`border-2 border-dashed p-6 text-center cursor-pointer transition-colors ${
+          isNew ? "rounded-xl bg-surface" : "rounded-lg"
+        } ${
           isDragActive
-            ? "border-primary bg-primary/5"
-            : "border-muted-foreground/25"
+            ? isNew
+              ? "border-forest bg-forest/5"
+              : "border-primary bg-primary/5"
+            : isNew
+              ? "border-hairline hover:border-forest/50"
+              : "border-muted-foreground/25"
         } ${isNormalizing ? "cursor-wait opacity-70" : ""}`}
       >
         <input {...getInputProps()} />
@@ -638,7 +648,11 @@ export function ImageUpload({
             ) : (
               <p>
                 Drag & drop files here, or{" "}
-                <Button variant="link" className="p-0 h-auto" type="button">
+                <Button
+                  variant="link"
+                  className={`p-0 h-auto ${isNew ? "font-semibold text-forest" : ""}`}
+                  type="button"
+                >
                   click to select
                 </Button>
               </p>
@@ -764,33 +778,46 @@ export function ImageUpload({
           <DialogFooter className="gap-2 pt-2 sm:gap-0">
             <Button
               type="button"
-              variant="outline"
+              variant={isNew ? "surface" : "outline"}
               onClick={resetCropState}
               disabled={isCropping}
-              className="w-full border-slate-300 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 sm:w-auto"
+              className={
+                isNew
+                  ? "w-full sm:w-auto"
+                  : "w-full border-slate-300 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 sm:w-auto"
+              }
             >
               Cancel
             </Button>
             {!cropRequired && (
               <Button
                 type="button"
-                variant="secondary"
+                variant={isNew ? "surface" : "secondary"}
                 onClick={() => {
                   if (pendingFile) {
                     void completeCropFile(pendingFile);
                   }
                 }}
                 disabled={isCropping}
-                className="w-full bg-slate-100 text-slate-800 hover:bg-slate-200 sm:w-auto"
+                className={
+                  isNew
+                    ? "w-full sm:w-auto"
+                    : "w-full bg-slate-100 text-slate-800 hover:bg-slate-200 sm:w-auto"
+                }
               >
                 Use Original
               </Button>
             )}
             <Button
               type="button"
+              variant={isNew ? "ink" : "default"}
               onClick={handleCropConfirm}
               disabled={isCropping}
-              className="w-full bg-slate-900 text-white hover:bg-slate-800 sm:w-auto"
+              className={
+                isNew
+                  ? "w-full sm:w-auto"
+                  : "w-full bg-slate-900 text-white hover:bg-slate-800 sm:w-auto"
+              }
             >
               {isCropping ? "Cropping..." : "Apply"}
             </Button>

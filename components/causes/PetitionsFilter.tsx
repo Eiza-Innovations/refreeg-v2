@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useRouter } from "nextjs-toploader/app";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface Category {
   id: string;
@@ -39,20 +39,16 @@ export function PetitionsFilter({
       {[{ id: "all", name: "All" }, ...categories].map((category) => {
         const active = selectedCategory === category.id;
         return (
-          <button
+          <Button
             key={category.id}
             type="button"
+            variant={active ? "ink" : "surface"}
             aria-pressed={active}
             onClick={() => handleCategoryChange(category.id)}
-            className={cn(
-              "h-9 rounded-full border px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2",
-              active
-                ? "border-ink bg-ink text-ink-foreground"
-                : "border-hairline bg-surface text-ink hover:border-ink/40 hover:bg-bone",
-            )}
+            className="h-9 rounded-full px-4"
           >
             {category.name}
-          </button>
+          </Button>
         );
       })}
     </div>

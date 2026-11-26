@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useCause } from "@/hooks/use-cause";
 import { useCauseForm } from "@/hooks/use-cause-form";
 import { useToast } from "@/hooks/use-toast";
+import { endDateFromDaysActive } from "@/lib/duration";
 import { editCauseStepMeta } from "@/lib/options/cause.options";
 import type { CauseFormValues } from "@/lib/schemas/cause.schema";
 import {
@@ -38,10 +39,7 @@ const initialValues = (cause: Cause): CauseFormValues => ({
   image: cause.image || "",
   sections: cause.sections || [{ heading: "", description: "" }],
   startDate: new Date(),
-  endDate:
-    cause.days_active != null
-      ? new Date(Date.now() + cause.days_active * 24 * 60 * 60 * 1000)
-      : undefined,
+  endDate: endDateFromDaysActive(cause.days_active),
   multimedia: cause.multimedia || [],
   videoLinks: cause.video_links || [],
 });

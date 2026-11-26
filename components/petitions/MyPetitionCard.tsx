@@ -9,6 +9,8 @@ import { CalloutBanner } from "@/components/ui/callout-banner";
 import { Heading, Small } from "@/components/marketing/Typography";
 import { PetitionDropdown } from "@/components/causes/PetitionDropdown";
 import { formatDate } from "@/lib/format-date";
+import { myPetitionStatusOptions } from "@/lib/options/petition.options";
+import { goalPercent } from "@/lib/progress";
 
 type Props = {
   petition: {
@@ -23,40 +25,35 @@ type Props = {
   };
 };
 
-const statusBadge = {
-  approved: { variant: "live", label: "Live" },
-  pending: { variant: "pending", label: "Under review" },
-  rejected: { variant: "critical", label: "Needs revision" },
+const statusVariant = {
+  approved: "live",
+  pending: "pending",
+  rejected: "critical",
 } as const;
-
-const number = (value: number) => new Intl.NumberFormat("en-NG").format(value);
 
 /** One petition in the My petitions grid. */
 export function MyPetitionCard({ petition }: Props) {
   const goal = Number(petition.goal) || 0;
-  const percent =
-    goal > 0
-      ? Math.min(Math.round((petition.signatures / goal) * 100), 100)
-      : 0;
-  const badge =
-    statusBadge[petition.status as keyof typeof statusBadge] ??
-    statusBadge.rejected;
+  const percent = goalPercent(petition.signatures, goal);
+  const status =
+    petition.status in statusVariant ? petition.status : "rejected";
+  const statusLabel = myPetitionStatusOptions.find(
+    (option) => option.value === status,
+  )?.label;
 
   return (
     <Card variant="parchment" className="flex h-full flex-col p-5 sm:p-6">
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant={badge.variant}>{badge.label}</Badge>
+          <Badge variant={statusVariant[status as keyof typeof statusVariant]}>
+            {statusLabel}
+          </Badge>
           {petition.category && <Eyebrow>{petition.category}</Eyebrow>}
         </div>
         <PetitionDropdown petitionId={petition.id} />
       </div>
 
-      <Heading
-        as="h2"
-        size="subsection"
-        className="mt-4 line-clamp-3 text-[22px] leading-tight md:text-[22px]"
-      >
+      <Heading as="h2" size="card" className="mt-4 line-clamp-3">
         <Link href={`/petitions/${petition.id}`} className="hover:underline">
           {petition.title}
         </Link>
@@ -65,9 +62,9 @@ export function MyPetitionCard({ petition }: Props) {
       <div className="mt-auto pt-6">
         <div className="flex items-end justify-between gap-3">
           <p className="font-fraunces text-3xl text-ink">
-            {number(petition.signatures)}
+            {petition.signatures.toLocaleString()}
             <span className="ml-1.5 font-montserrat text-xs text-ink/60">
-              of {number(goal)} signatures
+              of {goal.toLocaleString()} signatures
             </span>
           </p>
           <span className="text-sm font-semibold text-forest">{percent}%</span>
@@ -108,8 +105,8 @@ export function MyPetitionCard({ petition }: Props) {
           {petition.status === "rejected" && (
             <Button
               asChild
-              variant="outline"
-              className="h-10 w-full rounded-xl border-ink bg-surface text-ink hover:bg-bone"
+              variant="surface"
+              className="h-10 w-full rounded-xl"
             >
               <Link href={`/dashboard/petitions/${petition.id}/edit`}>
                 <PencilLine className="mr-2 h-4 w-4" />

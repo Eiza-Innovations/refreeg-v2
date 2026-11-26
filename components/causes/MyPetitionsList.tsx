@@ -2,7 +2,7 @@ import Link from "next/link";
 import { FileSignature, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { MyPetitionCard } from "@/components/petitions/my-petition-card";
+import { MyPetitionCard } from "@/components/petitions/MyPetitionCard";
 import { getUserPetitionsWithStatus } from "@/actions/petitions/petition-actions";
 import { getPetitionSignatureTotals } from "@/actions/petitions/signature-actions";
 
@@ -21,11 +21,9 @@ export async function MyPetitionsList({
   userId: string;
 }) {
   const petitions = await getUserPetitionsWithStatus(userId, status);
-  const filtered =
-    status === "all" ? petitions : petitions.filter((p) => p.status === status);
-  const totals = await getPetitionSignatureTotals(filtered.map((p) => p.id));
+  const totals = await getPetitionSignatureTotals(petitions.map((p) => p.id));
 
-  if (filtered.length === 0) {
+  if (petitions.length === 0) {
     return (
       <EmptyState
         icon={<FileSignature className="h-6 w-6 text-ink/60" />}
@@ -45,7 +43,7 @@ export async function MyPetitionsList({
 
   return (
     <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-      {filtered.map((petition) => (
+      {petitions.map((petition) => (
         <MyPetitionCard
           key={petition.id}
           petition={{

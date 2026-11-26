@@ -1,7 +1,7 @@
 import { getRankedPetitions } from "@/lib/causes/petitions-ranked";
 import { PaginationButton } from "@/components/engagement/PaginationButton";
 import { EmptyState } from "@/components/ui/empty-state";
-import { PetitionCard } from "./PetitionCard";
+import { PetitionCard } from "@/components/petitions/PetitionCard";
 
 interface PetitionsListProps {
   category: string;
@@ -38,16 +38,13 @@ export async function PetitionsList({
         {paginatedPetitions.map((petition) => (
           <PetitionCard
             key={petition.id}
-            petition={{
-              id: petition.id,
-              title: petition.title,
-              image: petition.image,
-              percentRaised: petition.percentRaised,
-              days_active: petition.days_active,
-              totalAmount: petition.totalAmount,
-              goal: petition.goal,
-              profiles: petition.profiles,
-            }}
+            id={petition.id}
+            title={petition.title}
+            percent={petition.percentRaised}
+            signatures={petition.totalAmount}
+            goal={petition.goal}
+            organiser={petition.profiles?.full_name || "Unknown organiser"}
+            daysLeft={petition.days_active}
           />
         ))}
       </div>

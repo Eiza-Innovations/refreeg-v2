@@ -5,6 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { causePublicPath } from "@/lib/causes/slug";
+import { goalPercent } from "@/lib/progress";
 
 export function EmptyState({
   title,
@@ -45,10 +46,7 @@ export function EmptyState({
 }
 
 export function CauseCard({ cause }: { cause: any }) {
-  const progressPercentage = Math.min(
-    Math.round((cause.raised / cause.goal) * 100),
-    100,
-  );
+  const progressPercentage = goalPercent(cause.raised, cause.goal);
 
   return (
     <div className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
@@ -126,8 +124,7 @@ export function PetitionCard({ petition }: { petition: any }) {
   const signatureCount = petition.signatures ?? 0;
   const goal = petition.goal ?? 0;
 
-  const progressPercentage =
-    goal > 0 ? Math.min(Math.round((signatureCount / goal) * 100), 100) : 0;
+  const progressPercentage = goalPercent(signatureCount, goal);
 
   return (
     <div className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
