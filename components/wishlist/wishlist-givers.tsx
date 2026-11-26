@@ -16,11 +16,11 @@ export function WishlistGivers({
   return (
     <div className="rounded-2xl border border-hairline bg-surface p-5">
       <Eyebrow className="text-ink/45">Your givers</Eyebrow>
-      <p className="mt-2 text-[13px] leading-5 text-ink/55">
+      {/* <p className="mt-2 text-[13px] leading-5 text-ink/55">
         Only their names are visible to you, for delivery coordination. Emails
         stay private to us and the giver.
-      </p>
-      <ul className="mt-4 space-y-4">
+      </p> */}
+      <ul className="mt-2 space-y-4">
         {contributors.map((giver) => (
           <li
             key={giver.id}
