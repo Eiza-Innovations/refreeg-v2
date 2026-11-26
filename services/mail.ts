@@ -1442,3 +1442,24 @@ export async function sendProofUpdatePublishedEmail(params: {
     },
   });
 }
+
+export async function sendCampaignRemovedDonorEmail(params: {
+  bcc: string[];
+  causeTitle: string;
+  reasonLabel: string;
+  refundLine: string;
+}) {
+  if (params.bcc.length === 0) return;
+  return sendMail({
+    to: SENDERS.support,
+    bcc: params.bcc,
+    subject: `"${params.causeTitle}" was removed from RefreeG`,
+    templateName: "campaign-removed-donor",
+    context: {
+      causeTitle: params.causeTitle,
+      reasonLabel: params.reasonLabel,
+      refundLine: params.refundLine,
+      currentYear: new Date().getFullYear(),
+    },
+  });
+}
