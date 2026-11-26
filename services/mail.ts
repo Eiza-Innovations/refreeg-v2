@@ -1324,6 +1324,45 @@ export async function sendProofUpdatePublishedEmail(params: {
   });
 }
 
+export async function sendPartnerCreditsIssuedEmail(params: {
+  to: string;
+  partnerName: string;
+  amount: number;
+  expiresAt: Date;
+  kind: "initial_grant" | "top_up";
+}) {
+  if (!params.to) return;
+  const currentYear = new Date().getFullYear();
+  const amountFormatted = `₦${params.amount.toLocaleString("en-NG")}`;
+  const expiresAtLabel = params.expiresAt.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+  const headline =
+    params.kind === "initial_grant"
+      ? `${params.partnerName} is now a RefreeG partner`
+      : `Your partner credit top-up is live`;
+
+  return sendMail({
+    to: params.to,
+    subject:
+      params.kind === "initial_grant"
+        ? `You're invited: ${amountFormatted} in RefreeG Partner Credits`
+        : `${amountFormatted} Partner Credits added to ${params.partnerName}`,
+    templateName: "partner-credits-issued",
+    context: {
+      headline,
+      partnerName: params.partnerName,
+      contactEmail: params.to,
+      amountFormatted,
+      expiresAtLabel,
+      dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com"}/dashboard/partner-credits`,
+      currentYear,
+    },
+  });
+}
+
 export async function sendCampaignRemovedDonorEmail(params: {
   bcc: string[];
   causeTitle: string;
