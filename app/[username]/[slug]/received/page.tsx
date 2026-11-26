@@ -5,7 +5,7 @@ import { WishlistReceived } from "@/components/wishlist/wishlist-received";
 // The checkout callback lands here from both providers; giving stays a
 // private share-link surface, so this confirmation is noindex too.
 export const metadata: Metadata = {
-  title: "Gift confirmation | Refreeg",
+  title: "Gift confirmation",
   robots: { index: false, follow: false },
 };
 

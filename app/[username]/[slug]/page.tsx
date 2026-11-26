@@ -23,9 +23,7 @@ export async function generateMetadata({
   const result = await getWishlistByUsernameAndSlug(username, slug);
 
   return {
-    title: result.success
-      ? `${result.data!.wishlist.title} | Refreeg`
-      : "Wishlist | Refreeg",
+    title: result.success ? `${result.data!.wishlist.title}` : "Wishlist",
     robots: { index: false, follow: false },
   };
 }
