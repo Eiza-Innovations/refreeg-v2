@@ -58,20 +58,15 @@ export default function CreateCauseForm() {
     mode: "create",
   });
   const { form, errors, setFormFields, currentStep } = wizard;
-  const { clearDraft } = useCauseDraft({
+  const { clearDraft, saveDraft } = useCauseDraft({
     form,
     setForm: wizard.setForm,
     isSignedIn: Boolean(user),
   });
 
   const handleSubmit = async () => {
-    if (!user) return;
-
+    if (!user || !wizard.validateAll() || submitting || isLoading) return;
     setSubmitting(true);
-    if (!wizard.validateAll()) {
-      setSubmitting(false);
-      return;
-    }
 
     try {
       const draftEntityId = crypto.randomUUID();
@@ -140,17 +135,22 @@ export default function CreateCauseForm() {
 
   return (
     <CauseWizard
-      title="Create a cause"
-      description="Set up your campaign, explain the need, and submit it for review. Your progress is saved as you go."
+      title="Create a campaign"
       stepMeta={createCauseStepMeta}
       currentStep={currentStep}
       onStepSelect={wizard.setCurrentStep}
       onBack={wizard.prevStep}
       onNext={wizard.nextStep}
       onSubmit={handleSubmit}
-      submitLabel="Launch Cause"
-      busyLabel="Launching..."
+      submitLabel="Send for review"
+      busyLabel="Sending…"
       busy={isLoading || submitting}
+      submitError={errors.multimedia}
+      onSaveAndExit={() => {
+        saveDraft();
+        router.push("/dashboard/causes");
+      }}
+      draftHasFiles={Boolean(form.coverImage || form.multimedia.length)}
     >
       {currentStep === 1 && (
         <CauseBasicsStep
@@ -160,24 +160,8 @@ export default function CreateCauseForm() {
           setFormFields={setFormFields}
         />
       )}
-      {currentStep === 2 && (
-        <CauseStoryStep
-          sections={form.sections}
-          errors={errors}
-          showErrors={wizard.attemptedStep === 2}
-          onAdd={wizard.addSection}
-          onRemove={wizard.removeSection}
-          onUpdate={wizard.updateSection}
-        />
-      )}
-      {currentStep === 3 && (
-        <CauseTimelineStep
-          startDate={form.startDate}
-          endDate={form.endDate}
-          errors={errors}
-          setFormFields={setFormFields}
-        />
-      )}
+      {currentStep === 2 && <CauseStoryStep {...wizard} />}
+      {currentStep === 3 && <CauseTimelineStep {...wizard} />}
       {currentStep === 4 && (
         <CauseMediaStep
           form={form}
@@ -189,7 +173,13 @@ export default function CreateCauseForm() {
           onGalleryRemove={wizard.removeMedia}
         />
       )}
-      {currentStep === 5 && <CauseReviewStep form={form} />}
+      {currentStep === 5 && (
+        <CauseReviewStep
+          form={form}
+          onEdit={wizard.setCurrentStep}
+          busy={isLoading || submitting}
+        />
+      )}
     </CauseWizard>
   );
 }

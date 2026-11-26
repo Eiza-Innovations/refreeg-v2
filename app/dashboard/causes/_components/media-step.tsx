@@ -3,18 +3,26 @@ import dynamic from "next/dynamic";
 import { Plus } from "lucide-react";
 import { Icons } from "@/components/layout/Icons";
 import { Button } from "@/components/ui/button";
+import { Eyebrow } from "@/components/ui/eyebrow";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useObjectUrl } from "@/hooks/use-object-urls";
 import {
   CAUSE_COVER_ACCEPT,
   CAUSE_COVER_DESCRIPTION,
   CAUSE_COVER_HEIGHT,
   CAUSE_COVER_WIDTH,
 } from "@/lib/media/cause-cover";
-import { isProxyMediaUrl } from "@/lib/s3/media";
+import {
+  MAX_VIDEO_BYTES,
+  MAX_VIDEO_DURATION_SEC,
+  MAX_VIDEOS_PER_CAUSE,
+} from "@/lib/media/video";
+import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import {
   MAX_GALLERY_FILES,
+  MAX_TOTAL_MEDIA_BYTES,
   type CauseFormErrors,
   type CauseFormValues,
 } from "@/lib/schemas/cause.schema";
@@ -38,10 +46,7 @@ const GALLERY_ACCEPT = {
   "video/mp4": [".mp4"],
   "video/webm": [".webm"],
 };
-
-const labelClass = "block text-sm font-semibold text-ink sm:text-base";
-const panelClass =
-  "rounded-xl border border-hairline bg-surface px-3 py-4 sm:p-6";
+const bytesPerMegabyte = 1024 * 1024;
 
 type Props = {
   form: CauseFormValues;
@@ -65,9 +70,9 @@ export function CauseMediaStep({
   onGalleryUpload,
   onGalleryRemove,
 }: Props) {
-  const coverSrc = form.coverImage
-    ? URL.createObjectURL(form.coverImage)
-    : form.image;
+  const localCover = useObjectUrl(form.coverImage);
+  const coverSrc = localCover || getMediaUrl(form.image);
+  const remainingFiles = MAX_GALLERY_FILES - form.multimedia.length;
   const setLink = (index: number, value: string) =>
     setFormFields(
       "videoLinks",
@@ -75,10 +80,39 @@ export function CauseMediaStep({
     );
 
   return (
-    <div className="space-y-5 sm:space-y-6">
-      <div className="space-y-4">
-        <Label className={labelClass}>Cover Image</Label>
-        <div className={panelClass}>
+    <div className="space-y-5">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+        <section aria-labelledby="cover-label" className="min-w-0 space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <Eyebrow id="cover-label">Cover photo</Eyebrow>
+            {form.coverImage && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={onCoverRemove}
+                aria-label="Remove cover image"
+                className="h-8 gap-1.5 px-2 text-rust hover:bg-rust/10 hover:text-rust"
+              >
+                <Icons.trash aria-hidden="true" className="h-4 w-4" />
+                Remove
+              </Button>
+            )}
+          </div>
+          {coverSrc && (
+            <div className="relative aspect-video overflow-hidden rounded-xl bg-bone">
+              <Image
+                src={coverSrc}
+                alt="Cover Preview"
+                fill
+                sizes="(max-width: 768px) 100vw, 50vw"
+                unoptimized={
+                  Boolean(form.coverImage) || isProxyMediaUrl(coverSrc)
+                }
+                className="object-contain"
+              />
+            </div>
+          )}
           <ImageUpload
             onUpload={onCoverUpload}
             maxFiles={1}
@@ -88,71 +122,43 @@ export function CauseMediaStep({
             cropRequired
             cropOutputWidth={CAUSE_COVER_WIDTH}
             cropOutputHeight={CAUSE_COVER_HEIGHT}
-            description={`${CAUSE_COVER_DESCRIPTION} · up to 100MB`}
+            description={`${CAUSE_COVER_DESCRIPTION} · up to ${MAX_TOTAL_MEDIA_BYTES / bytesPerMegabyte} MB`}
           />
-          {coverSrc && (
-            <div className="group relative mt-4 aspect-video overflow-hidden rounded-xl border border-hairline shadow-sm">
-              <Image
-                src={coverSrc}
-                alt="Cover Preview"
-                fill
-                sizes="(max-width: 768px) 100vw, 50vw"
-                unoptimized={
-                  Boolean(form.coverImage) || isProxyMediaUrl(coverSrc)
-                }
-                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-              />
-              {form.coverImage && (
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  onClick={onCoverRemove}
-                  className="absolute right-3 top-3 h-9 w-9 rounded-full border border-white/60 p-0 shadow-sm"
-                  aria-label="Remove cover image"
-                >
-                  <Icons.trash className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          )}
-          <FieldError message={errors.coverImage} className="mt-2" />
-        </div>
-      </div>
+          <FieldError message={errors.coverImage} />
+        </section>
 
-      <div className="space-y-4">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <Label className={labelClass}>Multimedia Gallery</Label>
-          <span className="w-fit rounded-full border border-hairline bg-bone px-2.5 py-1 text-xs font-semibold text-ink/70">
-            Max 5 files · 2 videos (MP4/WebM, 50MB, 90s)
-          </span>
-        </div>
-        <div className={panelClass}>
-          <ImageUpload
-            onUpload={onGalleryUpload}
-            maxFiles={MAX_GALLERY_FILES - form.multimedia.length}
-            accept={GALLERY_ACCEPT}
-            enableCrop
-            cropAspect={16 / 9}
-            cropOutputWidth={CAUSE_COVER_WIDTH}
-            cropOutputHeight={CAUSE_COVER_HEIGHT}
-            description="Select up to 5 images and crop each one, or keep its original framing; videos may be MP4/WebM (max 50MB / 90s each)"
-          />
-          <FieldError message={errors.multimedia} className="mt-2" />
+        <section aria-labelledby="gallery-label" className="min-w-0 space-y-3">
+          <Eyebrow id="gallery-label">Gallery</Eyebrow>
+          <p className="text-xs text-ink/70">
+            Up to {MAX_GALLERY_FILES} files, including {MAX_VIDEOS_PER_CAUSE}{" "}
+            videos (MP4 or WebM, {MAX_VIDEO_BYTES / bytesPerMegabyte} MB and{" "}
+            {MAX_VIDEO_DURATION_SEC} seconds each).
+          </p>
           {form.multimedia.length > 0 && (
-            <div className="mt-6">
-              <SelectedMediaCarousel
-                files={form.multimedia}
-                onRemove={onGalleryRemove}
-                variant="refreeg"
-              />
-            </div>
+            <SelectedMediaCarousel
+              files={form.multimedia}
+              onRemove={onGalleryRemove}
+              variant="refreeg"
+            />
           )}
-        </div>
+          {remainingFiles > 0 && (
+            <ImageUpload
+              onUpload={onGalleryUpload}
+              maxFiles={remainingFiles}
+              accept={GALLERY_ACCEPT}
+              enableCrop
+              cropAspect={16 / 9}
+              cropOutputWidth={CAUSE_COVER_WIDTH}
+              cropOutputHeight={CAUSE_COVER_HEIGHT}
+            />
+          )}
+          <FieldError message={errors.multimedia} />
+        </section>
       </div>
 
-      <div className="space-y-4">
-        <Label className={labelClass}>Video Links (Optional)</Label>
+      <Separator className="bg-hairline" />
+      <section aria-labelledby="video-links-label" className="space-y-3">
+        <Eyebrow id="video-links-label">Video links (optional)</Eyebrow>
         <div className="space-y-3">
           {form.videoLinks.map((link, index) => (
             <div
@@ -160,6 +166,7 @@ export function CauseMediaStep({
               className="group flex flex-col gap-2 animate-in slide-in-from-left-2 sm:flex-row"
             >
               <Input
+                aria-label={`Video link ${index + 1}`}
                 value={link}
                 onChange={(e) => setLink(index, e.target.value)}
                 placeholder="YouTube or Vimeo link"
@@ -192,7 +199,7 @@ export function CauseMediaStep({
             Add video link
           </Button>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

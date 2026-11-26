@@ -163,12 +163,12 @@ export function hasCauseErrors(errors: CauseFormErrors) {
   );
 }
 
-/** Which error keys block each wizard step (steps 5 has none). */
+/** Which error keys belong to each step of the campaign form. */
 export const stepErrorKeys: Record<number, (keyof CauseFormErrors)[]> = {
-  1: ["title", "location", "category", "goal"],
-  2: ["sections"],
-  3: ["startDate", "endDate"],
-  4: ["coverImage"],
+  1: ["location", "category"],
+  2: ["title", "summary", "sections"],
+  3: ["goal", "startDate", "endDate"],
+  4: ["coverImage", "multimedia"],
 };
 
 export function stepHasErrors(errors: CauseFormErrors, step: number) {

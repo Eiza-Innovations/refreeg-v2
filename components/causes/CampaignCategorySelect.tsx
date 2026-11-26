@@ -3,6 +3,8 @@
 import { getCampaignCategoryStyle } from "@/lib/causes/campaign-categories";
 import { categories } from "@/lib/causes/categories";
 import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -16,6 +18,7 @@ type CampaignCategorySelectProps = {
   onValueChange: (value: string) => void;
   invalid?: boolean;
   className?: string;
+  variant?: "select" | "tiles";
 };
 
 export function CampaignCategorySelect({
@@ -23,9 +26,40 @@ export function CampaignCategorySelect({
   onValueChange,
   invalid = false,
   className,
+  variant = "select",
 }: CampaignCategorySelectProps) {
   const selectedCategory = value ? getCampaignCategoryStyle(value) : null;
   const SelectedIcon = selectedCategory?.icon;
+
+  if (variant === "tiles") {
+    return (
+      <div className={cn("space-y-3", className)}>
+        <Label id="category-label" className="label-eyebrow">
+          Category
+        </Label>
+        <RadioGroup
+          aria-labelledby="category-label"
+          aria-invalid={invalid}
+          className="grid-cols-2 gap-2 xl:grid-cols-3"
+          value={value}
+          onValueChange={onValueChange}
+        >
+          {categories.map((category) => (
+            <Label
+              key={category.id}
+              className="flex min-h-14 cursor-pointer items-center gap-2 rounded-xl bg-bone px-3 py-2 leading-snug hover:bg-warm-neutral has-[[data-state=checked]]:bg-blue-accent/5 has-[[data-state=checked]]:font-semibold sm:gap-3 sm:px-4"
+            >
+              <RadioGroupItem
+                value={category.id}
+                className="shrink-0 border-transparent bg-warm-neutral data-[state=checked]:bg-blue-accent data-[state=checked]:text-white"
+              />
+              {category.name}
+            </Label>
+          ))}
+        </RadioGroup>
+      </div>
+    );
+  }
 
   return (
     <Select value={value} onValueChange={onValueChange}>

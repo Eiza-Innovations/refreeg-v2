@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   hasCauseErrors,
+  stepErrorKeys,
   stepHasErrors,
   validateCauseForm,
   type CauseFormErrors,
@@ -31,7 +32,6 @@ export function useCauseForm({
   const [form, setForm] = useState(initialValues);
   const [errors, setErrors] = useState<CauseFormErrors>({});
   const [currentStep, setCurrentStep] = useState(1);
-  const [attemptedStep, setAttemptedStep] = useState<number | null>(null);
 
   const setError = (key: keyof CauseFormErrors, message: string | undefined) =>
     setErrors((current) => ({ ...current, [key]: message }));
@@ -114,9 +114,11 @@ export function useCauseForm({
   };
 
   const nextStep = () => {
-    setAttemptedStep(currentStep);
     const found = validateCauseForm(form, mode);
-    setErrors(found);
+    const stepErrors = Object.fromEntries(
+      (stepErrorKeys[currentStep] ?? []).map((key) => [key, found[key]]),
+    );
+    setErrors((current) => ({ ...current, ...stepErrors }));
     if (currentStep < LAST_CAUSE_STEP && !stepHasErrors(found, currentStep)) {
       setCurrentStep((step) => step + 1);
     }
@@ -129,6 +131,12 @@ export function useCauseForm({
     const found = validateCauseForm(form, mode);
     if (!hasCauseErrors(found)) return true;
     setErrors(found);
+    for (let step = 1; step < LAST_CAUSE_STEP; step++) {
+      if (stepHasErrors(found, step)) {
+        setCurrentStep(step);
+        break;
+      }
+    }
     return false;
   };
 
@@ -140,7 +148,6 @@ export function useCauseForm({
     setError,
     currentStep,
     setCurrentStep,
-    attemptedStep,
     uploadCover,
     clearCover,
     uploadGallery,

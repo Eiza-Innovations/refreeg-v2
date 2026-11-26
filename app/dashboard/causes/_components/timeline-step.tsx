@@ -7,21 +7,31 @@ import {
   isBefore,
   startOfDay,
 } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { CalloutBanner } from "@/components/ui/callout-banner";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
+import { MAX_DURATION_DAYS } from "@/lib/schemas/cause.schema";
 import {
-  MAX_DURATION_DAYS,
-  type CauseFormErrors,
-  type CauseFormValues,
-} from "@/lib/schemas/cause.schema";
+  formatFundingGoalInput,
+  normalizeFundingGoalInput,
+} from "@/lib/causes/funding-goal";
+import { causeCurrencyOptions } from "@/lib/options/cause.options";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { useCauseForm } from "@/hooks/use-cause-form";
 import { cn } from "@/lib/utils";
 import { FieldError } from "@/components/ui/field-error";
 
@@ -32,23 +42,19 @@ const Calendar = dynamic(
 
 type DateField = "startDate" | "endDate";
 
-type Props = {
-  startDate: Date | undefined;
-  endDate: Date | undefined;
-  errors: CauseFormErrors;
-  setFormFields: <K extends keyof CauseFormValues>(
-    key: K,
-    value: CauseFormValues[K],
-  ) => void;
-};
+type Props = Pick<
+  ReturnType<typeof useCauseForm>,
+  "form" | "errors" | "setFormFields"
+>;
 
 export function CauseTimelineStep({
-  startDate,
-  endDate,
+  form: { startDate, endDate, goal, currency },
   errors,
   setFormFields,
 }: Props) {
   const today = startOfDay(new Date());
+  const duration =
+    startDate && endDate ? differenceInDays(endDate, startDate) : null;
 
   const datePicker = (field: DateField, label: string, id: string) => {
     const value = field === "startDate" ? startDate : endDate;
@@ -62,23 +68,24 @@ export function CauseTimelineStep({
     };
 
     return (
-      <div className="space-y-3 rounded-xl border border-hairline bg-surface px-3 py-4 sm:p-5">
-        <Label htmlFor={id} className="block text-sm font-semibold text-ink">
+      <div className="space-y-2">
+        <Label htmlFor={id} className="label-eyebrow">
           {label}
         </Label>
         <Popover>
           <PopoverTrigger asChild>
             <Button
               id={id}
-              variant="outline"
+              type="button"
+              variant="surface"
+              aria-invalid={Boolean(errors[field])}
               className={cn(
-                "h-12 w-full justify-start rounded-xl text-left font-normal premium-input",
+                "h-12 w-full justify-between rounded-xl text-left font-medium premium-input",
                 !value && "text-muted-foreground",
-                errors[field] && "border-rust",
               )}
             >
-              <CalendarIcon className="mr-3 h-4 w-4 text-forest" />
               {value ? format(value, "PPP") : <span>Pick a date</span>}
+              <ChevronDown aria-hidden="true" className="h-4 w-4 text-ink/60" />
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
@@ -102,21 +109,66 @@ export function CauseTimelineStep({
   };
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-8">
-        {datePicker("startDate", "Start Date", "start-date")}
-        {datePicker("endDate", "End Date", "end-date")}
+    <div className="space-y-5">
+      <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_8rem] sm:items-start">
+        <div className="space-y-2">
+          <Label htmlFor="goal" className="label-eyebrow">
+            Funding goal
+          </Label>
+          <div className="relative">
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 font-fraunces text-xl text-ink/60"
+            >
+              ₦
+            </span>
+            <Input
+              id="goal"
+              name="goal"
+              type="text"
+              inputMode="decimal"
+              placeholder="0.00"
+              value={formatFundingGoalInput(goal)}
+              onChange={(event) => {
+                const value = normalizeFundingGoalInput(event.target.value);
+                if (value !== null) setFormFields("goal", value);
+              }}
+              aria-invalid={Boolean(errors.goal)}
+              className="premium-input h-14 pl-10 font-fraunces text-2xl md:text-2xl"
+            />
+          </div>
+          <FieldError message={errors.goal} />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="currency" className="label-eyebrow">
+            Currency
+          </Label>
+          <Select
+            value={currency}
+            onValueChange={(value) => setFormFields("currency", value)}
+          >
+            <SelectTrigger id="currency" className="h-14 premium-input">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {causeCurrencyOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.value}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
-
-      {startDate && endDate && (
-        <CalloutBanner
-          variant="forest"
-          icon={
-            <CalendarIcon className="mt-0.5 h-4 w-4 shrink-0 text-forest" />
-          }
-          title={`Duration: ${differenceInDays(endDate, startDate)} days`}
-          description={`Running from ${format(startDate, "PPP")} to ${format(endDate, "PPP")}`}
-        />
+      <Separator className="bg-hairline" />
+      <div className="grid gap-4 sm:grid-cols-2">
+        {datePicker("startDate", "Start Date", "start-date")}
+        {datePicker("endDate", "Runs Until", "end-date")}
+      </div>
+      {duration !== null && duration > 0 && (
+        <p className="w-fit rounded-xl bg-blue-accent/5 px-4 py-2 text-sm font-medium">
+          {duration} {duration === 1 ? "day" : "days"}
+        </p>
       )}
     </div>
   );

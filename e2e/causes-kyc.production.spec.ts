@@ -350,13 +350,14 @@ test.describe("RefreeG Production — Causes & KYC", () => {
       return;
     }
 
+    await page.getByRole("button", { name: /^Continue to story$/i }).click();
     await expect(page.locator("#title")).toBeVisible({ timeout: 30_000 });
     await page.locator("#title").fill(editedTitle);
     await page.locator("#summary").fill("Updated summary from Playwright E2E");
 
     // Walk through remaining steps if wizard requires Continue
-    for (let step = 0; step < 4; step++) {
-      const continueBtn = page.getByRole("button", { name: /^Continue$/i });
+    for (let step = 0; step < 3; step++) {
+      const continueBtn = page.getByRole("button", { name: /^Continue to /i });
       if (await continueBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
         // Ensure story fields if we're on story step
         const heading = page.locator("#section-heading-0");
@@ -406,7 +407,9 @@ test.describe("RefreeG Production — Causes & KYC", () => {
       }
     }
 
-    const updateBtn = page.getByRole("button", { name: /Update Cause/i });
+    const updateBtn = page.getByRole("button", {
+      name: /Send changes for review/i,
+    });
     await expect(updateBtn).toBeVisible({ timeout: 20_000 });
     await updateBtn.click();
 

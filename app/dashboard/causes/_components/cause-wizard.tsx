@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
-import { ArrowLeft, ArrowRight, LockKeyhole } from "lucide-react";
 import { Icons } from "@/components/layout/Icons";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CalloutBanner } from "@/components/ui/callout-banner";
 import { Card } from "@/components/ui/card";
 import { Eyebrow } from "@/components/ui/eyebrow";
+import { FieldError } from "@/components/ui/field-error";
 import { Stepper } from "@/components/ui/stepper";
 import { causeSteps } from "@/lib/options/cause.options";
 import { LAST_CAUSE_STEP } from "@/hooks/use-cause-form";
@@ -15,7 +15,6 @@ type StepMeta = { title: string; description: string };
 
 type Props = {
   title: string;
-  description: string;
   stepMeta: readonly StepMeta[];
   currentStep: number;
   onStepSelect: (step: number) => void;
@@ -25,13 +24,15 @@ type Props = {
   submitLabel: string;
   busyLabel: string;
   busy: boolean;
+  submitError?: string;
+  onSaveAndExit?: () => void;
+  draftHasFiles?: boolean;
   children: ReactNode;
 };
 
 /** Shared frame for the create and edit cause wizards. */
 export function CauseWizard({
   title,
-  description,
   stepMeta,
   currentStep,
   onStepSelect,
@@ -41,16 +42,23 @@ export function CauseWizard({
   submitLabel,
   busyLabel,
   busy,
+  submitError,
+  onSaveAndExit,
+  draftHasFiles,
   children,
 }: Props) {
   const flowTopRef = useRef<HTMLDivElement>(null);
+  const stepHeadingRef = useRef<HTMLHeadingElement>(null);
   const previousStepRef = useRef(currentStep);
   const activeStep = stepMeta[currentStep - 1];
+  const nextStep = causeSteps[currentStep];
+  const isReview = currentStep === LAST_CAUSE_STEP;
 
   useEffect(() => {
     if (previousStepRef.current === currentStep) return;
     previousStepRef.current = currentStep;
     window.requestAnimationFrame(() => {
+      stepHeadingRef.current?.focus({ preventScroll: true });
       flowTopRef.current?.scrollIntoView({
         behavior: "smooth",
         block: "start",
@@ -59,129 +67,133 @@ export function CauseWizard({
   }, [currentStep]);
 
   return (
-    <div className="min-h-screen w-full bg-cream px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
-      <div className="mx-auto max-w-5xl">
-        <header className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <Eyebrow>Campaign builder</Eyebrow>
-            <h1 className="mt-2 font-fraunces text-3xl font-medium text-ink sm:text-4xl">
-              {title}
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-ink/70">
-              {description}
-            </p>
-          </div>
-          <p className="inline-flex w-fit items-center gap-2 text-xs font-medium text-ink/60">
-            <span className="h-1.5 w-1.5 rounded-full bg-forest" />
-            Draft saves automatically
-          </p>
-        </header>
-
-        <div ref={flowTopRef} className="scroll-mt-28 space-y-6">
-          <div className="overflow-x-auto pb-1">
-            <Stepper
-              className="min-w-[520px]"
-              steps={causeSteps.map((label, i) => ({
+    <div className="w-full bg-cream px-4 py-6 text-ink sm:px-6 lg:px-8 lg:py-9">
+      <div className="mx-auto grid max-w-6xl gap-5 lg:grid-cols-[11rem_minmax(0,1fr)] lg:gap-8">
+        <nav aria-label={title} className="space-y-3 lg:self-start lg:pt-1">
+          <Eyebrow className="lg:px-3">{title}</Eyebrow>
+          <Stepper
+            variant="rail"
+            steps={causeSteps.map((label, index) => {
+              const step = index + 1;
+              return {
                 label,
                 status:
-                  i + 1 < currentStep
+                  step < currentStep
                     ? "done"
-                    : i + 1 === currentStep
+                    : step === currentStep
                       ? "current"
                       : "upcoming",
-              }))}
-              onStepSelect={onStepSelect}
-            />
-          </div>
-
-          <Card variant="surface" className="overflow-hidden shadow-none">
-            <div className="border-b border-hairline bg-bone px-4 py-5 sm:p-6">
-              <Eyebrow>
-                Step {currentStep} of {LAST_CAUSE_STEP} ·{" "}
-                {causeSteps[currentStep - 1]}
-              </Eyebrow>
-              <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <h2 className="font-fraunces text-2xl font-medium text-ink">
-                    {activeStep.title}
-                  </h2>
-                  <p className="mt-1 max-w-2xl text-sm leading-6 text-ink/70">
-                    {activeStep.description}
-                  </p>
-                </div>
-                <Badge variant="forest" className="w-fit shrink-0 gap-1.5">
-                  <LockKeyhole className="h-3.5 w-3.5" />
-                  Milestone protected
-                </Badge>
-              </div>
+              };
+            })}
+            onStepSelect={busy ? undefined : onStepSelect}
+          />
+          {onSaveAndExit && (
+            <div className="border-t border-hairline pt-2 lg:mx-3">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={onSaveAndExit}
+                disabled={busy}
+                className="-ml-2 px-2 text-ink"
+              >
+                Save and exit
+              </Button>
+              {draftHasFiles && (
+                <p className="text-xs leading-5 text-ink/70">
+                  You’ll need to add your selected files again when you return.
+                </p>
+              )}
             </div>
+          )}
+        </nav>
 
-            <form
-              className="cause-flow space-y-6 px-4 py-5 sm:space-y-8 sm:p-6"
-              autoComplete="off"
-              onKeyDown={(e) => {
-                if (
-                  currentStep === LAST_CAUSE_STEP &&
-                  e.key === "Enter" &&
-                  e.target instanceof HTMLElement &&
-                  e.target.tagName !== "TEXTAREA" &&
-                  e.target.tagName !== "BUTTON"
-                ) {
-                  e.preventDefault();
-                }
-              }}
+        <div ref={flowTopRef} className="min-w-0 scroll-mt-28 space-y-5">
+          <header className="space-y-2">
+            <h1
+              ref={stepHeadingRef}
+              tabIndex={-1}
+              className="font-fraunces text-3xl font-medium tracking-tight sm:text-4xl"
             >
-              <div className="min-h-[320px] sm:min-h-[400px]">
-                <div
-                  key={currentStep}
-                  className="animate-in fade-in duration-200"
-                >
-                  {children}
-                </div>
-              </div>
+              {activeStep.title}
+            </h1>
+            <p className="text-sm leading-6 text-ink/70">
+              {activeStep.description}
+            </p>
+          </header>
 
-              <div className="sticky bottom-0 z-10 -mx-4 -mb-5 flex items-center justify-between gap-3 border-t border-hairline bg-surface px-4 py-4 sm:static sm:-mx-6 sm:-mb-6 sm:px-6 sm:py-5">
+          <form
+            className="cause-flow space-y-5"
+            autoComplete="off"
+            onSubmit={(event) => event.preventDefault()}
+          >
+            <Card
+              key={currentStep}
+              variant="surface"
+              className="space-y-6 rounded-2xl border-0 p-4 shadow-none sm:p-6"
+            >
+              {children}
+              {isReview && (
+                <>
+                  <FieldError message={submitError} />
+                  <CalloutBanner
+                    variant="sand"
+                    className="flex-col sm:flex-row sm:items-center"
+                    title="Send for review"
+                    description="RefreeG reviews submissions before they appear publicly."
+                    action={
+                      <Button
+                        type="button"
+                        variant="ink"
+                        disabled={busy}
+                        onClick={onSubmit}
+                        className="h-11 shrink-0 rounded-xl px-5"
+                      >
+                        {busy && (
+                          <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                        )}
+                        {busy ? busyLabel : submitLabel}
+                      </Button>
+                    }
+                  />
+                </>
+              )}
+            </Card>
+
+            <div className="flex flex-wrap items-center gap-2.5">
+              {!isReview && (
                 <Button
                   type="button"
-                  variant="surface"
-                  onClick={onBack}
-                  disabled={currentStep === 1}
-                  className="h-11 px-4 sm:px-5"
+                  variant="ink"
+                  onClick={onNext}
+                  className="h-11 rounded-xl px-5"
                 >
-                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Continue to {nextStep.toLowerCase()}
+                </Button>
+              )}
+              {currentStep > 1 && (
+                <Button
+                  type="button"
+                  variant="subtle"
+                  onClick={onBack}
+                  disabled={busy}
+                  className="h-11 rounded-xl px-5"
+                >
                   Back
                 </Button>
-                {currentStep < LAST_CAUSE_STEP ? (
-                  <Button
-                    type="button"
-                    variant="ink"
-                    onClick={onNext}
-                    className="h-11 px-5 sm:px-7"
-                  >
-                    Continue
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                ) : (
-                  <Button
-                    type="button"
-                    variant="lime"
-                    disabled={busy}
-                    onClick={onSubmit}
-                    className="h-11 px-5 sm:px-7"
-                  >
-                    {busy ? (
-                      <>
-                        <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-                        {busyLabel}
-                      </>
-                    ) : (
-                      submitLabel
-                    )}
-                  </Button>
-                )}
-              </div>
-            </form>
-          </Card>
+              )}
+              {currentStep === 1 && onSaveAndExit && (
+                <Button
+                  type="button"
+                  variant="subtle"
+                  onClick={onSaveAndExit}
+                  className="h-11 rounded-xl px-5"
+                >
+                  Save and finish later
+                </Button>
+              )}
+            </div>
+          </form>
         </div>
       </div>
     </div>

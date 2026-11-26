@@ -5,63 +5,49 @@ export const causeCurrencyOptions = [
 ] as const satisfies readonly Option[];
 
 export const causeSteps = [
-  "Basic Info",
+  "Cause",
   "Story",
-  "Timeline",
-  "Media",
+  "Target",
+  "Photos",
   "Review",
-];
+] as const;
+
+const sharedStepMeta = [
+  {
+    title: "What kind of campaign is this?",
+    description:
+      "Choose a category and tell supporters where the campaign is based.",
+  },
+  {
+    title: "Title and story",
+    description:
+      "Tell supporters who you’re helping, what happened, and how they can help.",
+  },
+  {
+    title: "Target and deadline",
+    description:
+      "Set how much you want to raise and when fundraising will run.",
+  },
+  {
+    title: "Photos and videos",
+    description:
+      "Choose a cover photo and add any other media that helps tell the story.",
+  },
+] as const;
 
 export const createCauseStepMeta = [
+  ...sharedStepMeta,
   {
-    title: "Start with the basics",
-    description:
-      "Give supporters a clear snapshot of what you are raising money for.",
-  },
-  {
-    title: "Tell your story",
-    description:
-      "Add sections so supporters understand who this helps and why.",
-  },
-  {
-    title: "Set your timeline",
-    description:
-      "Choose when fundraising starts and ends. Campaigns can run for up to 180 days.",
-  },
-  {
-    title: "Add campaign media",
-    description:
-      "Choose a strong cover image, then add photos or short videos that build trust.",
-  },
-  {
-    title: "Review your cause",
-    description:
-      "Check the details supporters will see before sending your cause for review.",
+    title: "Review your campaign",
+    description: "Check your campaign details before sending them for review.",
   },
 ] as const;
 
 export const editCauseStepMeta = [
-  {
-    title: "Basic information",
-    description: "Update the essentials supporters see first.",
-  },
-  {
-    title: "Your story",
-    description: "Update your sections to keep your supporters informed.",
-  },
-  {
-    title: "Campaign timeline",
-    description:
-      "Adjust your campaign duration. Max duration remains 180 days from start.",
-  },
-  {
-    title: "Visual impact",
-    description:
-      "Update your visuals. High-quality media significantly increases engagement.",
-  },
+  ...sharedStepMeta,
   {
     title: "Review your changes",
     description:
-      "Review how your updated cause will look. Changes will be submitted for review.",
+      "Check the updated details before sending your changes for review.",
   },
 ] as const;

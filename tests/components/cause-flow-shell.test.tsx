@@ -1,40 +1,41 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { FormStepper } from "@/components/ui/premium/form-stepper";
-import { PremiumFormContainer } from "@/components/ui/premium/premium-form-container";
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import { CauseWizard } from "@/app/dashboard/causes/_components/cause-wizard";
+import { createCauseStepMeta } from "@/lib/options/cause.options";
 
-describe("Refreeg cause flow shell", () => {
-  it("renders the campaign workspace and vertical setup progress", () => {
+describe("RefreeG campaign wizard", () => {
+  it("shows the active step and allows returning only to completed steps", () => {
     const onStepSelect = jest.fn();
     render(
-      <PremiumFormContainer
-        title="Create a cause"
-        description="Set up your campaign"
-        variant="refreeg"
+      <CauseWizard
+        title="Create a campaign"
+        stepMeta={createCauseStepMeta}
+        currentStep={2}
+        onStepSelect={onStepSelect}
+        onBack={jest.fn()}
+        onNext={jest.fn()}
+        onSubmit={jest.fn()}
+        submitLabel="Send for review"
+        busyLabel="Sending…"
+        busy={false}
       >
-        <FormStepper
-          steps={["Basic Info", "Story", "Timeline", "Media", "Review"]}
-          currentStep={2}
-          variant="refreeg"
-          onStepSelect={onStepSelect}
-        />
-      </PremiumFormContainer>,
+        <div>Story fields</div>
+      </CauseWizard>,
     );
 
     expect(
-      screen.getByRole("heading", { name: "Create a cause" }),
+      screen.getByRole("heading", { name: "Title and story" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Campaign builder")).toBeInTheDocument();
-    expect(screen.getByText("Step 2 of 5")).toBeInTheDocument();
-    expect(screen.getAllByText("40%").length).toBeGreaterThan(0);
-    expect(
-      screen
-        .getAllByText("Story")
-        .find((element) => element.closest('[aria-current="step"]')),
-    ).toBeTruthy();
+    const navigation = within(
+      screen.getByRole("navigation", { name: "Create a campaign" }),
+    );
+    expect(navigation.getByText("Story").closest("li")).toHaveAttribute(
+      "aria-current",
+      "step",
+    );
+    expect(navigation.getByText("Target").closest("button")).toBeNull();
     fireEvent.click(
-      screen.getByRole("button", { name: "Go back to Basic Info" }),
+      navigation.getByRole("button", { name: "Go back to Cause" }),
     );
     expect(onStepSelect).toHaveBeenCalledWith(1);
-    expect(screen.getByText("Timeline").closest("button")).toBeDisabled();
   });
 });

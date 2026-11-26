@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "nextjs-toploader/app";
 import { useAuth } from "@/hooks/use-auth";
 import { useCause } from "@/hooks/use-cause";
@@ -49,6 +50,7 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
   const { isLoading, updateCause } = useCause();
   const { toast } = useToast();
   const router = useRouter();
+  const [submitting, setSubmitting] = useState(false);
   const wizard = useCauseForm({
     initialValues: initialValues(cause),
     mode: "edit",
@@ -56,7 +58,8 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
   const { form, errors, setFormFields, currentStep } = wizard;
 
   const handleSubmit = async () => {
-    if (!user || !wizard.validateAll()) return;
+    if (!user || !wizard.validateAll() || submitting || isLoading) return;
+    setSubmitting(true);
 
     try {
       let coverImage: File | string | null = form.coverImage;
@@ -110,22 +113,24 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
         description: message,
         variant: "destructive",
       });
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
     <CauseWizard
-      title="Edit Cause"
-      description="Refine your project to reach more donors and achieve your impact."
+      title="Edit campaign"
       stepMeta={editCauseStepMeta}
       currentStep={currentStep}
       onStepSelect={wizard.setCurrentStep}
       onBack={wizard.prevStep}
       onNext={wizard.nextStep}
       onSubmit={handleSubmit}
-      submitLabel="Update Cause"
-      busyLabel="Saving..."
-      busy={isLoading}
+      submitLabel="Send changes for review"
+      busyLabel="Sending…"
+      busy={isLoading || submitting}
+      submitError={errors.multimedia}
     >
       {currentStep === 1 && (
         <CauseBasicsStep
@@ -135,24 +140,8 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
           setFormFields={setFormFields}
         />
       )}
-      {currentStep === 2 && (
-        <CauseStoryStep
-          sections={form.sections}
-          errors={errors}
-          showErrors={wizard.attemptedStep === 2}
-          onAdd={wizard.addSection}
-          onRemove={wizard.removeSection}
-          onUpdate={wizard.updateSection}
-        />
-      )}
-      {currentStep === 3 && (
-        <CauseTimelineStep
-          startDate={form.startDate}
-          endDate={form.endDate}
-          errors={errors}
-          setFormFields={setFormFields}
-        />
-      )}
+      {currentStep === 2 && <CauseStoryStep {...wizard} />}
+      {currentStep === 3 && <CauseTimelineStep {...wizard} />}
       {currentStep === 4 && (
         <CauseMediaStep
           form={form}
@@ -164,7 +153,13 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
           onGalleryRemove={wizard.removeMedia}
         />
       )}
-      {currentStep === 5 && <CauseReviewStep form={form} />}
+      {currentStep === 5 && (
+        <CauseReviewStep
+          form={form}
+          onEdit={wizard.setCurrentStep}
+          busy={isLoading || submitting}
+        />
+      )}
     </CauseWizard>
   );
 }
