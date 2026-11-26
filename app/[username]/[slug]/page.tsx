@@ -37,7 +37,8 @@ export default async function WishlistSharePage({ params }: WishlistPageProps) {
     notFound();
   }
 
-  const { wishlist, ownerUsername, viewerIsOwner } = result.data;
+  const { wishlist, ownerUsername, viewerIsOwner, ownerPayoutReady } =
+    result.data;
   const viewer = await getSessionUser();
 
   // Owner-only: the giver list with contact details never renders for
@@ -50,6 +51,7 @@ export default async function WishlistSharePage({ params }: WishlistPageProps) {
       wishlist={wishlist}
       ownerUsername={ownerUsername}
       viewerIsOwner={viewerIsOwner}
+      ownerPayoutReady={ownerPayoutReady}
       viewer={
         viewer
           ? {

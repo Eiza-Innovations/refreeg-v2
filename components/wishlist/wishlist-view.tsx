@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Gift } from "lucide-react";
+import Link from "next/link";
+import { Gift, Landmark } from "lucide-react";
 
 import {
   deleteWishlistItem,
@@ -36,6 +37,8 @@ export interface WishlistViewProps {
   /** Owner's username; the share URL is /<ownerUsername>/<slug>. */
   ownerUsername: string;
   viewerIsOwner: boolean;
+  /** Owner's bank details are on file, so gifts split straight to them. */
+  ownerPayoutReady?: boolean;
   /** Signed-in giver prefill for the give sheet; null for guests. */
   viewer: { id: string; name: string; email: string } | null;
   seasonal: boolean;
@@ -47,6 +50,7 @@ export function WishlistView({
   wishlist: initialWishlist,
   ownerUsername,
   viewerIsOwner,
+  ownerPayoutReady = true,
   viewer,
   seasonal,
   givers,
@@ -131,6 +135,27 @@ export function WishlistView({
               variant="neutral"
               title="This wishlist is archived"
               description="Everything stays visible, but giving is paused until the owner unarchives it."
+            />
+          </div>
+        )}
+
+        {/* Gold means waiting, not error: without bank details on file the
+            gifts still collect, they just land on the platform account. */}
+        {viewerIsOwner && !ownerPayoutReady && (
+          <div className="mt-5">
+            <CalloutBanner
+              variant="gold"
+              icon={<Landmark className="mt-0.5 h-5 w-5 shrink-0" />}
+              title="Payout details aren't finished"
+              description="Gifts still come through — they collect on RefreeG until you finish verification in Settings. After that, they split straight to your bank account."
+              action={
+                <Link
+                  href="/dashboard/settings/kyc"
+                  className="mt-0.5 shrink-0 text-sm font-semibold text-blue-accent hover:underline"
+                >
+                  Finish
+                </Link>
+              }
             />
           </div>
         )}

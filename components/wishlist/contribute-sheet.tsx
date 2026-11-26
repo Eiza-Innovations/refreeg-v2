@@ -81,7 +81,10 @@ export function ContributeSheet({
 
   const amount =
     form.preset === "other" ? Number(form.other) || 0 : form.preset;
-  const { errors, validate, clearError } = useValidator({
+  // The remaining-balance cap is server-owned; the sheet mirrors it so a
+  // nearly-funded item fails in the form instead of at checkout.
+  const remaining = Math.max(item.price - item.contributed, 0);
+  const { errors, validate, clearError, setError } = useValidator({
     store: {
       amount,
       name: viewer?.name || form.name,
@@ -109,6 +112,13 @@ export function ContributeSheet({
       : (viewer?.name || form.name).trim();
 
   const review = () => {
+    if (amount > remaining) {
+      setError(
+        "amount",
+        `This item only needs ₦${remaining.toLocaleString()} more.`,
+      );
+      return;
+    }
     if (!validate()) return;
     setStage("confirm");
   };
@@ -166,29 +176,41 @@ export function ContributeSheet({
 
             <p className={cn(label, "mt-5")}>Amount</p>
             <div className="mt-3 grid grid-cols-5 gap-2">
-              {[...PRESETS, "other" as const].map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => {
-                    setField("preset", value);
-                    clearError("amount");
-                  }}
-                  className={cn(
-                    "h-11 rounded-xl border text-[13px] font-semibold transition-colors",
-                    form.preset === value
-                      ? "border-ink bg-ink text-ink-foreground"
-                      : "border-hairline bg-surface text-ink hover:border-ink/30",
-                  )}
-                >
-                  {value === "other"
-                    ? "Other"
-                    : value >= 1000
-                      ? `₦${value / 1000}k`
-                      : `₦${value}`}
-                </button>
-              ))}
+              {[...PRESETS, "other" as const].map((value) => {
+                const over = value !== "other" && value > remaining;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    disabled={over}
+                    onClick={() => {
+                      setField("preset", value);
+                      clearError("amount");
+                    }}
+                    className={cn(
+                      "h-11 rounded-xl border text-[13px] font-semibold transition-colors",
+                      form.preset === value
+                        ? "border-ink bg-ink text-ink-foreground"
+                        : "border-hairline bg-surface text-ink hover:border-ink/30",
+                      "disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-hairline",
+                    )}
+                  >
+                    {value === "other"
+                      ? "Other"
+                      : value >= 1000
+                        ? `₦${value / 1000}k`
+                        : `₦${value}`}
+                  </button>
+                );
+              })}
             </div>
+            {remaining < WISHLIST_CONTRIBUTION_MIN && (
+              <p className="mt-2 text-[13px] leading-5 text-ink/55">
+                Only ₦{remaining.toLocaleString()} of this goal is left —
+                smaller than the ₦{WISHLIST_CONTRIBUTION_MIN} minimum, so this
+                item can&apos;t take another gift.
+              </p>
+            )}
             {form.preset === "other" && (
               <input
                 type="number"

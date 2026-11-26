@@ -62,3 +62,15 @@ export interface WishlistContributionData {
   message?: string;
   isAnonymous: boolean;
 }
+
+/** Public-safe confirmation the /received page shows after checkout: no
+ * emails, anonymous givers stay masked. */
+export interface WishlistGiftSummary {
+  itemName: string;
+  amount: number;
+  giverName: string;
+  wishlistTitle: string;
+  /** /<username>/<slug> when the owner has a public page, else null. */
+  sharePath: string | null;
+  createdAt: string | null;
+}

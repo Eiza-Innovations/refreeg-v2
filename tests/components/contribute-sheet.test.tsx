@@ -138,4 +138,70 @@ describe("ContributeSheet", () => {
       screen.getByRole("button", { name: "Give ₦100" }),
     ).toBeInTheDocument();
   });
+
+  it("disables presets above the item's remaining balance", () => {
+    // 30000 price − 28000 contributed = ₦2,000 left.
+    renderSheet({
+      item: { ...item, price: 30_000, contributed: 28_000 },
+      viewer: { id: "u-1", name: "Adaeze", email: "adaeze@example.com" },
+    });
+
+    expect(screen.getByRole("button", { name: "₦1k" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "₦2.5k" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "₦5k" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "₦10k" })).toBeDisabled();
+  });
+
+  it("blocks a gift that would overshoot the goal and states what is left", () => {
+    renderSheet({
+      item: { ...item, price: 30_000, contributed: 28_000 },
+      viewer: { id: "u-1", name: "Adaeze", email: "adaeze@example.com" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Other" }));
+    fireEvent.change(screen.getByLabelText("Amount in naira"), {
+      target: { value: "5000" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Review gift" }));
+
+    // The server-owned cap, mirrored in the sheet: no confirm step.
+    expect(
+      screen.getByText("This item only needs ₦2,000 more."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Give ₦5,000/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("passes exactly at the remaining balance", () => {
+    renderSheet({
+      item: { ...item, price: 30_000, contributed: 28_000 },
+      viewer: { id: "u-1", name: "Adaeze", email: "adaeze@example.com" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Other" }));
+    fireEvent.change(screen.getByLabelText("Amount in naira"), {
+      target: { value: "2000" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Review gift" }));
+
+    expect(
+      screen.getByRole("button", { name: "Give ₦2,000" }),
+    ).toBeInTheDocument();
+  });
+
+  it("explains when the leftovers are smaller than the minimum", () => {
+    renderSheet({
+      item: { ...item, price: 80_000, contributed: 79_950 },
+      viewer: { id: "u-1", name: "Adaeze", email: "adaeze@example.com" },
+    });
+
+    // ₦50 left is smaller than the ₦100 floor: the sheet says so outright…
+    expect(screen.getByText(/can't take another gift/)).toBeInTheDocument();
+    // …and any gift above ₦50 still hard-stops at review.
+    fireEvent.click(screen.getByRole("button", { name: "Review gift" }));
+    expect(
+      screen.getByText("This item only needs ₦50 more."),
+    ).toBeInTheDocument();
+  });
 });

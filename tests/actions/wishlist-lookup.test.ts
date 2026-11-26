@@ -22,7 +22,17 @@ import { auth } from "@/lib/auth/auth";
 import { prisma } from "@/lib/prisma";
 import { getWishlistByUsernameAndSlug } from "@/actions/wishlists/wishlist-actions";
 
-const owner = { id: "owner-1", username: "nomso" };
+const owner = {
+  id: "owner-1",
+  username: "nomso",
+  subAccountCode: "ACCT_paystack_1",
+};
+
+const unverifiedOwner = {
+  id: "owner-1",
+  username: "nomso",
+  subAccountCode: null,
+};
 
 const wishlistRow = {
   id: "w-1",
@@ -91,8 +101,20 @@ describe("getWishlistByUsernameAndSlug (public share lookup)", () => {
     expect(result.success).toBe(true);
     expect(result.data!.ownerUsername).toBe("nomso");
     expect(result.data!.viewerIsOwner).toBe(false);
+    // Payout readiness is a boolean only — never the details themselves.
+    expect(result.data!.ownerPayoutReady).toBe(true);
     expect(result.data!.wishlist.items[0].price).toBe(80000);
     expect(typeof result.data!.wishlist.created_at).toBe("string");
+  });
+
+  it("reports an owner without bank details as not payout-ready", async () => {
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue(unverifiedOwner);
+    (prisma.wishlists.findFirst as jest.Mock).mockResolvedValue(wishlistRow);
+    (auth as jest.Mock).mockResolvedValue(null);
+
+    const result = await getWishlistByUsernameAndSlug("nomso", "christmas");
+
+    expect(result.data!.ownerPayoutReady).toBe(false);
   });
 
   it("flags the owner session so the page can render owner state", async () => {

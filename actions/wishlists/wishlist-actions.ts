@@ -8,6 +8,7 @@ import type {
   WishlistContributor,
   WishlistContribution,
   WishlistContributionData,
+  WishlistGiftSummary,
   WishlistItem,
   WishlistWithItems,
   PaymentProviderType,
@@ -391,12 +392,13 @@ export async function getWishlistByUsernameAndSlug(
     wishlist: WishlistWithItems;
     ownerUsername: string;
     viewerIsOwner: boolean;
+    ownerPayoutReady: boolean;
   };
 }> {
   try {
     const user = await prisma.user.findUnique({
       where: { username },
-      select: { id: true, username: true },
+      select: { id: true, username: true, subAccountCode: true },
     });
     if (!user) return { success: false, error: "Wishlist not found" };
 
@@ -420,6 +422,10 @@ export async function getWishlistByUsernameAndSlug(
         // owner's username (the column is nullable, the lookup is not).
         ownerUsername: username,
         viewerIsOwner: session?.user?.id === wishlist.user_id,
+        // Bank details on file (the paystack subaccount exists), so gifts
+        // split straight to the owner instead of collecting on the
+        // platform. A boolean only — never the payout details themselves.
+        ownerPayoutReady: Boolean(user.subAccountCode),
       },
     };
   } catch (error) {
@@ -645,4 +651,57 @@ export async function recordWishlistContribution(
   }
 
   return mapPrismaToWishlistContribution(result.contribution);
+}
+
+/**
+ * Public-safe confirmation for the /received landing after checkout: the
+ * reference is the unguessable key, so the payload may show the amount and
+ * item, but giver emails never leave the ledger and anonymous names stay
+ * masked here just like on the public page.
+ */
+export async function getWishlistGiftByReference(reference: string): Promise<{
+  success: boolean;
+  error?: string;
+  data?: WishlistGiftSummary;
+}> {
+  try {
+    const row = await prisma.wishlist_contributions.findFirst({
+      where: { paystack_reference: reference },
+      select: {
+        amount: true,
+        name: true,
+        is_anonymous: true,
+        created_at: true,
+        item: {
+          select: {
+            name: true,
+            wishlist: {
+              select: {
+                title: true,
+                slug: true,
+                user: { select: { username: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+    if (!row) return { success: false, error: "Gift not found" };
+
+    const username = row.item.wishlist.user.username;
+    return {
+      success: true,
+      data: {
+        itemName: row.item.name,
+        amount: Number(row.amount),
+        giverName: row.is_anonymous ? "Anonymous" : row.name || "A giver",
+        wishlistTitle: row.item.wishlist.title,
+        sharePath: username ? `/${username}/${row.item.wishlist.slug}` : null,
+        createdAt: toIso(row.created_at),
+      },
+    };
+  } catch (error) {
+    console.error("Error loading wishlist gift:", error);
+    return { success: false, error: "Could not load the gift" };
+  }
 }

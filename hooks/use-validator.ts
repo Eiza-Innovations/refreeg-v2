@@ -43,5 +43,9 @@ export function useValidator<T extends z.ZodTypeAny>({
       return next;
     });
 
-  return { errors, validate, clearError };
+  /** Inline, schema-less messages (bounds that depend on runtime data). */
+  const setError = (key: keyof FieldErrors<T>, message: string) =>
+    setErrors((current) => ({ ...current, [key]: message }));
+
+  return { errors, validate, clearError, setError };
 }
