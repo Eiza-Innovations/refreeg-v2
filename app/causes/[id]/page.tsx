@@ -9,6 +9,7 @@ import CampaignQualityLab from "@/app/campaign/_components/campaign-quality-lab"
 import { causePublicPath } from "@/lib/causes/slug";
 import { CausePausedNotice } from "@/components/causes/CausePausedNotice";
 import { isAdminOrManager } from "@/actions/admin/role-actions";
+import { FunnelStepBeacon } from "@/components/causes/FunnelStepBeacon";
 
 import { Metadata } from "next";
 
@@ -66,6 +67,12 @@ export default async function CauseDetailPage({
   const user = session?.user;
 
   const isOwner = user?.id === cause.user_id;
+  if (cause.status === "removed" && !isOwner) {
+    const isAdmin = user?.id
+      ? await isAdminOrManager(user.id as string)
+      : false;
+    if (!isAdmin) return <CausePausedNotice title={cause.title} removed />;
+  }
   if (cause.paused && !isOwner) {
     const isAdmin = user?.id
       ? await isAdminOrManager(user.id as string)
@@ -88,14 +95,17 @@ export default async function CauseDetailPage({
   };
 
   return (
-    <CampaignQualityLab
-      cause={cause}
-      donors={donors}
-      comments={comments}
-      profile={profile}
-      creatorHasWallet={!!creatorProfile?.solana_wallet}
-      currentUserId={user?.id}
-      proofUpdates={proofUpdates}
-    />
+    <>
+      <FunnelStepBeacon causeId={cause.id} step="view" />
+      <CampaignQualityLab
+        cause={cause}
+        donors={donors}
+        comments={comments}
+        profile={profile}
+        creatorHasWallet={!!creatorProfile?.solana_wallet}
+        currentUserId={user?.id}
+        proofUpdates={proofUpdates}
+      />
+    </>
   );
 }

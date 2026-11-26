@@ -3,6 +3,7 @@ import type { PaymentProviderType } from "@/types";
 import Flutterwave from "@/services/flutterwave";
 import Paystack from "@/services/paystack";
 import { processSuccessfulCharge } from "@/lib/payments/paystack-charge-processing";
+import { recordPaymentOutcome } from "@/lib/campaign-analytics/funnel-server";
 
 export async function POST(request: NextRequest) {
   try {
@@ -80,7 +81,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, verified: true });
     }
 
-    const isSuccessful = await Paystack.verifyTransaction(reference);
+    const transaction = await Paystack.verifyTransactionFull(reference);
+    const isSuccessful = transaction?.status === "success";
+    await recordPaymentOutcome(reference, transaction ?? {}).catch((error) =>
+      console.error("Funnel outcome not recorded:", error),
+    );
 
     if (isSuccessful) {
       try {

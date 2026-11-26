@@ -2,6 +2,10 @@ jest.mock("@/hooks/use-toast", () => ({
   toast: jest.fn(),
 }));
 
+jest.mock("@/lib/campaign-analytics/track-funnel", () => ({
+  trackFunnelStep: jest.fn(),
+}));
+
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { toast } from "@/hooks/use-toast";
 import { usePayment } from "@/hooks/use-payment";

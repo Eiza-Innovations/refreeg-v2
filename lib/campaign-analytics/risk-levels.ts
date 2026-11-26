@@ -1,0 +1,8 @@
+export const RISK_HIGH = 70;
+export const RISK_MEDIUM = 40;
+export const RISK_SIGNAL_COUNT = 11;
+export const SLA_HOURS = 24;
+export const BIG_GIFT_AMOUNT = 50_000;
+export const AUDIT_TAKEN_DOWN = "campaign_taken_down";
+export const AUDIT_FROZEN = "campaign_frozen";
+export const AUDIT_CLEARED = "campaign_risk_cleared";
