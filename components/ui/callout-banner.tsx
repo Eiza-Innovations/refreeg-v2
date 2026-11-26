@@ -14,6 +14,7 @@ const calloutBannerVariants = cva(
         rust: "border-rust/30 bg-rust/10 text-ink",
         forest: "border-forest/30 bg-forest/10 text-ink",
         sand: "border-sand bg-sand/30 text-ink",
+        blue: "border-blue-accent/30 bg-blue-accent/10 text-blue-accent",
       },
     },
     defaultVariants: {

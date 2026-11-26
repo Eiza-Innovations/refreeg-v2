@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
-import { exportUsersToCSV } from "../actions/export-csv";
+import { exportUsersToCSV } from "@/actions/admin/admin-user-actions";
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
 
