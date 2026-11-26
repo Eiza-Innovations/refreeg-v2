@@ -30,6 +30,11 @@ import {
 } from "@/lib/media/cause-cover";
 import { resolveCampaignLocation } from "@/lib/locations/campaign-location";
 import { allocateUniqueCauseSlug } from "@/lib/causes/slug";
+import { mapPrismaToCause } from "@/lib/causes/map-cause";
+import {
+  CauseDeleteBlockedError,
+  removeCause,
+} from "@/lib/causes/remove-cause";
 import { UNCLAIMED_OWNER_EMAIL } from "@/lib/causes/recovered-causes";
 
 const UUID_REGEX =
@@ -48,38 +53,6 @@ async function isCauseSlugTaken(
   });
   return !!existing;
 }
-
-const mapPrismaToCause = (prismaCause: any): Cause => {
-  return {
-    ...prismaCause,
-    user_id: prismaCause.userId,
-
-    goal: prismaCause.goal ? Number(prismaCause.goal) : 0,
-    raised: prismaCause.raised ? Number(prismaCause.raised) : 0,
-    shared: prismaCause.shared ? Number(prismaCause.shared) : 0,
-
-    created_at:
-      prismaCause.createdAt instanceof Date
-        ? prismaCause.createdAt.toISOString()
-        : prismaCause.createdAt,
-    updated_at:
-      prismaCause.updatedAt instanceof Date
-        ? prismaCause.updatedAt.toISOString()
-        : prismaCause.updatedAt,
-    start_date:
-      prismaCause.start_date instanceof Date
-        ? prismaCause.start_date.toISOString()
-        : prismaCause.start_date,
-    end_date:
-      prismaCause.end_date instanceof Date
-        ? prismaCause.end_date.toISOString()
-        : prismaCause.end_date,
-    rejection_reason: prismaCause.rejectionReason,
-    days_active: prismaCause.daysActive,
-    video_links: prismaCause.videoLinks,
-    compliance_paused: prismaCause.compliance_paused || false,
-  } as unknown as Cause;
-};
 
 export async function getQuickDonateProps(causeId: string) {
   const { getProfile } = await import("../users/profile-actions");
@@ -1132,33 +1105,27 @@ export async function getUserCauses(userId: string): Promise<Cause[]> {
   }
 }
 
-export async function getUserCausesWithStatus(
-  userId: string,
-  status?: string,
-): Promise<Cause[]> {
-  try {
-    let whereClause: any = { userId: userId };
-    if (status && status !== "all") {
-      whereClause.status = status;
-    }
-    const data = await prisma.cause.findMany({
-      where: whereClause,
-      orderBy: { createdAt: "desc" },
-    });
-    return data.map((d: any) => mapPrismaToCause(d));
-  } catch (error) {
-    console.error("Error fetching user causes with status:", error);
-    throw error;
-  }
-}
-
 export async function deleteCause(causeId: string): Promise<void> {
-  try {
-    await prisma.cause.delete({ where: { id: causeId } });
-  } catch (error) {
-    console.error("Error deleting cause:", error);
-    throw error;
+  const user = await getCurrentUser();
+  if (!user?.id) throw new Error("Not authenticated");
+
+  const cause = await prisma.cause.findUnique({
+    where: { id: causeId },
+    select: { userId: true },
+  });
+  if (!cause) throw new Error("Cause not found");
+  if (cause.userId !== user.id && !(await isAdminOrManager(user.id))) {
+    throw new Error("You can only delete your own campaigns");
   }
+
+  try {
+    await removeCause(causeId);
+  } catch (error) {
+    if (error instanceof CauseDeleteBlockedError) throw error;
+    console.error("Error deleting cause:", error);
+    throw new Error("Could not delete this campaign. Please try again.");
+  }
+  revalidatePath("/dashboard/causes");
 }
 
 export async function updateCauseTrustMetrics(

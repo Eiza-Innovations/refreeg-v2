@@ -1,7 +1,6 @@
 jest.mock("@/actions/causes/cause-actions", () => ({
   createCause: jest.fn(),
   updateCause: jest.fn(),
-  deleteCause: jest.fn(),
 }));
 
 jest.mock("@/hooks/use-toast", () => ({
@@ -12,7 +11,7 @@ import { renderHook, act, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { useRouter } from "next/navigation";
-import { createCause, deleteCause } from "@/actions/causes/cause-actions";
+import { createCause } from "@/actions/causes/cause-actions";
 import { toast } from "@/hooks/use-toast";
 import { useCause } from "@/hooks/use-cause";
 
@@ -43,7 +42,6 @@ describe("useCause", () => {
     expect(result.current.isLoading).toBe(false);
     expect(typeof result.current.createCause).toBe("function");
     expect(typeof result.current.updateCause).toBe("function");
-    expect(typeof result.current.deleteCause).toBe("function");
   });
 
   it("creates a cause and navigates to dashboard", async () => {
@@ -63,24 +61,5 @@ describe("useCause", () => {
       expect.objectContaining({ title: "Cause created successfully" }),
     );
     expect(mockPush).toHaveBeenCalledWith("/dashboard/causes");
-  });
-
-  it("deletes a cause on success", async () => {
-    (deleteCause as jest.Mock).mockResolvedValue(undefined);
-
-    const { result } = renderHook(() => useCause(), {
-      wrapper: createWrapper(),
-    });
-
-    await act(async () => {
-      await result.current.deleteCause("cause-1");
-    });
-
-    await waitFor(() => {
-      expect(deleteCause).toHaveBeenCalledWith("cause-1");
-    });
-    expect(toast).toHaveBeenCalledWith(
-      expect.objectContaining({ title: "Cause deleted successfully" }),
-    );
   });
 });
