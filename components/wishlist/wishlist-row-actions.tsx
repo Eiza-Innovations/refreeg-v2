@@ -2,8 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Trash2 } from "lucide-react";
 
-import { setWishlistStatus } from "@/actions/wishlists/wishlist-actions";
+import {
+  deleteWishlist,
+  setWishlistStatus,
+} from "@/actions/wishlists/wishlist-actions";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -19,8 +23,9 @@ import { formatNaira } from "@/components/giving/format";
 import { toast } from "@/hooks/use-toast";
 
 /**
- * Archive/unarchive island for a dashboard wishlist card. Archiving with
- * money involved confirms first and states the amount (design rule 3).
+ * Archive and delete island for a dashboard wishlist card. Both flows
+ * confirm first; archiving states the amount involved and deleting states
+ * that it is irreversible (design rule 3).
  */
 export function WishlistRowActions({
   wishlistId,
@@ -37,6 +42,7 @@ export function WishlistRowActions({
 }) {
   const router = useRouter();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const changeStatus = async (status: "active" | "archived") => {
@@ -58,51 +64,106 @@ export function WishlistRowActions({
     router.refresh();
   };
 
+  const remove = async () => {
+    setBusy(true);
+    const result = await deleteWishlist(wishlistId);
+    setBusy(false);
+    setDeleteOpen(false);
+    if (!result.success) {
+      toast({ title: result.error || "Could not delete the wishlist" });
+      return;
+    }
+    toast({
+      title: "Wishlist deleted",
+      description: `“${title}” is gone for good.`,
+    });
+    router.refresh();
+  };
+
   return (
     <>
-      {archived ? (
-        <Button
-          variant="outline"
-          disabled={busy}
-          onClick={() => changeStatus("active")}
-          className="h-9 rounded-lg px-3 text-xs font-semibold text-slate-700"
-        >
-          {actionIcon}
-          Unarchive
-        </Button>
-      ) : (
-        <Button
-          variant="outline"
-          onClick={() => setConfirmOpen(true)}
-          className="h-9 rounded-lg px-3 text-xs font-semibold text-slate-700"
-        >
-          {actionIcon}
-          Archive
-        </Button>
-      )}
+      <span className="inline-flex items-center gap-1.5">
+        {archived ? (
+          <Button
+            variant="outline"
+            disabled={busy}
+            onClick={() => changeStatus("active")}
+            className="h-9 rounded-lg px-3 text-xs font-semibold"
+          >
+            {actionIcon}
+            Unarchive
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            onClick={() => setConfirmOpen(true)}
+            className="h-9 rounded-lg px-3 text-xs font-semibold"
+          >
+            {actionIcon}
+            Archive
+          </Button>
+        )}
+        {contributed === 0 && (
+          <Button
+            variant="ghost"
+            aria-label={`Delete ${title}`}
+            onClick={() => setDeleteOpen(true)}
+            className="h-9 rounded-lg px-2.5 text-xs font-semibold text-rust hover:bg-rust/10 hover:text-rust"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        )}
+      </span>
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent className="rounded-2xl sm:max-w-md">
+        <AlertDialogContent className="rounded-3xl sm:max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-lg font-semibold text-slate-950">
+            <AlertDialogTitle className="text-lg font-semibold text-ink">
               Archive “{title}”?
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-sm leading-6 text-slate-600">
+            <AlertDialogDescription className="text-sm leading-6 text-ink/70">
               It has {formatNaira(contributed)} given across its items. Your
               link keeps working and everything stays visible, but giving is
               paused until you unarchive it.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="h-10 rounded-xl px-4 text-sm font-semibold">
+            <AlertDialogCancel className="h-10 rounded-lg px-4 text-sm font-semibold">
               Keep it active
             </AlertDialogCancel>
             <AlertDialogAction
               disabled={busy}
               onClick={() => changeStatus("archived")}
-              className="h-10 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white hover:bg-slate-800"
+              className="h-10 rounded-lg bg-ink px-4 text-sm font-semibold text-cream hover:bg-ink/90"
             >
               Archive wishlist
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent className="rounded-3xl sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-lg font-semibold text-ink">
+              Delete “{title}”?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm leading-6 text-ink/70">
+              This removes the wishlist and every item on it for good, and it
+              cannot be undone. A wishlist that already has gifts on it cannot
+              be deleted; archive that one instead.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="h-10 rounded-lg px-4 text-sm font-semibold">
+              Keep it
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={busy}
+              onClick={() => remove()}
+              className="h-10 rounded-lg bg-rust px-4 text-sm font-semibold text-white hover:bg-rust/90"
+            >
+              Delete forever
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

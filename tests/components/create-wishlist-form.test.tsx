@@ -17,6 +17,10 @@ import {
 } from "@/actions/wishlists/wishlist-actions";
 import { CreateWishlistForm } from "@/components/wishlist/create-wishlist-form";
 
+// jsdom has no scrollIntoView; the wizard scrolls to the flow top on step
+// changes.
+Element.prototype.scrollIntoView = jest.fn();
+
 const createdWishlist = {
   success: true,
   data: { id: "w-1", slug: "nomsos-wishlist", title: "Nomso's Wishlist" },
@@ -39,7 +43,7 @@ describe("CreateWishlistForm item rows", () => {
   });
 
   const goToStep2 = () => {
-    fireEvent.change(screen.getByLabelText("Wishlist name"), {
+    fireEvent.change(screen.getByLabelText(/Wishlist name/), {
       target: { value: "Nomso's Wishlist" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));

@@ -146,7 +146,16 @@ export function WishlistView({
     <section className="bg-cream">
       <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
         <Eyebrow className="text-forest">
-          {seasonal ? "The Refreeg holiday wishlist" : "A Refreeg wishlist"}
+          {seasonal ? (
+            <>
+              The Refreeg holiday{" "}
+              <span className="italic text-brand-blue">wishlist</span>
+            </>
+          ) : (
+            <>
+              A Refreeg <span className="italic text-brand-blue">wishlist</span>
+            </>
+          )}
         </Eyebrow>
         <h1 className="mt-3 font-fraunces text-3xl leading-tight tracking-tight text-ink sm:text-4xl">
           {wishlist.title}

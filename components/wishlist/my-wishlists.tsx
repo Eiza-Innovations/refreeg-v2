@@ -20,8 +20,8 @@ import { formatDate } from "@/lib/format-date";
 
 /**
  * Dashboard section list: one card per wishlist with funded totals and
- * quick archive actions. Rendered server-side; only the row actions are a
- * client island.
+ * quick archive/delete actions. Rendered server-side; only the row actions
+ * are a client island.
  */
 export async function MyWishlists() {
   const result = await listUserWishlists();
@@ -30,19 +30,19 @@ export async function MyWishlists() {
 
   if (wishlists.length === 0) {
     return (
-      <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50/70 px-5 py-14 text-center">
-        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+      <div className="rounded-xl border border-dashed border-hairline bg-bone px-5 py-14 text-center">
+        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-surface text-forest shadow-flat">
           <Gift className="h-6 w-6" />
         </span>
-        <h3 className="mt-5 text-xl font-semibold text-slate-950">
+        <h3 className="mt-5 font-fraunces text-xl font-medium text-ink">
           No wishlists yet
         </h3>
-        <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600">
+        <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-ink/70">
           Name the gifts you&apos;d actually love and share one link with family
           and friends. They give together, anonymously if they prefer.
         </p>
-        <Link href="/wishlist/new" className="inline-block">
-          <Button className="mt-6 h-11 rounded-xl bg-blue-600 px-5 text-white hover:bg-blue-700">
+        <Link href="/dashboard/wishlists/create" className="inline-block">
+          <Button variant="ink" className="mt-6 h-11 rounded-lg px-5">
             <Plus className="mr-2 h-4 w-4" />
             Create your first wishlist
           </Button>
@@ -75,38 +75,31 @@ export async function MyWishlists() {
           : "/dashboard/wishlists";
 
         return (
-          <Card
-            key={wishlist.id}
-            className="border-slate-200 bg-white shadow-sm"
-          >
+          <Card key={wishlist.id} variant="surface" className="shadow-none">
             <CardContent className="p-5">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <Link
                     href={shareHref}
-                    className="block truncate text-base font-semibold text-slate-950 hover:text-blue-700"
+                    className="block truncate text-base font-semibold text-ink hover:text-forest"
                   >
                     {wishlist.title}
                   </Link>
-                  <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
+                  <p className="mt-1 flex items-center gap-1.5 text-xs text-ink/55">
                     <CalendarDays className="h-3.5 w-3.5" />
                     {formatDate(wishlist.created_at)}
                   </p>
                 </div>
                 {archived ? (
-                  <Badge className="border-slate-200 bg-slate-100 text-slate-600">
-                    ARCHIVED
-                  </Badge>
+                  <Badge variant="pending">ARCHIVED</Badge>
                 ) : (
-                  <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700">
-                    ACTIVE
-                  </Badge>
+                  <Badge variant="forest">ACTIVE</Badge>
                 )}
               </div>
 
-              <p className="mt-4 text-sm text-slate-600">
+              <p className="mt-4 text-sm text-ink/70">
                 {formatNaira(contributed)}{" "}
-                <span className="text-slate-400">
+                <span className="text-ink/45">
                   of {formatNaira(target)} across {wishlist.items.length}{" "}
                   {wishlist.items.length === 1 ? "item" : "items"}
                 </span>
@@ -114,26 +107,26 @@ export async function MyWishlists() {
               <Progress
                 value={percent}
                 indicatorVariant="forest"
-                className="mt-2 h-2 border border-slate-100"
+                className="mt-2 h-2 border border-hairline"
                 aria-label={`${wishlist.title}, ${percent} percent funded`}
               />
               {funded > 0 && (
-                <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-emerald-700">
+                <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-forest">
                   <CircleCheck className="h-3.5 w-3.5" />
                   {funded} {funded === 1 ? "item" : "items"} fully funded
                 </p>
               )}
               {wishlist.items.length === 0 && (
-                <p className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
+                <p className="mt-2 flex items-center gap-1.5 text-xs text-ink/55">
                   <PackageOpen className="h-3.5 w-3.5" />
                   No items yet. Add what you&apos;d love.
                 </p>
               )}
 
-              <div className="mt-4 flex items-center justify-between gap-2 border-t border-slate-100 pt-4">
+              <div className="mt-4 flex items-center justify-between gap-2 border-t border-hairline pt-4">
                 <Link
                   href={shareHref}
-                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 hover:underline"
+                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-accent hover:underline"
                 >
                   Open
                   <ArrowRight className="h-4 w-4" />

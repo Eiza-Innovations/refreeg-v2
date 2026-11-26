@@ -47,16 +47,19 @@ const SENDERS = {
 type SenderKey = keyof typeof SENDERS;
 
 // Template name -> sender; anything not listed sends as support@.
-// Wishlist gift alerts are one-way notifications, so they go from noreply@;
-// the footer still points at support@ for anyone who needs help.
+// Receipts and one-way alerts a customer cannot act on by replying go from
+// noreply@; the footer still points at support@ for anyone who needs help.
 const SENDER_BY_TEMPLATE: Partial<Record<string, SenderKey>> = {
   "otp-verification": "noreply",
   "password-reset": "noreply",
   "email-change-confirm": "noreply",
   "login-notification": "noreply",
   "bank-account-added": "noreply",
+  "donation-received": "noreply",
+  "cause-donation-receipt": "noreply",
   "wishlist-contribution-received": "noreply",
   "wishlist-item-funded": "noreply",
+  "wishlist-gift-receipt": "noreply",
   "welcome-email": "hello",
   announcement: "hello",
   "organization-invitation": "hello",
@@ -1143,8 +1146,8 @@ export async function sendWishlistItemFundedEmail({
   });
 }
 
-// Receipts are money mail a giver might answer (wrong amount, refund
-// request), so per the policy table above this one stays on support@.
+// Receipts go from noreply@: the giver already has the context, and a reply
+// thread belongs on support@, which every receipt footer points to.
 export async function sendWishlistGiftReceiptEmail({
   to,
   giverName,
@@ -1182,6 +1185,47 @@ export async function sendWishlistGiftReceiptEmail({
       giftNote: note,
       isAnonymous: Boolean(isAnonymous),
       seasonal: isWishlistSeasonActive(),
+      currentYear: new Date().getFullYear(),
+    },
+  });
+}
+
+// The giver's own receipt for a cause donation, mirroring the wishlist
+// gift receipt. Sends from noreply@ per the sender table; the template
+// footer routes any problem to support@.
+export async function sendCauseDonationReceiptEmail({
+  to,
+  donorName,
+  causeTitle,
+  amount,
+  causeUrl,
+  reference,
+  donorMessage,
+  isAnonymous,
+}: {
+  to: string;
+  donorName: string | null;
+  causeTitle: string;
+  amount: number;
+  causeUrl: string;
+  reference?: string | null;
+  donorMessage?: string | null;
+  isAnonymous?: boolean;
+}) {
+  const message = donorMessage?.trim();
+  return sendMail({
+    to,
+    subject: `💚 Your donation to "${causeTitle}" went through`,
+    templateName: "cause-donation-receipt",
+    context: {
+      donorName: donorName?.trim() || "there",
+      causeTitle,
+      amount: amount.toLocaleString(),
+      causeUrl,
+      reference: reference?.trim() || null,
+      showMessage: Boolean(message),
+      donorMessage: message,
+      isAnonymous: Boolean(isAnonymous),
       currentYear: new Date().getFullYear(),
     },
   });

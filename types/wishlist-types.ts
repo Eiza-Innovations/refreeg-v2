@@ -48,13 +48,14 @@ export interface WishlistWithItems extends Wishlist {
  * details themselves never leave the server. */
 export type WishlistOwnerPayoutState = "ready" | "kyc_pending" | "bank_missing";
 
-/** One row of the owner-only givers panel (delivery coordination). */
+/** One row of the owner-only givers panel (delivery coordination).
+ * Names only: giver emails stay on the server for receipts and never
+ * reach the owner (privacy decision). */
 export interface WishlistContributor {
   id: string;
   itemName: string;
   amount: number;
   name: string | null;
-  email: string;
   message: string | null;
   isAnonymous: boolean;
   createdAt: string | null;

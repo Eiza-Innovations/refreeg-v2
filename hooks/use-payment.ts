@@ -27,7 +27,11 @@ export const usePayment = (): UsePaymentReturn => {
     try {
       setIsLoading(true);
       setError(null);
-      trackFunnelStep(data.causeId, "amount", { amount: Number(data.amount) });
+      // TransactionData.causeId is optional; trackFunnelStep takes a plain
+      // string and early-returns on empty, so coalesce here.
+      trackFunnelStep(data.causeId ?? "", "amount", {
+        amount: Number(data.amount),
+      });
 
       const response = await fetch("/api/payments/initialize", {
         method: "POST",
@@ -43,7 +47,7 @@ export const usePayment = (): UsePaymentReturn => {
         throw new Error(result.error || "Failed to initialize payment");
       }
 
-      trackFunnelStep(data.causeId, "payment", {
+      trackFunnelStep(data.causeId ?? "", "payment", {
         amount: Number(data.amount),
         reference: result.data.reference,
       });

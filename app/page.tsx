@@ -24,9 +24,8 @@ export default function Home() {
     <div className="flex flex-col min-h-screen mt-12 md:mt-16 ">
       <Hero />
       <LiveSpotlight />
-      <LiveCampaigns />
-
       <WishlistBand />
+      <LiveCampaigns />
 
       <div className="mx-8">
         <RoutedOnChain />

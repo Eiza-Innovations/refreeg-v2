@@ -220,6 +220,45 @@ export async function setWishlistStatus(
   }
 }
 
+/**
+ * Delete a wishlist outright, items included. A list that has already
+ * received money keeps its trail: contributions have to stay queryable for
+ * receipts, so those lists are refused and should be archived instead
+ * (design rule 3: irreversible actions are explicit about it).
+ */
+export async function deleteWishlist(
+  wishlistId: string,
+): Promise<{ success: boolean; error?: string }> {
+  const session = await auth();
+  if (!session?.user?.id) return { success: false, error: "Not authenticated" };
+
+  try {
+    const wishlist = await requireOwnedWishlist(wishlistId, session.user.id);
+    if (!wishlist) return { success: false, error: "Wishlist not found" };
+
+    const gifts = await prisma.wishlist_contributions.count({
+      where: { item: { wishlist_id: wishlistId } },
+    });
+    if (gifts > 0) {
+      return {
+        success: false,
+        error:
+          "This wishlist already has gifts on it, so its record stays. Archive it instead.",
+      };
+    }
+
+    await prisma.$transaction([
+      prisma.wishlist_items.deleteMany({ where: { wishlist_id: wishlistId } }),
+      prisma.wishlists.delete({ where: { id: wishlistId } }),
+    ]);
+    revalidateSharePath(wishlist.user.username, wishlist.slug);
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting wishlist:", error);
+    return { success: false, error: "Could not delete the wishlist" };
+  }
+}
+
 export async function addWishlistItem(
   wishlistId: string,
   input: { name: string; price: number; note?: string },
@@ -555,8 +594,10 @@ export async function listUserWishlists(): Promise<{
 
 /**
  * Owner-only contributor list for delivery coordination: the one place
- * giver contact details are visible (decision 9). Public surfaces never
- * call this; ownership is re-checked here so a forged call fails closed.
+ * giver NAMES are visible (decision 9). Giver emails are not returned:
+ * they live on the contribution row for receipts only and never reach
+ * the owner. Public surfaces never call this; ownership is re-checked
+ * here so a forged call fails closed.
  */
 export async function getWishlistContributors(wishlistId: string): Promise<{
   success: boolean;
@@ -577,7 +618,6 @@ export async function getWishlistContributors(wishlistId: string): Promise<{
         id: true,
         amount: true,
         name: true,
-        email: true,
         message: true,
         is_anonymous: true,
         created_at: true,
@@ -592,7 +632,6 @@ export async function getWishlistContributors(wishlistId: string): Promise<{
         itemName: row.item.name,
         amount: Number(row.amount),
         name: row.name,
-        email: row.email,
         message: row.message,
         isAnonymous: row.is_anonymous,
         createdAt: toIso(row.created_at),

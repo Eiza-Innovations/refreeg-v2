@@ -9,7 +9,6 @@ import { Card } from "@/components/ui/card";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { Stepper } from "@/components/ui/stepper";
 import { causeSteps } from "@/lib/options/cause.options";
-import { LAST_CAUSE_STEP } from "@/hooks/use-cause-form";
 
 type StepMeta = { title: string; description: string };
 
@@ -26,9 +25,16 @@ type Props = {
   busyLabel: string;
   busy: boolean;
   children: ReactNode;
+  /** Left small-caps label above the title; other flows reuse the frame. */
+  eyebrow?: string;
+  /** Stepper pill labels; defaults to the cause flow's five steps. */
+  stepperLabels?: readonly string[];
+  /** Trust badge in the step header; defaults to the cause wording. */
+  headerBadge?: string;
 };
 
-/** Shared frame for the create and edit cause wizards. */
+/** Shared frame for the create and edit cause wizards. Other money-moving
+ * flows (wishlists) reuse it so every creation flow looks the same. */
 export function CauseWizard({
   title,
   description,
@@ -42,6 +48,9 @@ export function CauseWizard({
   busyLabel,
   busy,
   children,
+  eyebrow = "Campaign builder",
+  stepperLabels = causeSteps,
+  headerBadge = "Milestone protected",
 }: Props) {
   const flowTopRef = useRef<HTMLDivElement>(null);
   const previousStepRef = useRef(currentStep);
@@ -63,7 +72,7 @@ export function CauseWizard({
       <div className="mx-auto max-w-5xl">
         <header className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <Eyebrow>Campaign builder</Eyebrow>
+            <Eyebrow>{eyebrow}</Eyebrow>
             <h1 className="mt-2 font-fraunces text-3xl font-medium text-ink sm:text-4xl">
               {title}
             </h1>
@@ -81,7 +90,7 @@ export function CauseWizard({
           <div className="overflow-x-auto pb-1">
             <Stepper
               className="min-w-[520px]"
-              steps={causeSteps.map((label, i) => ({
+              steps={stepperLabels.map((label, i) => ({
                 label,
                 status:
                   i + 1 < currentStep
@@ -97,8 +106,8 @@ export function CauseWizard({
           <Card variant="surface" className="overflow-hidden shadow-none">
             <div className="border-b border-hairline bg-bone px-4 py-5 sm:p-6">
               <Eyebrow>
-                Step {currentStep} of {LAST_CAUSE_STEP} ·{" "}
-                {causeSteps[currentStep - 1]}
+                Step {currentStep} of {stepperLabels.length} ·{" "}
+                {stepperLabels[currentStep - 1]}
               </Eyebrow>
               <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
@@ -111,7 +120,7 @@ export function CauseWizard({
                 </div>
                 <Badge variant="forest" className="w-fit shrink-0 gap-1.5">
                   <LockKeyhole className="h-3.5 w-3.5" />
-                  Milestone protected
+                  {headerBadge}
                 </Badge>
               </div>
             </div>
@@ -121,7 +130,7 @@ export function CauseWizard({
               autoComplete="off"
               onKeyDown={(e) => {
                 if (
-                  currentStep === LAST_CAUSE_STEP &&
+                  currentStep === stepperLabels.length &&
                   e.key === "Enter" &&
                   e.target instanceof HTMLElement &&
                   e.target.tagName !== "TEXTAREA" &&
@@ -151,7 +160,7 @@ export function CauseWizard({
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Back
                 </Button>
-                {currentStep < LAST_CAUSE_STEP ? (
+                {currentStep < stepperLabels.length ? (
                   <Button
                     type="button"
                     variant="ink"
