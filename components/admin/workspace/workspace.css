@@ -1,0 +1,21 @@
+.admin-workspace {
+  color-scheme: light;
+}
+.admin-workspace .text-amber {
+  color: color-mix(in srgb, hsl(var(--amber)) 65%, hsl(var(--ink)));
+}
+.admin-workspace button,
+.admin-workspace a,
+.admin-workspace input,
+.admin-workspace select {
+  outline-offset: 3px;
+}
+.admin-workspace :focus-visible {
+  outline: 2px solid hsl(var(--blue-accent));
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-workspace * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

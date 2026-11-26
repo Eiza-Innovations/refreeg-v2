@@ -9,79 +9,22 @@ import {
   endOfDay,
   format,
 } from "date-fns";
+import { medianDecisionHours } from "@/actions/admin/operations-queue-actions";
+import { getWorkspaceData as fetchWorkspaceData } from "@/lib/admin-analytics/workspace-data";
+import type { Period, WorkspaceData } from "@/components/admin/workspace/types";
+import type {
+  Alert,
+  AnalyticsData,
+  CauseCategory,
+  CauseLifecycle,
+  DonationTrend,
+  KycAnalytics,
+  PaymentAnalytics,
+  UserGrowth,
+} from "@/types/admin-analytics-types";
 
-export interface AnalyticsData {
-  totalDonations: {
-    current: string;
-    previous: string;
-    trend: number;
-  };
-  totalUsers: {
-    current: number;
-    newInPeriod: number;
-    trend: number;
-  };
-  activeCauses: {
-    active: number;
-    total: number;
-  };
-  pendingApprovals: {
-    current: number;
-  };
-}
-
-export interface DonationTrend {
-  period: string;
-  regular: number;
-  crypto: number;
-  total: number;
-  count: number;
-}
-
-export interface UserGrowth {
-  period: string;
-  users: number;
-  active: number;
-}
-
-export interface CauseCategory {
-  category: string;
-  total: number;
-  approved: number;
-  pending: number;
-  completed: number;
-}
-
-export interface KycAnalytics {
-  total: number;
-  approvalRate: number;
-  pending: number;
-  avgProcessingTimeHours: number;
-}
-
-export interface PaymentAnalytics {
-  total: number;
-  failureRate: number;
-  failedAmount: number;
-}
-
-export interface CauseLifecycle {
-  funnel: {
-    created: number;
-    pending: number;
-    approved: number;
-  };
-  avgApprovalTimeHours: number;
-}
-
-export interface Alert {
-  id: string;
-  type: "warning" | "critical";
-  message: string;
-  metric: string;
-  value: string;
-  threshold: string;
-}
+const range = (from?: string, to?: string): [Date?, Date?] =>
+  from && to ? [new Date(from), new Date(to)] : [];
 
 export async function getAdminAnalytics(
   from?: string,
@@ -315,7 +258,10 @@ export async function getKycAnalytics(
     total,
     pending,
     approvalRate: total > 0 ? (approved / total) * 100 : 0,
-    avgProcessingTimeHours: 24,
+    avgProcessingTimeHours: await medianDecisionHours(
+      "kyc",
+      ...range(from, to),
+    ),
   };
 }
 
@@ -360,7 +306,10 @@ export async function getCauseLifecycleAnalytics(
       pending,
       approved,
     },
-    avgApprovalTimeHours: 12,
+    avgApprovalTimeHours: await medianDecisionHours(
+      "campaigns",
+      ...range(from, to),
+    ),
   };
 }
 
@@ -454,4 +403,11 @@ export async function getApiCampaigns(search?: string) {
       testCount,
     },
   };
+}
+
+export async function getWorkspaceData(
+  period: Period = "month",
+): Promise<WorkspaceData> {
+  await requireAdminOrManager();
+  return fetchWorkspaceData(period);
 }

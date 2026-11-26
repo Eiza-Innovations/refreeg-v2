@@ -120,7 +120,9 @@ export async function listPetitionComments(petitionId: string) {
 
   return comments.map((comment) => ({
     ...comment,
+    cause_id: comment.petition_id,
     created_at: comment.created_at.toISOString(),
+    updated_at: comment.created_at.toISOString(),
     user: mapUserToCommentUser(comment.user),
     replies_count: replyCountMap.get(comment.id) || 0,
   }));

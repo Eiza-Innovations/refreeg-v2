@@ -9,6 +9,7 @@ import { cn, getInitials } from "@/lib/utils";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { formatNairaShort } from "@/lib/causes/discover-summary";
 import { BookmarkButton } from "@/components/saved/BookmarkButton";
+import { PetitionCard } from "@/components/petitions/PetitionCard";
 import type { DiscoverItem } from "@/actions/causes/discover-actions";
 
 type CardProps = {
@@ -125,43 +126,15 @@ function CampaignActions({
 
 function PetitionGridCard({ item, onSignClick, initialBookmarked }: CardProps) {
   return (
-    <Link
-      href={hrefFor(item)}
-      className="group relative flex h-full flex-col rounded-2xl bg-sand p-5 transition-shadow hover:shadow-lg"
-    >
-      <BookmarkButton
-        itemId={item.id}
-        itemType="petition"
-        initialSaved={initialBookmarked ?? false}
-      />
-
-      <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-amber">
-        <Flag className="h-3.5 w-3.5" />
-        Petition
-      </span>
-      <h2 className="mt-3 line-clamp-4 font-fraunces text-[22px] leading-tight text-ink group-hover:underline">
-        {item.title}
-      </h2>
-      <div className="mt-auto pt-6">
-        <Progress
-          value={item.percent}
-          aria-label={`${item.percent}% of signature goal`}
-          className="h-1.5 bg-ink/10"
-          indicatorClassName="bg-ink"
-        />
-        <p className="mt-2 text-xs text-ink/70">
-          {item.raised.toLocaleString()} of {item.goal.toLocaleString()}{" "}
-          signatures
-        </p>
-        <Button
-          variant="ink"
-          className="mt-4 h-10 w-full rounded-xl text-sm font-semibold"
-          onClick={stop(onSignClick)}
-        >
-          Sign this petition
-        </Button>
-      </div>
-    </Link>
+    <PetitionCard
+      id={item.id}
+      title={item.title}
+      percent={item.percent}
+      signatures={item.raised}
+      goal={item.goal}
+      initialBookmarked={initialBookmarked}
+      onSignClick={onSignClick}
+    />
   );
 }
 

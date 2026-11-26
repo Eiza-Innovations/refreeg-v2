@@ -19,6 +19,7 @@ import { ProgressCard } from "./ui/progress-card";
 import { TabsCard } from "./ui/tabs-card";
 import { CampaignHealthCard } from "./ui/campaign-health-card";
 import { StorySections, CollapsibleStoryText } from "./ui/story-sections";
+import { goalPercent } from "@/lib/progress";
 
 const MultimediaCarousel = dynamic(
   () => import("@/components/marketing/MultimediaCarousel"),
@@ -74,10 +75,7 @@ export default function CampaignQualityLab({
     return () => observer.disconnect();
   }, []);
 
-  const percentRaised = useMemo(() => {
-    if (!cause.goal) return 0;
-    return Math.min(Math.round((cause.raised / cause.goal) * 100), 100);
-  }, [cause.goal, cause.raised]);
+  const percentRaised = goalPercent(cause.raised, cause.goal);
 
   const media = useMemo(
     () => [...(cause.multimedia || []), ...(cause.video_links || [])],

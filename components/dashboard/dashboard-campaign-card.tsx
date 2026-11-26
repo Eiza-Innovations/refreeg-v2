@@ -11,6 +11,7 @@ import { calculateDaysLeft, isCauseExpired } from "@/utils/cause/cause-utils";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { causePublicPath } from "@/lib/causes/slug";
 import type { Cause } from "@/types/cause-types";
+import { goalPercent } from "@/lib/progress";
 
 export type DashboardCause = Cause & {
   profiles?: { full_name?: string | null; is_verified?: boolean };
@@ -44,8 +45,7 @@ export function DashboardCampaignCard({
   const isExpired = isCauseExpired(cause);
   const raised = Number(cause.raised || 0);
   const goal = Number(cause.goal || 0);
-  const percentFunded =
-    goal > 0 ? Math.min(Math.round((raised / goal) * 100), 100) : 0;
+  const percentFunded = goalPercent(raised, goal);
   const orgName = cause.profiles?.full_name || "RefreeG Community";
   const isVerified = !!cause.profiles?.is_verified;
 

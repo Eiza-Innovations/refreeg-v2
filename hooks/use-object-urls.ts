@@ -1,18 +1,20 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-/** Object URLs for local files, revoked when the files change or unmount. */
+/**
+ * Object URLs for local files, revoked when the files change or unmount.
+ * Created inside the effect so React Strict Mode's mount, cleanup, mount cycle
+ * never leaves a revoked URL in use.
+ */
 export function useObjectUrls(files: File[]) {
-  const urls = useMemo(
-    () => files.map((file) => URL.createObjectURL(file)),
-    [files],
-  );
+  const [urls, setUrls] = useState<string[]>([]);
 
-  useEffect(
-    () => () => urls.forEach((url) => URL.revokeObjectURL(url)),
-    [urls],
-  );
+  useEffect(() => {
+    const next = files.map((file) => URL.createObjectURL(file));
+    setUrls(next);
+    return () => next.forEach((url) => URL.revokeObjectURL(url));
+  }, [files]);
 
   return urls;
 }

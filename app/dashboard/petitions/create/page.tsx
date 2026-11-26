@@ -10,9 +10,5 @@ export default async function CreateCausePage() {
     redirect("/auth/signin");
   }
 
-  return (
-    <div className="">
-      <CreatePetitionForm />
-    </div>
-  );
+  return <CreatePetitionForm />;
 }

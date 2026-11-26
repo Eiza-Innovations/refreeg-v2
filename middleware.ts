@@ -32,6 +32,7 @@ const PUBLIC_API_PREFIXES = [
   "/api/mail",
   "/api/s3",
   "/api/leaderboard",
+  "/api/funnel",
 ];
 
 function absoluteUrl(path: string, req: Request): URL {

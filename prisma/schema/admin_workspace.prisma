@@ -11,7 +11,9 @@ model admin_audit_entries {
   created_at DateTime @default(now()) @db.Timestamptz(6)
 
   @@index([actor_id, created_at])
+  @@index([action, created_at])
   @@index([kind, target_id])
+  @@index([target_id])
 }
 
 model admin_payment_attempts {
