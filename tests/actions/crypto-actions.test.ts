@@ -82,7 +82,7 @@ describe("crypto-actions", () => {
           metadata: expect.objectContaining({ is_crypto: true }),
         }),
       );
-      expect(revalidatePath).toHaveBeenCalledWith("/causes/cause-1");
+      expect(revalidatePath).toHaveBeenCalledWith("/campaigns/cause-1");
     });
 
     it("does not record event for guest donations", async () => {

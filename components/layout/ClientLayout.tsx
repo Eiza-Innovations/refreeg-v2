@@ -46,6 +46,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
   const appShellRoutes = [
     "/dashboard",
     "/causes",
+    "/campaigns",
     "/petitions",
     "/wallet",
     "/bounties",

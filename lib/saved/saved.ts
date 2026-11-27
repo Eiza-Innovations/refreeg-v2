@@ -101,7 +101,7 @@ export function toSavedItems(
         listId: b.list_id,
         title: c.title,
         image: c.image,
-        href: `/causes/${c.id}`,
+        href: `/campaigns/${c.id}`,
         status,
         raised,
         goal,

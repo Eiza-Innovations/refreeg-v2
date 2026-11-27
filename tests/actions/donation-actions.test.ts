@@ -180,7 +180,7 @@ describe("donation-actions", () => {
           amount: 10000,
         }),
       );
-      expect(revalidatePath).toHaveBeenCalledWith("/causes/cause-1");
+      expect(revalidatePath).toHaveBeenCalledWith("/campaigns/cause-1");
     });
 
     it("uses anonymous donor name when isAnonymous is true string", async () => {

@@ -198,7 +198,7 @@ export async function createDonation(
                 data: {
                   followers: followerEmails,
                   causeTitle: cause.title,
-                  causeUrl: `${appUrl}/causes/${causeId}`,
+                  causeUrl: `${appUrl}/campaigns/${causeId}`,
                   milestone: milestoneReached,
                 },
               }),
@@ -246,7 +246,7 @@ export async function createDonation(
           donorName,
           causeTitle: causeWithOwner.title,
           amount: donationAmount,
-          causeUrl: `${appUrl}/causes/${causeId}`,
+          causeUrl: `${appUrl}/campaigns/${causeId}`,
           amountRaised: Number(causeWithOwner.raised),
           goalAmount: Number(causeWithOwner.goal),
         }).catch((err) =>
@@ -261,7 +261,7 @@ export async function createDonation(
     );
   }
 
-  revalidatePath(`/causes/${causeId}`);
+  revalidatePath(`/campaigns/${causeId}`);
   revalidatePath("/causes");
   revalidatePath("/");
   if (userId) {

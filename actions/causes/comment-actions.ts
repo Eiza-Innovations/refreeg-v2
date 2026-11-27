@@ -112,7 +112,7 @@ export async function createComment(
           commenterName,
           causeTitle: causeWithOwner.title,
           commentText: content,
-          causeUrl: `${appUrl}/causes/${causeId}`,
+          causeUrl: `${appUrl}/campaigns/${causeId}`,
         }).catch((err) =>
           console.error("Error sending new comment email:", err),
         );

@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import { useQueryState } from "nuqs";
 import { usePayment } from "@/hooks/use-payment";
-import PaymentVerification from "@/app/causes/[id]/payment/verify/page";
+import PaymentVerification from "@/app/campaigns/[id]/payment/verify/page";
 
 jest.mock("next/link", () => ({
   __esModule: true,

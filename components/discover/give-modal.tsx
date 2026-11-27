@@ -76,7 +76,7 @@ function GiveForm({ props }: { props: QuickDonateProps }) {
   const fees =
     calculateServiceFee(amount) + calculateProviderFee(amount, provider);
   const imageUrl = getMediaUrl(props.causeImage) || "/icons/placeholder.svg";
-  const causeHref = `/causes/${props.causeSlug || props.causeId}`;
+  const causeHref = `/campaigns/${props.causeSlug || props.causeId}`;
   const isGuest = !props.userId;
 
   const give = async () => {

@@ -44,7 +44,7 @@ export async function syncMilestoneRequirements(
       to: cause.user?.email ?? "",
       userName: cause.user?.fullName ?? "there",
       causeTitle: cause.title,
-      causeUrl: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com"}/causes/${causeId}`,
+      causeUrl: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com"}/campaigns/${causeId}`,
       milestones: crossed,
       deadline: deadline.toDateString(),
     });

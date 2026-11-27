@@ -99,7 +99,7 @@ export async function createCryptoDonation(data: CreateCryptoDonationParams) {
       console.error("Error emitting crypto donation SSE:", e);
     }
 
-    revalidatePath(`/causes/${data.cause_id}`);
+    revalidatePath(`/campaigns/${data.cause_id}`);
     revalidatePath("/causes");
     revalidatePath("/");
     if (data.user_id) {

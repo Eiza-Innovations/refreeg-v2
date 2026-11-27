@@ -50,7 +50,7 @@ function revalidatePartnerViews(causeId?: string) {
   revalidatePath("/dashboard/admin/partners");
   revalidatePath("/dashboard/partner-credits");
   if (causeId) {
-    revalidatePath(`/causes/${causeId}`);
+    revalidatePath(`/campaigns/${causeId}`);
   }
 }
 
