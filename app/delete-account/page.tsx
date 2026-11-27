@@ -52,14 +52,16 @@ export default function DeleteAccountInfoPage() {
               <ol className="list-inside list-decimal space-y-2 text-sm text-ink/70">
                 <li>Sign in to the RefreeG mobile app.</li>
                 <li>
-                  Open the <strong>You</strong> tab from the bottom navigation
-                  bar.
+                  Open the <strong>You</strong> tab and tap the{" "}
+                  <strong>Settings</strong> gear icon in the top-right.
                 </li>
                 <li>
-                  Scroll to the bottom and tap <strong>Delete account</strong>.
+                  Tap <strong>Security</strong>, then tap{" "}
+                  <strong>Close account</strong>.
                 </li>
                 <li>
-                  Confirm your choice in the dialog to permanently delete your
+                  Type <strong>CLOSE</strong> and tap{" "}
+                  <strong>Close my account</strong> to permanently delete your
                   account.
                 </li>
               </ol>
