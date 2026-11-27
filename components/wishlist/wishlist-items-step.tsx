@@ -11,11 +11,9 @@ import { cn } from "@/lib/utils";
 export function WishlistItemsStep({
   title,
   itemRows,
-  serverError,
 }: {
   title: string;
   itemRows: WishlistItemRows;
-  serverError: string | null;
 }) {
   const { rows, errors } = itemRows;
   const atCap = rows.length >= WISHLIST_ITEM_CAP;
@@ -64,8 +62,6 @@ export function WishlistItemsStep({
           {rows.length} of {WISHLIST_ITEM_CAP}
         </span>
       </div>
-
-      <FieldError message={serverError ?? undefined} />
     </div>
   );
 }

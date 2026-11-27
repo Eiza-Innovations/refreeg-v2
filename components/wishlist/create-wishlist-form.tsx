@@ -21,7 +21,7 @@ import { saveWishlistWithItems } from "@/lib/wishlist/save-wishlist";
 const WISHLIST_STEPS = [
   {
     title: "Name your wishlist",
-    description: "This is the title givers see at the top of your share page.",
+    description: "This is the title givers see at the top of your page.",
   },
   {
     title: "Add your gifts",
@@ -94,7 +94,7 @@ export function CreateWishlistForm({
     <CauseWizard
       eyebrow="Wishlist builder"
       title="Create your wishlist"
-      description="Name it, list the gifts, and share one link."
+      // description="Name it, list the gifts, and share one link."
       stepMeta={WISHLIST_STEPS}
       stepperLabels={["Name it", "Add gifts"]}
       headerBadge="Bank payout protected"
@@ -108,6 +108,7 @@ export function CreateWishlistForm({
       submitLabel="Create wishlist"
       busyLabel="Creating…"
       busy={submitting}
+      submitError={serverError}
     >
       {step === 1 ? (
         <WishlistNameStep
@@ -118,11 +119,7 @@ export function CreateWishlistForm({
           onChange={(patch) => setWishlist((w) => ({ ...w, ...patch }))}
         />
       ) : (
-        <WishlistItemsStep
-          title={wishlist.title}
-          itemRows={itemRows}
-          serverError={serverError}
-        />
+        <WishlistItemsStep title={wishlist.title} itemRows={itemRows} />
       )}
     </CauseWizard>
   );
