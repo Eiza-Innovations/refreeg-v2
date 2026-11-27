@@ -1080,7 +1080,7 @@ export async function sendDonationReceivedEmail({
 
   return sendMail({
     to,
-    subject: `💚 You just received a donation for "${causeTitle}"!`,
+    subject: `💙 You just received a donation for "${causeTitle}"!`,
     templateName: "donation-received",
     context: {
       ownerName,
@@ -1119,7 +1119,7 @@ export async function sendWishlistContributionEmail({
   const note = giftNote?.trim();
   return sendMail({
     to,
-    subject: `💚 A gift was just given on "${wishlistTitle}"!`,
+    subject: `💙 A gift was just given on "${wishlistTitle}"!`,
     templateName: "wishlist-contribution-received",
     context: {
       ownerName,
@@ -1193,7 +1193,7 @@ export async function sendWishlistGiftReceiptEmail({
   const note = giftNote?.trim();
   return sendMail({
     to,
-    subject: `💚 Your gift to "${wishlistTitle}" went through`,
+    subject: `💙 Your gift to "${wishlistTitle}" went through`,
     templateName: "wishlist-gift-receipt",
     context: {
       giverName: giverName?.trim() || "there",
@@ -1274,7 +1274,7 @@ export async function sendCauseDonationReceiptEmail({
   const message = donorMessage?.trim();
   return sendMail({
     to,
-    subject: `💚 Your donation to "${causeTitle}" went through`,
+    subject: `💙 Your donation to "${causeTitle}" went through`,
     templateName: "cause-donation-receipt",
     context: {
       donorName: donorName?.trim() || "there",
