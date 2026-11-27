@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { Progress } from "@/components/ui/progress";
+import { Heading, P } from "@/components/marketing/Typography";
 import { goalPercent } from "@/lib/progress";
 import type { Signature } from "@/types";
 
@@ -21,13 +22,13 @@ export function SignersList({
   return (
     <Card variant="surface" className="p-6">
       <Eyebrow>Support so far</Eyebrow>
-      <p className="mt-2 font-fraunces text-3xl text-ink">
+      <Heading as="p" size="block" className="mt-2">
         {total.toLocaleString()} {total === 1 ? "person has" : "people have"}{" "}
         signed
-      </p>
-      <p className="mt-1 text-sm text-ink/60">
+      </Heading>
+      <P className="mt-1 text-ink/60 md:text-sm">
         Help {petitionTitle} reach {goal.toLocaleString()} signatures.
-      </p>
+      </P>
       <Progress
         value={percent}
         aria-label={`${percent}% of signature goal`}

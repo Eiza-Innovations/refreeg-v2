@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { Progress } from "@/components/ui/progress";
+import { Heading, P } from "@/components/marketing/Typography";
 import { ShareModal } from "@/components/engagement/ShareModal";
 import { goalPercent } from "@/lib/progress";
 
@@ -27,12 +28,12 @@ export function PetitionProgressCard({
   return (
     <Card variant="parchment" className="p-6">
       <Eyebrow>Signatures</Eyebrow>
-      <p className="mt-2 font-fraunces text-5xl text-ink">
+      <Heading as="p" size="section" className="mt-2">
         {signatures.toLocaleString()}
-      </p>
-      <p className="mt-1 text-sm text-ink/60">
+      </Heading>
+      <P className="mt-1 text-ink/60 md:text-sm">
         of {goal.toLocaleString()} needed
-      </p>
+      </P>
       <Progress
         value={percent}
         aria-label={`${percent}% of signature goal`}
