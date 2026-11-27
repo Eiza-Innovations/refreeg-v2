@@ -161,10 +161,7 @@ export function UserNav() {
         <DropdownMenuGroup>
           <MenuLink href="/dashboard">Dashboard</MenuLink>
           <DropdownMenuItem asChild>
-            <Link
-              href={personalProfileHref}
-              className="flex cursor-pointer flex-col justify-center rounded-lg px-3 py-2 text-[15px] text-ink focus:bg-bone focus:text-ink"
-            >
+            <Link href={personalProfileHref}>
               <span>Your profile</span>
               {profile?.username && (
                 <span className="text-xs font-normal text-ink/50">

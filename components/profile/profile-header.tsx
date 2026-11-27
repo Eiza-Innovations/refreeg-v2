@@ -48,20 +48,23 @@ export function ProfileHeader({
       )}
 
       <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-          <h1 className="font-fraunces text-2xl font-medium tracking-tight text-ink sm:text-3xl">
-            {displayName}
-          </h1>
-          {isVerified && (
-            <span
-              aria-label="Verified"
-              className="flex h-5 w-5 items-center justify-center rounded-full bg-forest text-surface"
-            >
-              <BadgeCheck className="h-3.5 w-3.5" />
-            </span>
-          )}
-        </div>
-        {username && <p className="mt-0.5 text-sm text-ink/55">@{username}</p>}
+        <h1 className="font-fraunces text-xl font-medium tracking-tight text-ink sm:text-2xl">
+          {displayName}
+        </h1>
+        {(username || isVerified) && (
+          <div className="mt-0.5 flex items-center gap-x-1.5">
+            {username && <p className="text-sm text-ink/55">@{username}</p>}
+            {isVerified && (
+              <span
+                aria-label="Verified"
+                title="Verified"
+                className="flex h-4 w-4 items-center justify-center rounded-full bg-forest text-surface"
+              >
+                <BadgeCheck className="h-3 w-3" />
+              </span>
+            )}
+          </div>
+        )}
         {bio && (
           <p className="mt-2 max-w-xl text-sm leading-6 text-ink/70">{bio}</p>
         )}
