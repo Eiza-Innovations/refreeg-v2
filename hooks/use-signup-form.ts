@@ -2,45 +2,24 @@
 
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "nextjs-toploader/app";
 import { useAuth } from "@/hooks/use-auth";
+import { useSocialSignIn } from "@/hooks/use-social-sign-in";
 import { useValidator } from "@/hooks/use-validator";
 import { toast } from "@/hooks/use-toast";
+import { safeRedirect } from "@/lib/auth/safe-redirect";
 import { normalizeRegistrationInput } from "@/lib/auth/registration";
 import type { SignupAccountType } from "@/lib/auth/registration";
 import {
-  getSignupErrors,
   signupSchema,
   type SignupFields,
 } from "@/lib/schemas/registration.schema";
-
-export type SignupCopy = {
-  accountType: SignupAccountType;
-  /** The other sign-up page, prefetched alongside the OTP page. */
-  prefetchPath: string;
-  creating: { title: string; description: string };
-  codeSentDescription: string;
-  reviewDescription: string;
-  fallbackError: string;
-  /** Marks a Google sign-in as an organization sign-up (read on the callback). */
-  markOrganizationIntent?: boolean;
-};
-
-type Tracking = {
-  referralCode: string | null;
-  redirect: string | null;
-  utmSource: string | null;
-  utmMedium: string | null;
-  utmCampaign: string | null;
-};
-
-function isSafeRedirect(target: string | null): target is string {
-  return !!target && target.startsWith("/") && !target.startsWith("//");
-}
+import type { SignupCopy, SignupTracking } from "@/types/auth-types";
 
 export function useSignupForm(copy: SignupCopy) {
   const router = useRouter();
-  const { user, signInWithGoogle } = useAuth();
+  const { user } = useAuth();
 
   const [form, setForm] = useState({
     email: "",
@@ -48,10 +27,8 @@ export function useSignupForm(copy: SignupCopy) {
     confirmPassword: "",
     agreeTerms: true,
   });
-  const [loadingType, setLoadingType] = useState<
-    "manual" | "google" | "apple" | null
-  >(null);
-  const [tracking, setTracking] = useState<Tracking>({
+  const [termsRejected, setTermsRejected] = useState(false);
+  const [tracking, setTracking] = useState<SignupTracking>({
     referralCode: null,
     redirect: null,
     utmSource: null,
@@ -63,17 +40,24 @@ export function useSignupForm(copy: SignupCopy) {
     schema: signupSchema,
   });
 
+  // Read once. `router` changes identity on every render, so keeping this
+  // effect free of it stops the state update from looping.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const redirect = params.get("redirect");
+    // "Change email" on the code page links back here with the address typed.
+    const email = params.get("email");
+    if (email) setForm((current) => ({ ...current, email }));
     setTracking({
       referralCode: params.get("ref_v1") || null,
-      redirect: isSafeRedirect(redirect) ? redirect : null,
+      redirect: safeRedirect(redirect),
       utmSource: params.get("utm_source"),
       utmMedium: params.get("utm_medium"),
       utmCampaign: params.get("utm_campaign"),
     });
+  }, []);
 
+  useEffect(() => {
     router.prefetch("/auth/verify-otp");
     router.prefetch(copy.prefetchPath);
   }, [router, copy.prefetchPath]);
@@ -82,79 +66,23 @@ export function useSignupForm(copy: SignupCopy) {
     key: K,
     value: (typeof form)[K],
   ) => {
+    if (register.isError) register.reset();
     setForm((current) => ({ ...current, [key]: value }));
-    if (key !== "agreeTerms") clearError(key as keyof SignupFields);
+    if (key === "agreeTerms") setTermsRejected(false);
+    else clearError(key as keyof SignupFields);
   };
 
-  const handleGoogleSignIn = async () => {
-    try {
-      setLoadingType("google");
-      if (copy.markOrganizationIntent) {
-        document.cookie =
-          "auth_org_intent=true; path=/; max-age=600; SameSite=Lax";
-      }
-      await signInWithGoogle(tracking.redirect);
-    } catch (error) {
-      console.error("Google Sign In Error:", error);
-      setLoadingType(null);
+  const { google } = useSocialSignIn(tracking.redirect, () => {
+    if (copy.markOrganizationIntent) {
+      document.cookie =
+        "auth_org_intent=true; path=/; max-age=600; SameSite=Lax";
     }
-  };
+  });
 
-  const handleAppleSignIn = () => {
-    toast({
-      title: "Apple Sign In",
-      description:
-        "Apple sign in is coming soon. Please continue with Google or Email.",
-    });
-  };
-
-  const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault();
-
-    if (!form.agreeTerms) {
-      toast({
-        title: "Terms required",
-        description: "Please accept the terms and privacy policy to continue.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!validate()) {
-      const found = getSignupErrors(form, copy.accountType);
-      if (found.password) {
-        toast({
-          title: "Password Error",
-          description: found.password,
-          variant: "destructive",
-        });
-      } else if (found.confirmPassword) {
-        toast({
-          title: "Password Mismatch",
-          description: found.confirmPassword,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Please review the highlighted fields",
-          description: copy.reviewDescription,
-          variant: "destructive",
-        });
-      }
-      return;
-    }
-
-    const registration = normalizeRegistrationInput({
-      accountType: copy.accountType,
-      email: form.email,
-      password: form.password,
-      confirmPassword: form.confirmPassword,
-    });
-
-    setLoadingType("manual");
-    toast(copy.creating);
-
-    try {
+  const register = useMutation({
+    mutationFn: async (
+      registration: ReturnType<typeof normalizeRegistrationInput>,
+    ) => {
       const response = await fetch("/api/auth/register-pending", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -169,36 +97,52 @@ export function useSignupForm(copy: SignupCopy) {
             typeof navigator !== "undefined" ? navigator.userAgent : undefined,
         }),
       });
-
       const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "Failed to initiate registration");
-      }
-
+      if (!response.ok) throw new Error(result.error ?? response.statusText);
+      return registration;
+    },
+    onSuccess: (registration) => {
       toast({
         title: "Check your email!",
         description: copy.codeSentDescription,
       });
-
       const redirectParam = tracking.redirect
         ? `&redirect=${encodeURIComponent(tracking.redirect)}`
         : "";
       router.push(
         `/auth/verify-otp?email=${encodeURIComponent(registration.email)}${redirectParam}`,
       );
-    } catch (error) {
-      toast({
-        title: "Error",
-        description:
-          error instanceof Error && error.message
-            ? error.message
-            : copy.fallbackError,
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingType(null);
-    }
+    },
+  });
+
+  const loadingType = register.isPending
+    ? "manual"
+    : google.isPending
+      ? "google"
+      : null;
+
+  const handleGoogleSignIn = () => {
+    if (!loadingType) google.mutate();
+  };
+
+  const handleSubmit = (event: FormEvent) => {
+    event.preventDefault();
+    if (loadingType) return;
+
+    // Run both so every problem shows at once, each under its own field.
+    const fieldsValid = validate();
+    setTermsRejected(!form.agreeTerms);
+    if (!fieldsValid || !form.agreeTerms) return;
+
+    const registration = normalizeRegistrationInput({
+      accountType: copy.accountType,
+      email: form.email,
+      password: form.password,
+      confirmPassword: form.confirmPassword,
+    });
+
+    toast(copy.creating);
+    register.mutate(registration);
   };
 
   return {
@@ -206,10 +150,13 @@ export function useSignupForm(copy: SignupCopy) {
     form,
     setFormFields,
     errors,
+    termsError: termsRejected
+      ? "Accept the terms and privacy policy to continue."
+      : undefined,
+    submitError: register.error?.message ?? null,
     loadingType,
     redirect: tracking.redirect,
     handleGoogleSignIn,
-    handleAppleSignIn,
     handleSubmit,
   };
 }

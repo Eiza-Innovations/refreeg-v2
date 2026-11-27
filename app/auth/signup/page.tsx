@@ -1,9 +1,7 @@
 "use client";
 
-import {
-  SignupScreen,
-  type SignupVariant,
-} from "@/components/auth/signup-screen";
+import { SignupScreen } from "@/components/auth/SignupScreen";
+import type { SignupVariant } from "@/types/auth-types";
 
 const variant: SignupVariant = {
   accountType: "individual",
@@ -50,8 +48,6 @@ const variant: SignupVariant = {
     description: "Setting up your RefreeG account.",
   },
   codeSentDescription: "We've sent a 6-digit code to verify your email.",
-  reviewDescription: "Correct the signup information and try again.",
-  fallbackError: "Could not create account",
 };
 
 export default function SignUpPage() {

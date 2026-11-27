@@ -3,18 +3,12 @@
 import { useState } from "react";
 import { Building2, Heart, Info } from "lucide-react";
 import { motion } from "framer-motion";
+import { ChoiceCard } from "@/components/onboarding/ChoiceCard";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { organizationPurposeOptions } from "@/lib/options/organization.options";
-
-interface Step1Props {
-  user: any;
-  onNext: (
-    accountType: "individual" | "organization",
-    meta?: { organizationPurpose?: string },
-  ) => void;
-  onboardingData: any;
-}
+import type { AccountTypeKey, Step1Props } from "@/types/onboarding-types";
+import { onboardingSplitClass } from "@/components/onboarding/split-layout";
 
 const accountOptions = [
   {
@@ -33,10 +27,8 @@ const accountOptions = [
   },
 ] as const;
 
-type SelectedKey = "individual" | "organization";
-
 export default function Step1({ onNext, onboardingData }: Step1Props) {
-  const [selected, setSelected] = useState<SelectedKey>(
+  const [selected, setSelected] = useState<AccountTypeKey>(
     onboardingData.accountType === "organization"
       ? "organization"
       : "individual",
@@ -55,7 +47,7 @@ export default function Step1({ onNext, onboardingData }: Step1Props) {
   };
 
   return (
-    <div className="grid w-full gap-10 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-16">
+    <div className={onboardingSplitClass}>
       <div className="flex flex-col">
         <h1 className="font-fraunces text-4xl font-medium text-ink sm:text-5xl">
           How will you use RefreeG?
@@ -93,41 +85,14 @@ export default function Step1({ onNext, onboardingData }: Step1Props) {
             const active = selected === option.key;
 
             return (
-              <motion.button
+              <ChoiceCard
                 key={option.key}
-                type="button"
-                onClick={() => setSelected(option.key)}
-                whileTap={{ scale: 0.99 }}
-                aria-pressed={active}
-                className={cn(
-                  "flex w-full items-center gap-4 rounded-xl border bg-surface px-4 py-4 text-left transition-colors",
-                  active
-                    ? "border-blue-accent bg-blue-accent/10"
-                    : "border-hairline hover:border-ink/40",
-                )}
-              >
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-cream-muted">
-                  <Icon className="h-5 w-5 text-ink" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-base font-semibold text-ink">
-                    {option.label}
-                  </span>
-                  <span className="block text-sm text-ink/60">
-                    {option.description}
-                  </span>
-                </span>
-                <span
-                  className={cn(
-                    "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border",
-                    active ? "border-blue-accent" : "border-ink/30",
-                  )}
-                >
-                  {active ? (
-                    <span className="h-2.5 w-2.5 rounded-full bg-blue-accent" />
-                  ) : null}
-                </span>
-              </motion.button>
+                icon={Icon}
+                label={option.label}
+                description={option.description}
+                active={active}
+                onSelect={() => setSelected(option.key)}
+              />
             );
           })}
         </div>

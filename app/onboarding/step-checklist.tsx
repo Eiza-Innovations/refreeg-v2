@@ -10,12 +10,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { getOrganizationOnboardingSummary } from "@/actions/users/organization-actions";
 import type { OrganizationOnboardingSummary } from "@/types/organization-types";
-
-interface ChecklistStepProps {
-  user: any;
-  onComplete: () => void;
-  onboardingData: any;
-}
+import type { ChecklistStepProps } from "@/types/onboarding-types";
+import { onboardingSplitClass } from "@/components/onboarding/split-layout";
 
 function RowCircle({ done, index }: { done: boolean; index: number }) {
   return (
@@ -52,7 +48,7 @@ export default function ChecklistStep({
 
   if (isLoading) {
     return (
-      <div className="grid w-full gap-10 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-16">
+      <div className={onboardingSplitClass}>
         <Skeleton className="h-16 w-3/4" />
         <Skeleton className="h-72 w-full" />
       </div>
@@ -69,6 +65,7 @@ export default function ChecklistStep({
     );
   }
 
+  const csrDone = summary.purpose === "fundraising" || !!summary.csrBudget;
   const verified = summary.verificationStatus === "approved";
   const pending = summary.verificationStatus === "pending";
   const rejected = summary.verificationStatus === "rejected";
@@ -86,20 +83,20 @@ export default function ChecklistStep({
     : "Your organisation is set up";
 
   return (
-    <div className="grid w-full gap-10 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-16">
+    <div className={onboardingSplitClass}>
       <div className="flex flex-col">
         <h1 className="font-fraunces text-4xl font-medium text-ink sm:text-5xl">
           {title}
         </h1>
         <p className="mt-4 text-base leading-7 text-ink/70">
-          Your organisation account is ready to browse. Three things unlock
-          giving and reports.
+          Your organisation account is ready to browse. Verifying your
+          organisation is the next step.
         </p>
         <div className="mt-8 lg:mt-auto lg:pt-8">
           <Button
             type="button"
             variant="ink"
-            onClick={onComplete}
+            onClick={() => onComplete()}
             className="h-12 px-10"
           >
             Go to dashboard
@@ -127,7 +124,7 @@ export default function ChecklistStep({
         </div>
 
         <div className="flex items-center gap-4 p-5 sm:p-6">
-          <RowCircle done index={2} />
+          <RowCircle done={csrDone} index={2} />
           <div className="min-w-0 flex-1">
             <p className="text-base font-semibold text-ink">
               CSR budget and team
@@ -136,9 +133,9 @@ export default function ChecklistStep({
           </div>
         </div>
 
-        <div className="flex items-center gap-4 p-5 sm:p-6">
+        <div className="flex flex-wrap items-center gap-4 p-5 sm:flex-nowrap sm:p-6">
           <RowCircle done={verified} index={3} />
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 basis-40">
             <p className="text-base font-semibold text-ink">
               Verify your organisation
             </p>
@@ -163,36 +160,10 @@ export default function ChecklistStep({
               type="button"
               variant="ink"
               onClick={() => router.push("/organization/verification")}
-              className="shrink-0"
+              className="ml-[3.25rem] shrink-0 sm:ml-0"
             >
               Start verification
             </Button>
-          )}
-        </div>
-
-        <div className="flex items-center gap-4 p-5 sm:p-6">
-          <RowCircle done={false} index={4} />
-          <div className="min-w-0 flex-1">
-            <p className="text-base font-semibold text-ink">
-              Fund the CSR wallet
-            </p>
-            <p className="mt-0.5 text-sm text-ink/60">
-              Bank transfer or card. Available after verification.
-            </p>
-          </div>
-          {verified ? (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.push("/wallet")}
-              className="shrink-0"
-            >
-              Open wallet
-            </Button>
-          ) : (
-            <Badge variant="secondary" className="shrink-0">
-              Locked
-            </Badge>
           )}
         </div>
       </Card>

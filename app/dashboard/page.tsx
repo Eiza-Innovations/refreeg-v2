@@ -27,7 +27,10 @@ import {
   DashboardCampaignCard,
   type DashboardCause,
 } from "@/components/dashboard/dashboard-campaign-card";
-import { interestOptions } from "@/lib/causes/interest-categories";
+import {
+  interestLabel,
+  interestOptions,
+} from "@/lib/causes/interest-categories";
 import { DashboardGivingCard } from "@/components/dashboard/dashboard-giving-card";
 import { DashboardSetupCard } from "@/components/dashboard/dashboard-setup-card";
 import { DashboardDeliveredCard } from "@/components/dashboard/dashboard-delivered-card";
@@ -36,18 +39,6 @@ export const metadata: Metadata = {
   title: "Dashboard",
   description:
     "Manage your causes, petitions, and track your social impact on RefreeG.",
-};
-
-const interestLabelMap: Record<string, string> = {
-  education: "EDUCATION",
-  health: "HEALTH",
-  "disaster-relief": "DISASTER RELIEF",
-  water: "WATER",
-  "small-business": "SMALL BUSINESS",
-  "women-girls": "WOMEN & GIRLS",
-  accountability: "ACCOUNTABILITY",
-  climate: "CLIMATE",
-  "skills-bounties": "SKILLS & BOUNTIES",
 };
 
 export default async function DashboardPage() {
@@ -121,12 +112,15 @@ export default async function DashboardPage() {
     new Set(displayCauses.map((c) => c.category).filter(Boolean)),
   ).slice(0, 3);
 
+  // Interests saved from the older, longer list may no longer be offered.
+  const offeredInterests = interests.filter((id) =>
+    interestOptions.some((option) => option.id === id),
+  );
+
   const interestsDisplay =
-    interests.length > 0
-      ? interests
-          .map(
-            (id) => interestLabelMap[id] || id.replace(/-/g, " ").toUpperCase(),
-          )
+    offeredInterests.length > 0
+      ? offeredInterests
+          .map((id) => interestLabel(id).toUpperCase())
           .slice(0, 3)
           .join(", ")
       : displayedCategories.length > 0
@@ -135,15 +129,15 @@ export default async function DashboardPage() {
             .join(", ")
         : "COMMUNITY CAUSES";
 
-  const causesCountWord =
+  const hereAre =
     displayCauses.length === 1
-      ? "one campaign"
-      : `${displayCauses.length} campaigns`;
+      ? "Here is one campaign"
+      : `Here are ${displayCauses.length} campaigns`;
   const subtitle =
     displayCauses.length > 0
       ? interests.length > 0
-        ? `Your account is ready. Here are ${causesCountWord} from the causes you picked.`
-        : `Your account is ready. Here are ${causesCountWord} you can support today.`
+        ? `Your account is ready. ${hereAre} from the causes you picked.`
+        : `Your account is ready. ${hereAre} you can support today.`
       : "Your account is ready. Browse campaigns from causes across Nigeria.";
 
   // Discover filters by one category, so only link a filtered view when the

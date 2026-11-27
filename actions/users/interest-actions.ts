@@ -8,13 +8,7 @@ import {
 } from "@/actions/causes/cause-actions";
 import { interestOptions } from "@/lib/causes/interest-categories";
 import type { Cause } from "@/types/cause-types";
-
-export interface InterestOptionWithCount {
-  id: string;
-  label: string;
-
-  count: number | null;
-}
+import type { InterestOptionWithCount } from "@/types/interest-types";
 
 export async function getInterestOptions(): Promise<InterestOptionWithCount[]> {
   const countsByCategory = await countCausesByCategory();

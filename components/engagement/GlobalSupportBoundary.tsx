@@ -1,17 +1,13 @@
 "use client";
 
 import React from "react";
+import { ErrorPageLayout } from "@/components/engagement/ErrorPageLayout";
 import { SupportErrorCta } from "@/components/engagement/SupportErrorCta";
 import { reportClientError } from "@/lib/api/client-error-reporter";
-
-type Props = {
-  children: React.ReactNode;
-};
-
-type State = {
-  hasError: boolean;
-  errorMessage: string | null;
-};
+import type {
+  SupportBoundaryProps,
+  SupportBoundaryState,
+} from "@/types/support-types";
 
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) {
@@ -49,13 +45,16 @@ function reloadOnceForStaleChunk(error: unknown): boolean {
   return true;
 }
 
-export class GlobalSupportBoundary extends React.Component<Props, State> {
-  state: State = {
+export class GlobalSupportBoundary extends React.Component<
+  SupportBoundaryProps,
+  SupportBoundaryState
+> {
+  state: SupportBoundaryState = {
     hasError: false,
     errorMessage: null,
   };
 
-  static getDerivedStateFromError(error: unknown): State {
+  static getDerivedStateFromError(error: unknown): SupportBoundaryState {
     return {
       hasError: true,
       errorMessage: getErrorMessage(error),
@@ -135,7 +134,7 @@ export class GlobalSupportBoundary extends React.Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <main className="mx-auto flex min-h-[70vh] w-full max-w-3xl items-center px-4 py-12 sm:px-6">
+        <ErrorPageLayout>
           <SupportErrorCta
             title="We hit an error loading this page"
             description="Please follow us on X and join our Telegram community for customer support while we sort this out."
@@ -145,7 +144,7 @@ export class GlobalSupportBoundary extends React.Component<Props, State> {
             }}
             retryLabel="Go home"
           />
-        </main>
+        </ErrorPageLayout>
       );
     }
 

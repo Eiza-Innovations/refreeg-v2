@@ -1,21 +1,16 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { FieldError } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-
-type AuthFieldProps = Omit<React.ComponentProps<typeof Input>, "id"> & {
-  id: string;
-  label: string;
-  error?: string;
-  /** Shown opposite the label, e.g. a "Forgot password?" link. */
-  labelAction?: ReactNode;
-};
+import type { AuthFieldProps } from "@/types/auth-types";
 
 /**
- * Labelled sign-up input with an inline error. Password fields get their own
+ * Labelled auth input with an inline error. Password fields get their own
  * show/hide toggle.
  */
 export function AuthField({
@@ -36,9 +31,10 @@ export function AuthField({
       type={isPassword && revealed ? "text" : type}
       aria-invalid={!!error}
       className={cn(
-        "h-12 rounded-xl bg-linen/70 border border-neutral-200/80 px-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:border-blue-600 transition-colors",
+        // The global input:focus rule forces a navy border; this field uses the accent blue.
+        "h-12 rounded-md border-transparent bg-cream-muted px-4 text-sm text-ink shadow-none placeholder:text-ink/40 focus-visible:ring-0 focus:!border-blue-accent focus:!shadow-[0_0_0_3px_hsl(var(--blue-accent)/0.15)]",
         isPassword && "pr-11",
-        error && "border-red-500 bg-red-50/20",
+        error && "border-rust bg-rust/5",
         className,
       )}
       {...inputProps}
@@ -46,14 +42,11 @@ export function AuthField({
   );
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <label
-          htmlFor={id}
-          className="block text-[11px] font-bold uppercase tracking-wider text-neutral-600"
-        >
+        <Label htmlFor={id} className="label-eyebrow">
           {label}
-        </label>
+        </Label>
         {labelAction}
       </div>
       {isPassword ? (
@@ -64,24 +57,20 @@ export function AuthField({
             variant="bare"
             size="bare"
             onClick={() => setRevealed((current) => !current)}
-            className="absolute right-0 top-0 bottom-0 px-3.5 flex items-center text-neutral-400 hover:text-neutral-600 cursor-pointer"
-            tabIndex={-1}
+            aria-label={revealed ? "Hide password" : "Show password"}
+            className="absolute bottom-0 right-0 top-0 flex items-center px-3.5 text-ink/40 hover:text-ink"
           >
             {revealed ? (
-              <EyeOff className="w-4 h-4" />
+              <EyeOff className="h-4 w-4" />
             ) : (
-              <Eye className="w-4 h-4" />
+              <Eye className="h-4 w-4" />
             )}
           </Button>
         </div>
       ) : (
         input
       )}
-      {error && (
-        <p role="alert" className="text-xs text-red-600 mt-1">
-          {error}
-        </p>
-      )}
+      <FieldError message={error} />
     </div>
   );
 }

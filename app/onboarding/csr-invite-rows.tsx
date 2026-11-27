@@ -12,11 +12,13 @@ import {
 } from "@/components/ui/select";
 import { FieldError } from "@/components/ui/field-error";
 import { inviteRoleOptions } from "@/lib/options/organization.options";
-
-export interface InviteRow {
-  email: string;
-  role: string;
-}
+import type { InviteRow } from "@/types/onboarding-types";
+import {
+  fieldClass,
+  selectTriggerClass,
+  selectContentClass,
+  selectItemClass,
+} from "@/components/ui/field-styles";
 
 export function CsrInviteRows({
   invites,
@@ -49,17 +51,22 @@ export function CsrInviteRows({
               placeholder="finance@korahq.com"
               value={invite.email}
               onChange={(event) => setRow(index, "email", event.target.value)}
+              className={fieldClass}
             />
             <Select
               value={invite.role}
               onValueChange={(role) => setRow(index, "role", role)}
             >
-              <SelectTrigger>
+              <SelectTrigger className={selectTriggerClass}>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className={selectContentClass}>
                 {inviteRoleOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
+                  <SelectItem
+                    key={option.value}
+                    value={option.value}
+                    className={selectItemClass}
+                  >
                     {option.label}
                   </SelectItem>
                 ))}

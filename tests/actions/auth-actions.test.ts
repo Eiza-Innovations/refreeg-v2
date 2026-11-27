@@ -257,42 +257,77 @@ describe("auth-actions", () => {
   });
 
   describe("requestPasswordResetAction", () => {
-    it("returns error when user is not found", async () => {
+    it("answers the same for an unknown email but sends nothing", async () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
+      (sendPasswordResetEmail as jest.Mock).mockClear();
+      (mockPrisma.passwordResetToken.upsert as jest.Mock).mockClear();
 
       const result = await requestPasswordResetAction("missing@example.com");
 
-      expect(result).toEqual({
-        success: false,
-        error: "No account found with this email address.",
-      });
+      expect(result).toEqual({ success: true });
+      expect(sendPasswordResetEmail).not.toHaveBeenCalled();
+      expect(mockPrisma.passwordResetToken.upsert).not.toHaveBeenCalled();
     });
 
     it("stores token and sends reset email on success", async () => {
       mockPrisma.user.findUnique.mockResolvedValue({ id: "user-1" });
       (mockPrisma.passwordResetToken.upsert as jest.Mock).mockResolvedValue({});
-      (sendPasswordResetEmail as jest.Mock).mockResolvedValue(undefined);
+      (sendPasswordResetEmail as jest.Mock).mockResolvedValue({
+        success: true,
+      });
 
       const result = await requestPasswordResetAction("test@example.com");
 
       expect(result).toEqual({ success: true });
-      expect(sendPasswordResetEmail).toHaveBeenCalledWith({
-        email: "test@example.com",
-        resetUrl: expect.stringContaining("/auth/update-password?token="),
-      });
+      expect(sendPasswordResetEmail).toHaveBeenCalledWith(
+        {
+          email: "test@example.com",
+          resetUrl: expect.stringContaining("/auth/update-password?token="),
+        },
+        { timeoutMs: 20_000 },
+      );
+    });
+  });
+
+  describe("requestPasswordResetAction mail delivery", () => {
+    it("tries the reset email again when the first send times out", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ id: "user-1" });
+      (mockPrisma.passwordResetToken.upsert as jest.Mock).mockResolvedValue({});
+      (sendPasswordResetEmail as jest.Mock)
+        .mockClear()
+        .mockResolvedValueOnce({ success: false, error: "SMTP Timeout" })
+        .mockResolvedValueOnce({ success: true });
+      jest.spyOn(console, "error").mockImplementation(() => {});
+
+      const result = await requestPasswordResetAction("test@example.com");
+
+      expect(result).toEqual({ success: true });
+      expect(sendPasswordResetEmail).toHaveBeenCalledTimes(2);
     });
   });
 
   describe("resetPasswordAction", () => {
+    const STRONG_PASSWORD = "Qa-0efOjvnF_cK5FQ1!";
+
     it("returns error for invalid or expired token", async () => {
       mockPrisma.passwordResetToken.findUnique.mockResolvedValue(null);
 
-      const result = await resetPasswordAction("bad-token", "newpass");
+      const result = await resetPasswordAction("bad-token", STRONG_PASSWORD);
 
       expect(result).toEqual({
         success: false,
         error: "Invalid or expired token",
       });
+    });
+
+    it("rejects a password that breaks the sign-up policy without touching the token", async () => {
+      const result = await resetPasswordAction("valid-token", "newpass");
+
+      expect(result).toEqual({
+        success: false,
+        error: "At least 10 characters",
+      });
+      expect(mockPrisma.passwordResetToken.findUnique).not.toHaveBeenCalled();
     });
 
     it("resets password when token is valid", async () => {
@@ -304,10 +339,19 @@ describe("auth-actions", () => {
       mockBcryptHash.mockResolvedValue("new-hash");
       mockPrisma.$transaction.mockResolvedValue([]);
 
-      const result = await resetPasswordAction("valid-token", "newpass");
+      const result = await resetPasswordAction("valid-token", STRONG_PASSWORD);
 
       expect(result).toEqual({ success: true, email: "test@example.com" });
       expect(mockPrisma.$transaction).toHaveBeenCalled();
+      expect(mockPrisma.user.update).toHaveBeenCalledWith({
+        where: { email: "test@example.com" },
+        data: expect.objectContaining({
+          password: "new-hash",
+          sessions_invalidated_after: expect.any(Date),
+          failed_login_attempts: 0,
+          locked_until: null,
+        }),
+      });
     });
   });
 });
