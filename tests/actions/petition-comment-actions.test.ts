@@ -1,3 +1,7 @@
+jest.mock("@/lib/auth/auth", () => ({
+  auth: jest.fn(),
+}));
+
 jest.mock("@/lib/prisma", () => ({
   prisma: {
     petition_comments: {
@@ -11,6 +15,7 @@ jest.mock("@/lib/prisma", () => ({
   },
 }));
 
+import { auth } from "@/lib/auth/auth";
 import { prisma } from "@/lib/prisma";
 import {
   createPetitionComment,
@@ -37,9 +42,12 @@ const mockUser = {
   username: "jane",
 };
 
+const mockAuth = auth as jest.Mock;
+
 describe("petition-comment-actions", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockAuth.mockResolvedValue({ user: { id: "user-1" } });
   });
 
   describe("createPetitionComment", () => {

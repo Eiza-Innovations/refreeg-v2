@@ -1,125 +1,166 @@
+import { useMemo } from "react";
 import dynamic from "next/dynamic";
-import { differenceInDays, format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
-import { Icons } from "@/components/layout/Icons";
+import { format } from "date-fns";
+import { Heading, P } from "@/components/marketing/Typography";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Eyebrow } from "@/components/ui/eyebrow";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useObjectUrl, useObjectUrls } from "@/hooks/use-object-urls";
 import { categories } from "@/lib/causes/categories";
+import { isVideoFile } from "@/lib/media/video";
+import { formatCurrency } from "@/lib/utils";
 import type { CauseFormValues } from "@/lib/schemas/cause.schema";
 
 const MultimediaCarousel = dynamic(
   () => import("@/components/marketing/MultimediaCarousel"),
-  { loading: () => <Skeleton className="h-64 w-full" /> },
+  { loading: () => <Skeleton className="aspect-video w-full" /> },
 );
 
-const chipClass =
-  "flex items-center gap-1.5 rounded-full border border-hairline bg-bone px-2.5 py-1 text-sm font-medium text-ink";
+type Props = {
+  form: CauseFormValues;
+  onEdit: (step: number) => void;
+  busy: boolean;
+};
 
-export function CauseReviewStep({ form }: { form: CauseFormValues }) {
-  const category = categories.find((c) => c.id === form.category)?.name;
-  const [firstSection, ...otherSections] = form.sections;
-  const { startDate, endDate } = form;
+export function CauseReviewStep({ form, onEdit, busy }: Props) {
+  const {
+    category,
+    location,
+    goal,
+    currency,
+    startDate,
+    endDate,
+    sections,
+    multimedia,
+    videoLinks,
+  } = form;
+  const categoryName =
+    categories.find(({ id }) => id === category)?.name ?? category;
+  const cover = useObjectUrl(form.coverImage) || form.image;
+  const localFiles = useMemo(
+    () => multimedia.filter((item): item is File => typeof item !== "string"),
+    [multimedia],
+  );
+  const localMediaUrls = useObjectUrls(localFiles);
+  let fileIndex = 0;
+  const media = multimedia
+    .map((item) => {
+      if (typeof item === "string") return item;
+      const url = localMediaUrls[fileIndex++];
+      if (!url) return undefined;
+      return {
+        url,
+        type: isVideoFile(item) ? ("video" as const) : ("image" as const),
+      };
+    })
+    .filter((item) => item !== undefined);
+  const mediaCount =
+    Number(Boolean(form.coverImage || form.image)) +
+    multimedia.length +
+    videoLinks.filter((link) => link.trim()).length;
+  const formattedGoal = formatCurrency(Number(goal), currency);
+  const rows = [
+    {
+      label: "Cause",
+      value: [categoryName, location].filter(Boolean).join(" · "),
+    },
+    {
+      label: "Story",
+      value: `${sections.length} ${sections.length === 1 ? "section" : "sections"}`,
+    },
+    {
+      label: "Target",
+      value: formattedGoal,
+      note:
+        startDate && endDate
+          ? `${format(startDate, "d MMM yyyy")} – ${format(endDate, "d MMM yyyy")}`
+          : undefined,
+    },
+    {
+      label: "Photos and videos",
+      value: `${mediaCount} ${mediaCount === 1 ? "item" : "items"}`,
+    },
+  ];
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
-      <div className="space-y-6 lg:col-span-2 lg:space-y-8">
-        <div className="overflow-hidden rounded-xl border border-hairline bg-surface">
-          <MultimediaCarousel
-            media={[
-              ...form.multimedia.map((file) =>
-                typeof file === "string" ? file : URL.createObjectURL(file),
-              ),
-              ...form.videoLinks,
-            ]}
-            coverImage={
-              form.coverImage
-                ? URL.createObjectURL(form.coverImage)
-                : form.image || undefined
-            }
-            title={form.title}
-          />
-        </div>
-
-        <div className="space-y-5 sm:space-y-6">
-          <div>
-            <h3 className="mb-3 font-fraunces text-2xl font-medium text-ink">
-              {form.title}
-            </h3>
-            {(form.location || form.category) && (
-              <div className="mb-4 flex flex-wrap gap-2">
-                {form.location && (
-                  <div className={chipClass}>
-                    <Icons.mapPin className="h-3.5 w-3.5 text-forest" />
-                    {form.location}
+    <div className="grid gap-5 xl:grid-cols-2">
+      <Card
+        variant="surface"
+        className="min-w-0 overflow-hidden rounded-2xl border-0 bg-bone shadow-none"
+      >
+        <MultimediaCarousel
+          media={[...media, ...videoLinks]}
+          coverImage={cover || undefined}
+          title={form.title}
+          variant="flush"
+        />
+        <div className="space-y-2 p-4">
+          <Heading as="h2" size="panel" className="break-words font-medium">
+            {form.title}
+          </Heading>
+          {form.summary && (
+            <P className="break-words text-sm text-ink/70">{form.summary}</P>
+          )}
+          <Accordion type="single" collapsible>
+            <AccordionItem value="story" className="border-b-0">
+              <AccordionTrigger className="py-2 text-sm">
+                Preview story
+              </AccordionTrigger>
+              <AccordionContent className="space-y-4">
+                {sections.map((section, index) => (
+                  <div key={index} className="space-y-1 break-words">
+                    <Heading
+                      as="h3"
+                      size="panel"
+                      className="font-montserrat text-base font-semibold"
+                    >
+                      {section.heading}
+                    </Heading>
+                    <P className="whitespace-pre-line leading-6 text-ink/70">
+                      {section.description}
+                    </P>
                   </div>
-                )}
-                {form.category && <div className={chipClass}>{category}</div>}
-              </div>
-            )}
-            {form.summary && (
-              <p className="mb-4 border-l-2 border-forest py-1 pl-4 text-ink/70">
-                &quot;{form.summary}&quot;
-              </p>
-            )}
-            {firstSection?.heading && (
-              <h4 className="mb-2 text-lg font-semibold text-ink">
-                {firstSection.heading}
-              </h4>
-            )}
-            <p className="whitespace-pre-line leading-relaxed text-ink/70">
-              {firstSection?.description}
-            </p>
-          </div>
-
-          {otherSections.map((section, index) => (
-            <div key={index} className="space-y-2">
-              <h4 className="text-lg font-semibold text-ink">
-                {section.heading}
-              </h4>
-              <p className="whitespace-pre-line leading-relaxed text-ink/70">
-                {section.description}
-              </p>
-            </div>
-          ))}
+                ))}
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </div>
-      </div>
+      </Card>
 
-      <div className="space-y-6">
-        <Card
-          variant="surface"
-          className="space-y-5 px-4 py-5 shadow-none sm:p-6 lg:sticky lg:top-6"
-        >
-          <div className="space-y-1">
-            <Eyebrow>Target goal</Eyebrow>
-            <p className="font-fraunces text-3xl font-medium text-ink">
-              {form.currency} {Number(form.goal).toLocaleString()}
-            </p>
+      <dl className="min-w-0 divide-y divide-hairline">
+        {rows.map(({ label, value, note }, index) => (
+          <div
+            key={label}
+            className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 py-3 first:pt-0"
+          >
+            <dt className="text-xs text-ink/70">{label}</dt>
+            <dd className="col-start-1 break-words text-sm font-medium">
+              {value}
+              {note && (
+                <P className="mt-1 text-xs font-normal text-ink/70">{note}</P>
+              )}
+            </dd>
+            <dd className="col-start-2 row-span-2 row-start-1">
+              <Button
+                type="button"
+                variant="link"
+                aria-label={`Edit ${label.toLowerCase()}`}
+                disabled={busy}
+                onClick={() => onEdit(index + 1)}
+                className="text-blue-accent"
+              >
+                Edit
+              </Button>
+            </dd>
           </div>
-
-          <div className="space-y-1 border-t border-hairline pt-4">
-            <Eyebrow>Category</Eyebrow>
-            <p className="text-lg font-semibold text-ink">{category}</p>
-          </div>
-
-          <div className="space-y-1 border-t border-hairline pt-4">
-            <Eyebrow>Duration</Eyebrow>
-            <div className="flex items-center gap-2 text-ink">
-              <CalendarIcon className="h-4 w-4 text-forest" />
-              <span className="font-medium">
-                {startDate && endDate
-                  ? `${differenceInDays(endDate, startDate)} Days`
-                  : "Not set"}
-              </span>
-            </div>
-            {startDate && endDate && (
-              <p className="mt-1 text-xs text-ink/50">
-                {format(startDate, "MMM d")} - {format(endDate, "MMM d, yyyy")}
-              </p>
-            )}
-          </div>
-        </Card>
-      </div>
+        ))}
+      </dl>
     </div>
   );
 }

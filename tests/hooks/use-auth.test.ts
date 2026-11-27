@@ -82,21 +82,14 @@ describe("useAuth", () => {
     );
   });
 
-  it("shows error toast when sign in fails", async () => {
+  it("throws the error when sign in fails so the form can show it inline", async () => {
     (signIn as jest.Mock).mockResolvedValue({ error: "CredentialsSignin" });
 
     const { result } = renderHook(() => useAuth());
 
-    await act(async () => {
-      await result.current.signIn("test@example.com", "wrong");
-    });
-
-    expect(toast).toHaveBeenCalledWith(
-      expect.objectContaining({
-        title: "Error signing in",
-        variant: "destructive",
-      }),
-    );
+    await expect(
+      result.current.signIn("test@example.com", "wrong"),
+    ).rejects.toThrow("Invalid credentials");
     expect(mockPush).not.toHaveBeenCalled();
   });
 
@@ -136,13 +129,24 @@ describe("useAuth", () => {
 
     const { result } = renderHook(() => useAuth());
 
-    let success: boolean | undefined;
     await act(async () => {
-      success = await result.current.resetPassword("test@example.com");
+      await result.current.resetPassword("test@example.com");
     });
 
-    expect(success).toBe(true);
     expect(requestPasswordResetAction).toHaveBeenCalledWith("test@example.com");
+  });
+
+  it("throws the server message when the reset link cannot be sent", async () => {
+    (requestPasswordResetAction as jest.Mock).mockResolvedValue({
+      success: false,
+      error: "Too many requests",
+    });
+
+    const { result } = renderHook(() => useAuth());
+
+    await expect(
+      result.current.resetPassword("test@example.com"),
+    ).rejects.toThrow("Too many requests");
   });
 
   it("redirects to reset password if cause user lacks password or profile details", async () => {
@@ -172,14 +176,26 @@ describe("useAuth", () => {
 
     const { result } = renderHook(() => useAuth());
 
-    let success: boolean | undefined;
     await act(async () => {
-      success = await result.current.updatePassword("newpass", "token-1");
+      await result.current.updatePassword("newpass", "token-1");
     });
 
-    expect(success).toBe(true);
     expect(resetPasswordAction).toHaveBeenCalledWith("token-1", "newpass");
     expect(mockPush).toHaveBeenCalledWith("/auth/signin");
+  });
+
+  it("throws the server message when the reset token is rejected", async () => {
+    (resetPasswordAction as jest.Mock).mockResolvedValue({
+      success: false,
+      error: "Invalid or expired token",
+    });
+
+    const { result } = renderHook(() => useAuth());
+
+    await expect(
+      result.current.updatePassword("newpass", "bad-token"),
+    ).rejects.toThrow("Invalid or expired token");
+    expect(mockPush).not.toHaveBeenCalled();
   });
 
   it("updates password, auto-authenticates, and navigates to onboarding for cause-profile flow", async () => {
@@ -191,14 +207,12 @@ describe("useAuth", () => {
 
     const { result } = renderHook(() => useAuth());
 
-    let success: boolean | undefined;
     await act(async () => {
-      success = await result.current.updatePassword("newpass", "token-1", {
+      await result.current.updatePassword("newpass", "token-1", {
         flow: "cause-profile",
       });
     });
 
-    expect(success).toBe(true);
     expect(resetPasswordAction).toHaveBeenCalledWith("token-1", "newpass");
     expect(signIn).toHaveBeenCalledWith("credentials", {
       redirect: false,

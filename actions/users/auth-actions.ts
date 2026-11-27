@@ -14,7 +14,11 @@ import {
 } from "@/services/mail";
 import { runPostSignupActions } from "@/lib/auth/welcome";
 import crypto from "crypto";
-import { deriveFullNameFromEmail } from "@/lib/auth/registration";
+import {
+  deriveFullNameFromEmail,
+  getPasswordErrors,
+} from "@/lib/auth/registration";
+import { retrySend } from "@/lib/email/retry-send";
 
 export const getCurrentUser = cache(async () => {
   const session = await auth();
@@ -198,6 +202,15 @@ export async function recordSignupReward(userId: string, amount: number = 1) {
   }
 }
 
+/** A reset link that never arrives is worse than a short wait, so allow a slow mail server and retry once. */
+const RESET_EMAIL_TIMEOUT_MS = 20_000;
+
+function sendResetEmail(context: Parameters<typeof sendPasswordResetEmail>[0]) {
+  return retrySend(() =>
+    sendPasswordResetEmail(context, { timeoutMs: RESET_EMAIL_TIMEOUT_MS }),
+  );
+}
+
 export async function requestPasswordResetAction(rawEmail: string) {
   try {
     const email = rawEmail.trim().toLowerCase();
@@ -208,7 +221,7 @@ export async function requestPasswordResetAction(rawEmail: string) {
     // profile get a quick profile created and a link into the profile flow.
     const causeCheck = await checkCauseUserLoginAction(email);
     if (causeCheck.isCauseUserWithoutProfile && causeCheck.token) {
-      await sendPasswordResetEmail({
+      await sendResetEmail({
         email,
         resetUrl: `${baseUrl}/auth/update-password?token=${causeCheck.token}&flow=cause-profile&email=${encodeURIComponent(email)}`,
       });
@@ -217,12 +230,9 @@ export async function requestPasswordResetAction(rawEmail: string) {
 
     const user = await prisma.user.findUnique({ where: { email } });
 
-    if (!user) {
-      return {
-        success: false,
-        error: "No account found with this email address.",
-      };
-    }
+    // Answer the same way whether or not the address has an account, so this
+    // form cannot be used to find out who is registered. Nothing is sent.
+    if (!user) return { success: true };
 
     const token = crypto.randomBytes(32).toString("hex");
     const expires = new Date(Date.now() + 3600000);
@@ -233,7 +243,7 @@ export async function requestPasswordResetAction(rawEmail: string) {
       create: { email, token, expires },
     });
 
-    await sendPasswordResetEmail({
+    await sendResetEmail({
       email,
       resetUrl: `${baseUrl}/auth/update-password?token=${token}`,
     });
@@ -247,6 +257,12 @@ export async function requestPasswordResetAction(rawEmail: string) {
 
 export async function resetPasswordAction(token: string, password: string) {
   try {
+    // Same policy as sign-up: the form check is only a convenience.
+    const [passwordError] = getPasswordErrors(password);
+    if (passwordError) {
+      return { success: false, error: passwordError };
+    }
+
     const resetToken = await prisma.passwordResetToken.findUnique({
       where: { token },
     });
@@ -260,7 +276,14 @@ export async function resetPasswordAction(token: string, password: string) {
     await prisma.$transaction([
       prisma.user.update({
         where: { email: resetToken.email },
-        data: { password: hashedPassword },
+        data: {
+          password: hashedPassword,
+          // Whoever held the old password (or an old session) is signed out,
+          // and a failed-login lockout no longer applies to the new one.
+          sessions_invalidated_after: new Date(),
+          failed_login_attempts: 0,
+          locked_until: null,
+        },
       }),
       prisma.passwordResetToken.delete({
         where: { id: resetToken.id },

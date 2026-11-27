@@ -4,14 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { fieldClass } from "@/components/petitions/field-styles";
-import type { PetitionSignFormApi } from "@/hooks/use-petition-sign-form";
-
-type Props = Pick<PetitionSignFormApi, "form" | "errors" | "setFormFields"> & {
-  /** Keeps element ids unique when two forms share a page. */
-  idPrefix: string;
-  disabled?: boolean;
-};
+import { fieldClass } from "@/components/ui/field-styles";
+import type { SignFormFieldsProps } from "@/types/petition-types";
 
 /** Name, email, message and anonymous switch of a petition signing form. */
 export function SignFormFields({
@@ -20,7 +14,7 @@ export function SignFormFields({
   setFormFields,
   idPrefix,
   disabled = false,
-}: Props) {
+}: SignFormFieldsProps) {
   const inputClass = cn(
     fieldClass,
     disabled && "cursor-not-allowed bg-cream-muted",

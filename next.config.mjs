@@ -131,6 +131,13 @@ const nextConfig = {
     ],
   },
 
+  // Same alias as the webpack hook below, for `pnpm dev:turbo`.
+  turbopack: {
+    resolveAlias: {
+      handlebars: "handlebars/dist/handlebars.js",
+    },
+  },
+
   webpack(config) {
     config.resolve.alias = {
       ...config.resolve.alias,

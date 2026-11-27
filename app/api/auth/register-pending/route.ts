@@ -1,8 +1,9 @@
 import { NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { sendOtpEmail } from "@/services/mail";
+import { sendOtpEmailWithRetry } from "@/lib/auth/send-otp-email";
 import { getClientIp } from "@/lib/api/client-ip";
+import { generateOtpCode, hashOtpCode } from "@/lib/auth/otp";
 import {
   normalizeRegistrationInput,
   type RegistrationInput,
@@ -53,7 +54,8 @@ export async function POST(req: Request) {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpCode = generateOtpCode();
+    const otpHash = hashOtpCode(otpCode);
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
     await prisma.pendingRegistration.upsert({
@@ -72,7 +74,7 @@ export async function POST(req: Request) {
         utm_campaign,
         user_agent,
         ip_address,
-        otpCode,
+        otpCode: otpHash,
         expiresAt,
         failedAttempts: 0,
         lastOtpSentAt: new Date(),
@@ -92,7 +94,7 @@ export async function POST(req: Request) {
         utm_campaign,
         user_agent,
         ip_address,
-        otpCode,
+        otpCode: otpHash,
         expiresAt,
         lastOtpSentAt: new Date(),
       },
@@ -102,7 +104,7 @@ export async function POST(req: Request) {
     // email after the response is flushed. Awaiting SMTP inline kept new
     // users on the signup screen for the entire mail round-trip.
     after(async () => {
-      const emailResult = await sendOtpEmail({
+      const emailResult = await sendOtpEmailWithRetry({
         email,
         userName: fullName,
         otpCode,

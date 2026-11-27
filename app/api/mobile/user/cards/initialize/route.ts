@@ -2,6 +2,10 @@ import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
 import { enforceRateLimit } from "@/lib/api/rate-limit";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
+import {
+  encodeStoreReviewDemoReference,
+  isStoreReviewDemoAccount,
+} from "@/lib/auth/store-review-demo";
 import Paystack from "@/services/paystack";
 
 export async function OPTIONS() {
@@ -27,6 +31,24 @@ export async function POST(request: NextRequest) {
       identifier: user.id,
     });
     if (rateLimited) return rateLimited;
+
+    if (isStoreReviewDemoAccount(user.email)) {
+      const demoReference = encodeStoreReviewDemoReference({
+        causeId: "card_setup",
+        amount: 50,
+        tipAmount: 0,
+        donorName: user.fullName || "Store Reviewer",
+        message: "Store Review Demo card setup",
+        isAnonymous: false,
+      });
+      return apiSuccess({
+        authorization_url: `refreeg://payment/card-setup?reference=${encodeURIComponent(demoReference)}`,
+        reference: demoReference,
+        access_code: "store_review_demo_code",
+        amount: 50,
+        isStoreReviewDemo: true,
+      });
+    }
 
     // ₦50 charge (5000 kobo)
     const response = await Paystack.initializeTransaction({

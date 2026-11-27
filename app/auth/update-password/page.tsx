@@ -1,160 +1,125 @@
 "use client";
-import { useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { useAuth } from "@/hooks/use-auth";
+
+import { Suspense } from "react";
+import { Loader2 } from "lucide-react";
+import { AuthField } from "@/components/auth/AuthField";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { PasswordRequirements } from "@/components/auth/PasswordRequirements";
+import { Heading, Lead } from "@/components/marketing/Typography";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Icons } from "@/components/layout/Icons";
+import { CalloutBanner } from "@/components/ui/callout-banner";
+import { AuthLink } from "@/components/auth/AuthLink";
+import { useUpdatePasswordForm } from "@/hooks/use-update-password-form";
+import { signinBrand } from "@/lib/auth/signin-copy";
 
 function UpdatePasswordForm() {
-  const searchParams = useSearchParams();
-  const token = searchParams.get("token");
-  const flow = searchParams.get("flow");
-  const email = searchParams.get("email");
-  const redirect = searchParams.get("redirect");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const { updatePassword } = useAuth();
+  const {
+    hasToken,
+    isCauseProfileFlow,
+    form,
+    setFormFields,
+    errors,
+    submitError,
+    isSaving,
+    handleSubmit,
+  } = useUpdatePasswordForm();
 
-  const isCauseProfileFlow = flow === "cause-profile";
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (password !== confirmPassword) {
-      return;
-    }
-
-    if (!token) {
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      await updatePassword(password, token, {
-        flow,
-        email,
-        redirect,
-      });
-    } catch (error) {
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  if (!token) {
+  if (!hasToken) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-destructive">Invalid Link</CardTitle>
-          <CardDescription>
-            This password reset link is invalid or has expired.
-          </CardDescription>
-        </CardHeader>
-        <CardFooter>
-          <Button asChild className="w-full">
-            <Link href="/auth/reset-password">Request a new link</Link>
-          </Button>
-        </CardFooter>
-      </Card>
+      <>
+        <Heading as="h1" size="subsection">
+          This link is invalid
+        </Heading>
+        <Lead className="mt-2 text-sm text-ink/70 md:text-sm">
+          This password reset link is invalid or has expired. Request a new one
+          and we&apos;ll email it right away.
+        </Lead>
+        <Button asChild variant="ink" className="mt-6 h-12 w-full rounded-md">
+          <AuthLink
+            href="/auth/reset-password"
+            className="font-medium text-ink-foreground no-underline hover:no-underline"
+          >
+            Request a new link
+          </AuthLink>
+        </Button>
+      </>
     );
   }
 
   return (
-    <Card>
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl text-center">
-          {isCauseProfileFlow ? "Set Your New Password" : "New Password"}
-        </CardTitle>
-        <CardDescription className="text-center">
+    <>
+      <div className="mb-7">
+        <Heading as="h1" size="subsection">
+          {isCauseProfileFlow ? "Set your password" : "Choose a new password"}
+        </Heading>
+        <Lead className="mt-2 text-sm text-ink/70 md:text-sm">
           {isCauseProfileFlow
             ? "Welcome back! Set a secure password to access your campaign, then we'll guide you to complete your profile."
-            : "Please enter your new password below."}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit}>
-          <div className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="password">New Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={8}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="confirm-password">Confirm New Password</Label>
-              <Input
-                id="confirm-password"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-              />
-              {password && confirmPassword && password !== confirmPassword && (
-                <p className="text-xs text-destructive">
-                  Passwords do not match
-                </p>
-              )}
-            </div>
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={
-                isLoading || password !== confirmPassword || password.length < 8
-              }
-            >
-              {isLoading ? (
-                <>
-                  <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-                  {isCauseProfileFlow
-                    ? "Setting password..."
-                    : "Updating password..."}
-                </>
-              ) : isCauseProfileFlow ? (
-                "Set Password & Complete Profile"
-              ) : (
-                "Update password"
-              )}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+            : "Pick a strong password you haven't used elsewhere."}
+        </Lead>
+      </div>
+
+      <form onSubmit={handleSubmit} noValidate className="space-y-4">
+        <AuthField
+          id="password"
+          type="password"
+          label="New password"
+          placeholder="••••••••"
+          autoComplete="new-password"
+          value={form.password}
+          onChange={(e) => setFormFields("password", e.target.value)}
+          error={errors.password}
+        />
+        <PasswordRequirements password={form.password} />
+        <AuthField
+          id="confirmPassword"
+          type="password"
+          label="Confirm new password"
+          placeholder="••••••••"
+          autoComplete="new-password"
+          value={form.confirmPassword}
+          onChange={(e) => setFormFields("confirmPassword", e.target.value)}
+          error={errors.confirmPassword}
+        />
+
+        {submitError ? (
+          <CalloutBanner
+            variant="rust"
+            role="alert"
+            title={submitError}
+            description={
+              submitError.includes("expired")
+                ? "Request a new reset link and try again."
+                : undefined
+            }
+          />
+        ) : null}
+
+        <Button
+          type="submit"
+          variant="ink"
+          disabled={isSaving}
+          className="h-12 w-full rounded-md shadow-subtle"
+        >
+          {isSaving ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : isCauseProfileFlow ? (
+            "Set password and continue"
+          ) : (
+            "Update password"
+          )}
+        </Button>
+      </form>
+    </>
   );
 }
 
 export default function UpdatePasswordPage() {
   return (
-    <div className="container flex h-screen w-screen flex-col items-center justify-center">
-      <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
-        <Suspense
-          fallback={
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-center">Loading...</CardTitle>
-              </CardHeader>
-            </Card>
-          }
-        >
-          <UpdatePasswordForm />
-        </Suspense>
-      </div>
-    </div>
+    <AuthShell brand={signinBrand}>
+      <Suspense fallback={<div className="h-64" aria-busy="true" />}>
+        <UpdatePasswordForm />
+      </Suspense>
+    </AuthShell>
   );
 }

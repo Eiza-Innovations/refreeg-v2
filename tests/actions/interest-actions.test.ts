@@ -48,11 +48,11 @@ describe("interest-actions", () => {
       expect(options.find((o) => o.id === "disaster-relief")?.count).toBe(2);
     });
 
-    it("keeps count null for interests with no campaign category", async () => {
+    it("gives every interest a number, zero when it has no campaigns yet", async () => {
       const options = await getInterestOptions();
 
-      const uncategorised = options.filter((o) => o.count === null);
-      expect(uncategorised.length).toBeGreaterThan(0);
+      expect(options.every((o) => typeof o.count === "number")).toBe(true);
+      expect(options.find((o) => o.id === "community")?.count).toBe(0);
     });
   });
 
