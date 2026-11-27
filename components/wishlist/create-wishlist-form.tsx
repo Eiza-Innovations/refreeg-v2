@@ -45,10 +45,6 @@ const WISHLIST_STEPS = [
   },
 ] as const;
 
-/**
- * The wishlist creation flow, hosted in the same wizard frame as cause
- * creation so every builder on RefreeG looks and behaves the same.
- */
 export function CreateWishlistForm({
   seasonal,
   username,
@@ -62,8 +58,6 @@ export function CreateWishlistForm({
   const [serverError, setServerError] = useState<string | null>(null);
 
   const [wishlist, setWishlist] = useState({ title: "", message: "" });
-  // The server keeps an 8-item cap per wishlist; the form lets the owner
-  // fill all 8 slots during creation, or just one and the rest later.
   const [items, setItems] = useState<ItemRow[]>([emptyRow()]);
   const [rowErrors, setRowErrors] = useState<RowErrors>({});
 
@@ -158,7 +152,6 @@ export function CreateWishlistForm({
       }
 
       if (added === 0 && firstError) {
-        // The wishlist exists; send the owner there to finish the list.
         toast({
           title: "Wishlist created",
           description: `${firstError} Add your items below.`,

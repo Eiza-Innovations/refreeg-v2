@@ -27,8 +27,6 @@ const STEPS = [
   },
 ];
 
-/** The public wishlist landing. Seasonal flag comes from the server page:
- * the override env var is not available in the browser bundle. */
 export function WishlistLanding({ seasonal }: { seasonal: boolean }) {
   const sectionRef = useRef<HTMLElement>(null);
 

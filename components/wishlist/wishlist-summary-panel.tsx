@@ -3,11 +3,6 @@ import { Eyebrow } from "@/components/ui/eyebrow";
 import { formatNaira } from "@/components/giving/format";
 import type { WishlistWithItems } from "@/types";
 
-/**
- * Money state lives on an ink panel (design guide rule 4). The numbers are
- * the same aggregates the bars show per item, so they are safe to render
- * for visitors as well as the owner.
- */
 export function WishlistSummaryPanel({
   wishlist,
 }: {

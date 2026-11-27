@@ -3,11 +3,6 @@ import { Eyebrow } from "@/components/ui/eyebrow";
 import { formatDate } from "@/lib/format-date";
 import type { WishlistContributor } from "@/types";
 
-/**
- * Server-rendered owner panel: the one place giver names are visible, so
- * the owner can physically buy and hand over each gift. Giver emails are
- * never shown here; they stay on the server for receipts only.
- */
 export function WishlistGivers({
   contributors,
 }: {
@@ -16,10 +11,7 @@ export function WishlistGivers({
   return (
     <div className="rounded-2xl border border-hairline bg-surface p-5">
       <Eyebrow className="text-ink/45">Your givers</Eyebrow>
-      {/* <p className="mt-2 text-[13px] leading-5 text-ink/55">
-        Only their names are visible to you, for delivery coordination. Emails
-        stay private to us and the giver.
-      </p> */}
+
       <ul className="mt-2 space-y-4">
         {contributors.map((giver) => (
           <li

@@ -7,9 +7,9 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <title>New KYC Submission - Admin Notification</title>
 </head>
-<body style="margin:0;padding:0;width:100%;background-color:#f2f1ed;">
-<div style="display:none;font-size:1px;color:#f2f1ed;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">A Didit KYC verification needs admin attention.</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f2f1ed;">
+<body style="margin:0;padding:0;width:100%;background-color:#faf9f6;">
+<div style="display:none;font-size:1px;color:#faf9f6;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">A Didit KYC verification needs admin attention.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#faf9f6;">
 <tr><td align="center" style="padding:32px 12px;">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;background-color:#ffffff;border:1px solid #e0e0dc;border-radius:12px;overflow:hidden;">
 <tr><td style="padding:26px 32px 0 32px;">
@@ -21,13 +21,10 @@
 <p style="font-size:15px;line-height:1.65;color:#414d46;margin:0 0 14px 0;">Hi {{adminName}}, {{#if isRejected}}a KYC verification was declined by Didit. You can inspect it in the Didit admin console and decide whether a manual approval is warranted.{{else}}a new KYC verification has been submitted via Didit and requires manual review.{{/if}}</p>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f7f6f2;border:1px solid #e0e0dc;border-radius:12px;margin:6px 0 18px 0;"><tr><td style="padding:6px 20px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:10px 0;"><div style="font-size:10.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#6f7a72;font-family:'Montserrat','Helvetica Neue',Arial,sans-serif;margin:0 0 2px 0;">User name</div><div style="font-size:14px;line-height:1.55;color:#0e1b14;font-weight:600;font-family:'Montserrat','Helvetica Neue',Arial,sans-serif;">{{userName}}</div></td></tr><tr><td style="padding:10px 0;border-top:1px solid #e0e0dc;"><div style="font-size:10.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#6f7a72;font-family:'Montserrat','Helvetica Neue',Arial,sans-serif;margin:0 0 2px 0;">Email</div><div style="font-size:14px;line-height:1.55;color:#0e1b14;font-weight:600;font-family:'Montserrat','Helvetica Neue',Arial,sans-serif;">{{userEmail}}</div></td></tr><tr><td style="padding:10px 0;border-top:1px solid #e0e0dc;"><div style="font-size:10.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#6f7a72;font-family:'Montserrat','Helvetica Neue',Arial,sans-serif;margin:0 0 2px 0;">Status</div><div style="font-size:14px;line-height:1.55;color:#0e1b14;font-weight:600;font-family:'Montserrat','Helvetica Neue',Arial,sans-serif;">{{#if isRejected}}Rejected / Declined{{else}}Pending review{{/if}}</div></td></tr></table></td></tr></table><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:16px 0 4px 0;"><tr><td style="border-left:4px solid #b07d18;background-color:#faf3df;border-radius:0 8px 8px 0;padding:13px 16px;font-size:13.5px;line-height:1.6;color:#414d46;font-family:'Montserrat','Helvetica Neue',Arial,sans-serif;">{{#if isRejected}}{{#if rejectionReason}}<strong>Reason:</strong> {{rejectionReason}}{{else}}Please review this verification in the Didit admin console.{{/if}}{{else}}Please review this submission within 24 to 48 hours to keep onboarding smooth for the user.{{/if}}</td></tr></table>
 
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0 6px 0;"><tr><td bgcolor="#0e1b14" style="background-color:#0e1b14;border-radius:8px;"><a href="{{kycReviewUrl}}" style="display:inline-block;padding:13px 26px;font-family:'Montserrat','Helvetica Neue',Arial,sans-serif;font-size:15px;font-weight:700;color:#faf9f6;text-decoration:none;border-radius:8px;">Review in Didit</a></td></tr></table>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0 6px 0;"><tr><td bgcolor="#1c3cd5" style="background-color:#1c3cd5;border-radius:8px;"><a href="{{kycReviewUrl}}" style="display:inline-block;padding:13px 26px;font-family:'Montserrat','Helvetica Neue',Arial,sans-serif;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:8px;">Review in Didit</a></td></tr></table>
 
 </td></tr>
-<tr><td style="padding:16px 32px 20px 32px;border-top:1px solid #e0e0dc;background-color:#f7f6f2;font-family:'Montserrat','Helvetica Neue',Arial,sans-serif;">
-<div style="font-size:12px;line-height:1.6;color:#6f7a72;margin:0 0 6px 0;">Automated administrative notification.</div>
-<div style="font-size:12px;line-height:1.6;color:#6f7a72;margin:0;">&copy; {{currentYear}} RefreeG</div>
-</td></tr>
+<tr><td style="padding:16px 32px 20px 32px;border-top:1px solid #e0e0dc;background-color:#f7f6f2;font-family:'Montserrat','Helvetica Neue',Arial,sans-serif;"><div style="font-size:12px;line-height:1.6;color:#6f7a72;margin:0 0 6px 0;">You are receiving this because you have a RefreeG account. Manage email preferences in <a href="https://www.refreeg.com/dashboard/settings" style="color:#0a3cb5;text-decoration:none;">Settings</a>.</div><div style="font-size:12px;line-height:1.6;color:#6f7a72;margin:0;">&copy; {{currentYear}} RefreeG &middot; <a href="mailto:hello@refreeg.com" style="color:#0a3cb5;text-decoration:none;">hello@refreeg.com</a> &middot; +234 901 744 6760</div></td></tr>
 </table>
 </td></tr>
 </table>

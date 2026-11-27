@@ -7,6 +7,7 @@ const ALLOWED_ENTITY_TYPES: S3EntityType[] = [
   "profiles",
   "kyc",
   "organizations",
+  "wishlist-items",
 ];
 
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];

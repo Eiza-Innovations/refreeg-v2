@@ -11,6 +11,7 @@ import { Eyebrow } from "@/components/ui/eyebrow";
 import { Icons } from "@/components/layout/Icons";
 import { usePayment } from "@/hooks/use-payment";
 import { useValidator } from "@/hooks/use-validator";
+import { rememberAbandonedGift } from "@/lib/wishlist/gift-reminder";
 import {
   WISHLIST_CONTRIBUTION_MIN,
   wishlistContributionSchema,
@@ -50,11 +51,9 @@ export interface ContributeSheetProps {
   item: WishlistItem;
   wishlistTitle: string;
   wishlistSlug: string;
-  /** Owner's username; the post-payment callback returns to /<username>/<slug>/received. */
   ownerUsername: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Signed-in giver prefill; guests fill these in the sheet. */
   viewer: { id: string; name: string; email: string } | null;
 }
 
@@ -81,8 +80,6 @@ export function ContributeSheet({
 
   const amount =
     form.preset === "other" ? Number(form.other) || 0 : form.preset;
-  // The remaining-balance cap is server-owned; the sheet mirrors it so a
-  // nearly-funded item fails in the form instead of at checkout.
   const remaining = Math.max(item.price - item.contributed, 0);
   const { errors, validate, clearError, setError } = useValidator({
     store: {
@@ -133,20 +130,29 @@ export function ContributeSheet({
         full_name: giverName === "Anonymous" ? "" : giverName,
         serviceFee: calculateServiceFee(amount),
         paymentProvider: form.provider,
-        // The server resolves the owner's payout destination; the giver
-        // never sends one (unlike causes, where the donor picks it up).
         subaccounts: [],
         message: form.message.trim(),
         isAnonymous: form.isAnonymous,
         callbackUrl: `${window.location.origin}/${ownerUsername}/${wishlistSlug}/received`,
       });
-    } catch {
-      // usePayment already surfaced the toast.
-    }
+    } catch {}
   };
 
   const close = (next: boolean) => {
-    if (!next) setStage("form");
+    if (!next) {
+      setStage("form");
+      const giverEmail = (viewer?.email || form.email).trim();
+      if (giverEmail) {
+        rememberAbandonedGift({
+          email: giverEmail,
+          giverName: giverName === "Anonymous" ? "" : giverName,
+          itemName: item.name,
+          wishlistTitle,
+          wishlistUrl: `${window.location.origin}/${ownerUsername}/${wishlistSlug}`,
+          attemptedAt: new Date().toISOString(),
+        });
+      }
+    }
     onOpenChange(next);
   };
 

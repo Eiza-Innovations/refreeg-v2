@@ -7,6 +7,7 @@ import Handlebars from "handlebars";
 import type { TemplateDelegate } from "handlebars";
 import { headers } from "next/headers";
 import { getClientIp } from "@/lib/api/client-ip";
+import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/actions/users/auth-actions";
 import { getProfile } from "@/actions/users/profile-actions";
 import { isTemplateEnabled } from "@/lib/email/triggers";
@@ -32,7 +33,7 @@ const TEMPLATE_DIR = path.join(process.cwd(), "services", "templates");
 // Sender identity policy: one table decides who sends what.
 // - noreply@: one-way system alerts (codes, reset links, security alerts).
 //   A reply thread would go nowhere, so the From sets that expectation; the
-//   footer still points to support@ for anyone who needs help.
+//   footer points to hello@ for anyone who needs help.
 // - support@: product and account mail a customer might answer (money,
 //   verification outcomes, campaign reviews, reminders).
 // - hello@: general communication (welcome, organization invitations).
@@ -48,7 +49,7 @@ type SenderKey = keyof typeof SENDERS;
 
 // Template name -> sender; anything not listed sends as support@.
 // Receipts and one-way alerts a customer cannot act on by replying go from
-// noreply@; the footer still points at support@ for anyone who needs help.
+// noreply@; the footer points at hello@ for anyone who needs help.
 const SENDER_BY_TEMPLATE: Partial<Record<string, SenderKey>> = {
   "otp-verification": "noreply",
   "password-reset": "noreply",
@@ -1185,6 +1186,44 @@ export async function sendWishlistGiftReceiptEmail({
       giftNote: note,
       isAnonymous: Boolean(isAnonymous),
       seasonal: isWishlistSeasonActive(),
+      currentYear: new Date().getFullYear(),
+    },
+  });
+}
+
+export async function sendWishlistGiftReminderEmail(context: {
+  email: string;
+  giverName: string;
+  itemName: string;
+  wishlistTitle: string;
+  wishlistUrl: string;
+  attemptedAt: string;
+}) {
+  const attemptedAt = new Date(context.attemptedAt);
+  if (Number.isNaN(attemptedAt.getTime())) {
+    return { success: false, error: "Invalid reminder attempt time" };
+  }
+
+  const completedSince = await prisma.wishlist_contributions.count({
+    where: {
+      email: context.email,
+      status: "completed",
+      created_at: { gt: attemptedAt },
+    },
+  });
+  if (completedSince > 0) {
+    return { success: true, skipped: true };
+  }
+
+  return sendMail({
+    to: context.email,
+    subject: `You didn't finish your gift to "${context.wishlistTitle}" 🎁`,
+    templateName: "wishlist-gift-reminder",
+    context: {
+      giverName: context.giverName?.trim() || "there",
+      itemName: context.itemName,
+      wishlistTitle: context.wishlistTitle,
+      wishlistUrl: context.wishlistUrl,
       currentYear: new Date().getFullYear(),
     },
   });

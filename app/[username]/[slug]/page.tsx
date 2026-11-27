@@ -9,22 +9,50 @@ import { WishlistGivers } from "@/components/wishlist/wishlist-givers";
 import { WishlistView } from "@/components/wishlist/wishlist-view";
 import { getSessionUser } from "@/lib/auth/session-user";
 import { isWishlistSeasonActive } from "@/lib/wishlist/season";
+import { getMediaUrl } from "@/lib/s3/media";
 
 interface WishlistPageProps {
   params: Promise<{ username: string; slug: string }>;
 }
 
-// Share links are unguessable but not secret: personal pages stay out of
-// search engines entirely; only /wishlist (the landing) is promoted.
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com";
+
 export async function generateMetadata({
   params,
 }: WishlistPageProps): Promise<Metadata> {
   const { username, slug } = await params;
   const result = await getWishlistByUsernameAndSlug(username, slug);
+  if (!result.success || !result.data) {
+    return { title: "Wishlist", robots: { index: false, follow: false } };
+  }
+
+  const { wishlist, ownerUsername } = result.data;
+  const title = `${wishlist.title} — a wishlist by @${ownerUsername}`;
+  const description =
+    wishlist.message?.trim() ||
+    `A wishlist by @${ownerUsername} on Refreeg — pick a gift and make their day.`;
+  const firstPhoto = wishlist.items.find((item) => item.image_url)?.image_url;
+  const image = firstPhoto
+    ? new URL(getMediaUrl(firstPhoto), APP_URL).toString()
+    : "/og-image.png";
 
   return {
-    title: result.success ? `${result.data!.wishlist.title}` : "Wishlist",
+    title: wishlist.title,
+    description,
     robots: { index: false, follow: false },
+    openGraph: {
+      title,
+      description,
+      url: `${APP_URL}/${ownerUsername}/${wishlist.slug}`,
+      type: "website",
+      images: [{ url: image, alt: wishlist.title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image],
+    },
   };
 }
 
@@ -44,8 +72,6 @@ export default async function WishlistSharePage({ params }: WishlistPageProps) {
   } = result.data;
   const viewer = await getSessionUser();
 
-  // Owner-only: the giver list with contact details never renders for
-  // visitors, and the action re-checks ownership on its own.
   const contributors =
     viewerIsOwner && viewer ? await getWishlistContributors(wishlist.id) : null;
 

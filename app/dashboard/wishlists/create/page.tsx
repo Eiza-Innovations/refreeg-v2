@@ -14,10 +14,6 @@ export const metadata: Metadata = {
   robots: { index: false },
 };
 
-// A wishlist collects real gifts for its owner, so payout setup comes
-// before the first list exists, not after the first gift lands. The page
-// mirrors the cause creation flow: same builder shell, same readiness
-// callouts, same wizard.
 export default async function CreateWishlistPage() {
   const session = await auth();
   if (!session?.user) {
@@ -26,8 +22,6 @@ export default async function CreateWishlistPage() {
 
   const readiness = await getWishlistCreationReadiness();
 
-  // The share URL is /<username>/<slug>, so a wishlist needs its owner's
-  // username to exist; claim one first.
   if (!readiness.username) {
     redirect("/onboarding");
   }

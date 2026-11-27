@@ -14,13 +14,13 @@ import { useAuth } from "@/hooks/use-auth";
 import { useAdmin } from "@/hooks/use-admin";
 import { useProfile } from "@/hooks/use-profile";
 import Link from "next/link";
-import { ChevronDown } from "lucide-react";
+import { BadgeCheck, ChevronDown } from "lucide-react";
 import { getMediaUrl } from "@/lib/s3/media";
 import { getOrganizationWorkspace } from "@/actions/users/organization-actions";
 
 export function UserNav() {
   const { user, signOut } = useAuth();
-  const { profile } = useProfile(user?.id);
+  const { profile, hasBankDetails } = useProfile(user?.id);
   const [organization, setOrganization] = useState<any>(null);
   const [open, setOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -111,16 +111,26 @@ export function UserNav() {
           className="flex items-center gap-1.5 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-blue-accent"
           aria-label="Open profile menu"
         >
-          <Avatar className="h-9 w-9 rounded-full">
-            <AvatarImage
-              src={personalAvatarUrl}
-              alt=""
-              className="object-cover"
-            />
-            <AvatarFallback className="rounded-full bg-forest text-xs font-semibold text-lime">
-              {personalInitials}
-            </AvatarFallback>
-          </Avatar>
+          <span className="relative">
+            <Avatar className="h-9 w-9 rounded-full">
+              <AvatarImage
+                src={personalAvatarUrl}
+                alt=""
+                className="object-cover"
+              />
+              <AvatarFallback className="rounded-full bg-forest text-xs font-semibold text-lime">
+                {personalInitials}
+              </AvatarFallback>
+            </Avatar>
+            {isVerified && (
+              <span
+                aria-label="Verified"
+                className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-surface bg-forest text-surface"
+              >
+                <BadgeCheck className="h-3 w-3" />
+              </span>
+            )}
+          </span>
           <ChevronDown className="h-4 w-4 text-ink/50" />
         </button>
       </DropdownMenuTrigger>
@@ -150,21 +160,36 @@ export function UserNav() {
 
         <DropdownMenuGroup>
           <MenuLink href="/dashboard">Dashboard</MenuLink>
-          <MenuLink href="/dashboard/settings/profile">Your profile</MenuLink>
-          <MenuLink href="/dashboard/causes">Your causes</MenuLink>
-          <MenuLink href="/dashboard/settings/kyc">
-            Verification
-            <span
-              className={
-                isVerified
-                  ? "rounded-full bg-forest/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-forest"
-                  : "rounded-full bg-gold/40 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-ink"
-              }
+          <DropdownMenuItem asChild>
+            <Link
+              href={personalProfileHref}
+              className="flex cursor-pointer flex-col justify-center rounded-lg px-3 py-2 text-[15px] text-ink focus:bg-bone focus:text-ink"
             >
-              {isVerified ? "Verified" : "Not verified"}
-            </span>
+              <span>Your profile</span>
+              {profile?.username && (
+                <span className="text-xs font-normal text-ink/50">
+                  @{profile.username}
+                </span>
+              )}
+            </Link>
+          </DropdownMenuItem>
+          <MenuLink href="/dashboard/causes">Your causes</MenuLink>
+          {!isVerified && (
+            <MenuLink href="/dashboard/settings/kyc">
+              Verification
+              <span className="rounded-full bg-gold/40 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-ink">
+                Not verified
+              </span>
+            </MenuLink>
+          )}
+          <MenuLink href="/dashboard/settings/bank">
+            Payment methods
+            {!hasBankDetails && (
+              <span className="rounded-full bg-gold/40 px-2 py-1 text-[10px] font-semibold text-ink">
+                Add bank account
+              </span>
+            )}
           </MenuLink>
-          <MenuLink href="/dashboard/settings/bank">Payment methods</MenuLink>
           <MenuLink href="/dashboard/settings">Settings</MenuLink>
         </DropdownMenuGroup>
 
