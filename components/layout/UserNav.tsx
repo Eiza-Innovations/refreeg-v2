@@ -14,7 +14,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useAdmin } from "@/hooks/use-admin";
 import { useProfile } from "@/hooks/use-profile";
 import Link from "next/link";
-import { BadgeCheck, ChevronDown } from "lucide-react";
+import { AlertCircle, BadgeCheck, ChevronDown } from "lucide-react";
 import { getMediaUrl } from "@/lib/s3/media";
 import { getOrganizationWorkspace } from "@/actions/users/organization-actions";
 
@@ -160,31 +160,32 @@ export function UserNav() {
 
         <DropdownMenuGroup>
           <MenuLink href="/dashboard">Dashboard</MenuLink>
-          <DropdownMenuItem asChild>
-            <Link href={personalProfileHref}>
-              <span>Your profile</span>
-              {profile?.username && (
-                <span className="text-xs font-normal text-ink/50">
-                  @{profile.username}
-                </span>
-              )}
-            </Link>
-          </DropdownMenuItem>
+          <MenuLink href={personalProfileHref}>
+            <span>Your profile</span>
+            {profile?.username && (
+              <span className="text-xs font-normal text-ink/50">
+                @{profile.username}
+              </span>
+            )}
+          </MenuLink>
           <MenuLink href="/dashboard/causes">Your causes</MenuLink>
           {!isVerified && (
             <MenuLink href="/dashboard/settings/kyc">
               Verification
-              <span className="rounded-full bg-gold/40 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-ink">
-                Not verified
-              </span>
+              <AlertCircle
+                className="h-4 w-4 shrink-0 text-amber-600"
+                aria-label="Verification required"
+              />
             </MenuLink>
           )}
+
           <MenuLink href="/dashboard/settings/bank">
             Payment methods
             {!hasBankDetails && (
-              <span className="rounded-full bg-gold/40 px-2 py-1 text-[10px] font-semibold text-ink">
-                Add bank account
-              </span>
+              <AlertCircle
+                className="h-4 w-4 shrink-0 text-amber-600"
+                aria-label="Bank account required"
+              />
             )}
           </MenuLink>
           <MenuLink href="/dashboard/settings">Settings</MenuLink>

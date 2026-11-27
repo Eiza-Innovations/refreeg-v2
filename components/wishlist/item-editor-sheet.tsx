@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
-import { ImagePlus, Loader2, X } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import {
   addWishlistItem,
@@ -12,14 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogTitle } from "@/components/ui/dialog";
 import { ResponsiveDialogContent } from "@/components/ui/responsive-dialog-content";
 import { CalloutBanner } from "@/components/ui/callout-banner";
+import { ItemPhotoField } from "@/components/wishlist/item-photo-field";
 import { useValidator } from "@/hooks/use-validator";
 import { toast } from "@/hooks/use-toast";
 import { wishlistItemSchema } from "@/lib/schemas/wishlist.schema";
-import {
-  uploadWishlistItemImage,
-  WISHLIST_IMAGE_ACCEPT,
-} from "@/lib/wishlist/item-image-upload";
-import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
+import { uploadWishlistItemImage } from "@/lib/wishlist/item-image-upload";
 import { formatNaira } from "@/components/giving/format";
 import type { WishlistItem } from "@/types";
 import { cn } from "@/lib/utils";
@@ -44,15 +39,16 @@ export function ItemEditorSheet({
 }: ItemEditorSheetProps) {
   const editing = Boolean(item);
   const priceLocked = Boolean(item && item.contributed > 0);
+
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", price: "", note: "" });
-  const [imageUrl, setImageUrl] = useState<string>("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [imageUrl, setImageUrl] = useState("");
 
   useEffect(() => {
     if (!open) return;
+
     setServerError(null);
     setForm({
       name: item?.name ?? "",
@@ -63,58 +59,72 @@ export function ItemEditorSheet({
   }, [open, item]);
 
   const { errors, validate, clearError } = useValidator({
-    store: { name: form.name, price: Number(form.price) || 0, note: form.note },
+    store: {
+      name: form.name,
+      price: Number(form.price) || 0,
+      note: form.note,
+    },
     schema: wishlistItemSchema,
   });
 
-  const pickImage = () => fileInputRef.current?.click();
-
-  const handleFile = async (file: File | undefined) => {
-    if (!file) return;
+  const handleFile = async (file: File) => {
     setUploading(true);
-    const result = await uploadWishlistItemImage(
-      file,
-      editing && item ? item.id : undefined,
-    );
-    setUploading(false);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    if (!result.success) {
-      toast({ title: result.error });
-      return;
+
+    try {
+      const result = await uploadWishlistItemImage(
+        file,
+        editing && item ? item.id : undefined,
+      );
+
+      if (!result.success) {
+        toast({ title: result.error });
+        return;
+      }
+
+      setImageUrl(result.key);
+    } catch {
+      toast({ title: "Upload failed. Please try again." });
+    } finally {
+      setUploading(false);
     }
-    setImageUrl(result.key);
   };
 
   const save = async () => {
     setServerError(null);
+
     if (!validate()) return;
+
     setSaving(true);
 
-    const result =
-      editing && item
-        ? await updateWishlistItem(item.id, {
-            name: form.name,
-            ...(priceLocked ? {} : { price: Number(form.price) }),
-            note: form.note || undefined,
-            imageUrl: imageUrl || null,
-          })
-        : await addWishlistItem(wishlistId, {
-            name: form.name,
-            price: Number(form.price),
-            note: form.note || undefined,
-            imageUrl: imageUrl || null,
-          });
-    setSaving(false);
+    try {
+      const result =
+        editing && item
+          ? await updateWishlistItem(item.id, {
+              name: form.name,
+              ...(priceLocked ? {} : { price: Number(form.price) }),
+              note: form.note || undefined,
+              imageUrl: imageUrl || null,
+            })
+          : await addWishlistItem(wishlistId, {
+              name: form.name,
+              price: Number(form.price),
+              note: form.note || undefined,
+              imageUrl: imageUrl || null,
+            });
 
-    if (!result.success || !result.data) {
-      setServerError(result.error || "Could not save the item");
-      return;
+      if (!result.success || !result.data) {
+        setServerError(result.error || "Could not save the item");
+        return;
+      }
+
+      onSaved(result.data);
+      onOpenChange(false);
+    } catch {
+      setServerError("Could not save the item. Please try again.");
+    } finally {
+      setSaving(false);
     }
-    onSaved(result.data);
-    onOpenChange(false);
   };
-
-  const preview = imageUrl ? getMediaUrl(imageUrl) : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -122,16 +132,31 @@ export function ItemEditorSheet({
         <DialogTitle className="sr-only">
           {editing ? `Edit ${item?.name}` : "Add an item"}
         </DialogTitle>
+
         <div className="rounded-3xl bg-surface p-6 sm:p-7">
           <div className="flex items-start justify-between gap-4 border-b border-hairline pb-4">
             <p className="font-fraunces text-xl text-ink">
               {editing ? "Edit item" : "Add an item"}
             </p>
+
             <DialogClose
               className="rounded-full p-1 text-ink/60 transition-colors hover:bg-ink/5 hover:text-ink"
               aria-label="Close"
             >
-              <X className="h-5 w-5" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
+              </svg>
             </DialogClose>
           </div>
 
@@ -145,64 +170,20 @@ export function ItemEditorSheet({
             </div>
           )}
 
-          <p className={cn(label, "mt-5 block")}>Photo</p>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept={WISHLIST_IMAGE_ACCEPT}
-            className="hidden"
-            onChange={(e) => handleFile(e.target.files?.[0])}
-          />
-          {preview ? (
-            <div className="mt-2 flex items-center gap-3">
-              <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-hairline bg-bone">
-                <Image
-                  src={preview}
-                  alt="Item photo preview"
-                  fill
-                  sizes="64px"
-                  className="object-cover"
-                  unoptimized={isProxyMediaUrl(preview)}
-                />
-              </div>
-              <button
-                type="button"
-                onClick={pickImage}
-                disabled={uploading}
-                className="text-sm font-semibold text-blue-accent hover:underline disabled:opacity-50"
-              >
-                Change
-              </button>
-              <button
-                type="button"
-                onClick={() => setImageUrl("")}
-                disabled={uploading}
-                className="text-sm font-semibold text-rust hover:underline disabled:opacity-50"
-              >
-                Remove
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={pickImage}
-              disabled={uploading}
-              className="mt-2 flex w-full items-center gap-3 rounded-xl border border-dashed border-hairline bg-bone px-4 py-3.5 text-left transition-colors hover:border-ink/30 disabled:opacity-60"
-            >
-              {uploading ? (
-                <Loader2 className="h-5 w-5 shrink-0 animate-spin text-ink/60" />
-              ) : (
-                <ImagePlus className="h-5 w-5 shrink-0 text-ink/60" />
-              )}
-              <span className="text-sm text-ink/70">
-                {uploading ? "Uploading…" : "Add a photo (optional)"}
-              </span>
-            </button>
-          )}
+          <div className="mt-5">
+            <ItemPhotoField
+              index={0}
+              imageUrl={imageUrl}
+              uploading={uploading}
+              onPick={handleFile}
+              onRemove={() => setImageUrl("")}
+            />
+          </div>
 
           <label htmlFor="editor-name" className={cn(label, "mt-5 block")}>
             Item name
           </label>
+
           <input
             id="editor-name"
             value={form.name}
@@ -214,6 +195,7 @@ export function ItemEditorSheet({
             placeholder="A new study desk"
             className="mt-2 h-12 w-full rounded-md border border-hairline bg-surface px-4 text-[15px] text-ink outline-none focus:border-ink/40"
           />
+
           {errors.name && (
             <p className="mt-2 text-sm font-medium text-rust" role="alert">
               {errors.name}
@@ -228,6 +210,7 @@ export function ItemEditorSheet({
               </span>
             )}
           </label>
+
           <input
             id="editor-price"
             type="number"
@@ -242,6 +225,7 @@ export function ItemEditorSheet({
             placeholder="80000"
             className="mt-2 h-12 w-full rounded-md border border-hairline bg-surface px-4 text-[15px] text-ink outline-none focus:border-ink/40 disabled:cursor-not-allowed disabled:bg-bone disabled:text-ink/50"
           />
+
           {errors.price && (
             <p className="mt-2 text-sm font-medium text-rust" role="alert">
               {errors.price}
@@ -251,6 +235,7 @@ export function ItemEditorSheet({
           <label htmlFor="editor-note" className={cn(label, "mt-5 block")}>
             Note <span className="normal-case text-ink/40">(optional)</span>
           </label>
+
           <textarea
             id="editor-note"
             value={form.note}
@@ -260,6 +245,7 @@ export function ItemEditorSheet({
             placeholder="Say why you'd love it, or anything givers should know."
             className="mt-2 w-full rounded-md border border-hairline bg-surface px-4 py-3 text-[15px] text-ink outline-none focus:border-ink/40"
           />
+
           {errors.note && (
             <p className="mt-2 text-sm font-medium text-rust" role="alert">
               {errors.note}
