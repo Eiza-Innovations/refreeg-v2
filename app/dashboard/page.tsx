@@ -35,7 +35,7 @@ import { DashboardDeliveredCard } from "@/components/dashboard/dashboard-deliver
 export const metadata: Metadata = {
   title: "Dashboard",
   description:
-    "Manage your causes, petitions, and track your social impact on RefreeG.",
+    "Manage your causes, wishlists, and petitions, and track your social impact on RefreeG.",
 };
 
 const interestLabelMap: Record<string, string> = {

@@ -122,7 +122,8 @@ function SignInContent() {
           checklist={[
             {
               title: "Real-time updates",
-              description: "Follow the causes and petitions you care about.",
+              description:
+                "Follow the causes, wishlists, and petitions you care about.",
             },
             {
               title: "Verified receipts",
@@ -154,7 +155,8 @@ function SignInContent() {
         checklist={[
           {
             title: "Real-time updates",
-            description: "Follow the causes and petitions you care about.",
+            description:
+              "Follow the causes, wishlists, and petitions you care about.",
           },
           {
             title: "Verified receipts",

@@ -105,7 +105,7 @@ export const faqCategories: FaqCategory[] = [
         id: "kyc-before-launch",
         question: "Do I need KYC before launching a cause?",
         answer:
-          "Yes. Creating a cause or petition requires an approved identity verification (KYC) and a complete profile. It keeps fundraising safer for donors, cuts down on fraud, and is also what unlocks payout setup for wishlists.",
+          "Yes. Creating a cause, wishlist, or petition requires an approved identity verification (KYC) and a complete profile. It keeps fundraising safer for donors, cuts down on fraud, and is also what unlocks payout setup for wishlists.",
       },
       {
         id: "start-a-cause",

@@ -37,7 +37,7 @@ export async function generateMetadata({
   const name = profile.full_name || `@${username}`;
   const description =
     profile.bio?.trim() ||
-    `See ${name}'s causes, petitions and wishlists on Refreeg.`;
+    `See ${name}'s causes, wishlists and petitions on Refreeg.`;
   const photo = getMediaUrl(profile.profile_photo);
   const image = photo ? new URL(photo, APP_URL).toString() : "/og-image.png";
 
