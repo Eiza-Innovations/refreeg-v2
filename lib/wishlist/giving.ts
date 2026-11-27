@@ -1,12 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { WISHLIST_KYC_THRESHOLD_NAIRA } from "@/lib/schemas/wishlist.schema";
 
-/**
- * The payout snapshot the initialize route needs to attach the owner's
- * subaccount split. Verified means bank details are on file (the same
- * triple the JIT Flutterwave block requires); money for unverified owners
- * still collects, it just lands on the platform account.
- */
 export interface WishlistOwnerSnapshot {
   id: string;
   fullName: string | null;
@@ -18,21 +12,6 @@ export interface WishlistOwnerSnapshot {
   bankName: string | null;
 }
 
-/**
- * Server-side re-check before checkout opens (the sheet's client state is
- * advisory only). Throws with a giver-facing message when the gift cannot
- * start, exactly as assertCauseAcceptingDonations does for causes:
- *
- * - the item must exist and belong to an active wishlist,
- * - the item must not be funded,
- * - the gift may not exceed the item's remaining balance (the cap is
- *   server-owned so a stale page cannot overshoot a nearly-funded item),
- * - an owner without verified payout details stops collecting at the
- *   ₦500k fraud ceiling until KYC clears.
- *
- * Resolves the owner payout snapshot in the same read so the route never
- * queries for it twice.
- */
 export async function assertWishlistAcceptingGifts(
   itemId: string,
   amount: number,

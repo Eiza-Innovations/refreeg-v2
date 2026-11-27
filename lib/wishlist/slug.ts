@@ -1,6 +1,3 @@
-// Share slugs: lowercase letters, digits and hyphens only. Apostrophes and
-// other quote marks are stripped rather than hyphenated, so "Nomso's
-// Wishlist" becomes nomsos-wishlist and never nomso-s-wishlist.
 const MAX_SLUG_LENGTH = 60;
 
 export function slugifyWishlistTitle(title: string): string {

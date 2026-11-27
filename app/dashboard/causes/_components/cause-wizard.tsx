@@ -10,12 +10,17 @@ import { Eyebrow } from "@/components/ui/eyebrow";
 import { FieldError } from "@/components/ui/field-error";
 import { Stepper } from "@/components/ui/stepper";
 import { causeSteps } from "@/lib/options/cause.options";
+import { LAST_CAUSE_STEP } from "@/hooks/use-cause-form";
 
 type StepMeta = { title: string; description: string };
 
 type Props = {
+  eyebrow?: string;
   title: string;
+  description?: string;
   stepMeta: readonly StepMeta[];
+  stepperLabels?: readonly string[];
+  headerBadge?: string;
   currentStep: number;
   onStepSelect: (step: number) => void;
   onBack: () => void;
@@ -24,23 +29,25 @@ type Props = {
   submitLabel: string;
   busyLabel: string;
   busy: boolean;
-  submitError?: string;
+  submitError?: string | null; // Added: Pass error from parent
   onSaveAndExit?: () => void;
   draftHasFiles?: boolean;
+  /** Callout title shown on the last step above the submit button. */
+  submitCalloutTitle?: string;
+  /** Callout description shown on the last step above the submit button. */
+  submitCalloutDescription?: string;
   children: ReactNode;
-  /** Left small-caps label above the title; other flows reuse the frame. */
-  eyebrow?: string;
-  /** Stepper pill labels; defaults to the cause flow's five steps. */
-  stepperLabels?: readonly string[];
-  /** Trust badge in the step header; defaults to the cause wording. */
-  headerBadge?: string;
 };
 
-/** Shared frame for the create and edit cause wizards. Other money-moving
- * flows (wishlists) reuse it so every creation flow looks the same. */
+/** Shared frame for the create and edit cause wizards.
+ * Also reused by Wishlists with custom labels/badges. */
 export function CauseWizard({
+  eyebrow = "Campaign builder",
   title,
+  description,
   stepMeta,
+  stepperLabels = causeSteps, // Default to cause steps
+  headerBadge = "Milestone protected", // Default to cause badge
   currentStep,
   onStepSelect,
   onBack,
@@ -52,17 +59,17 @@ export function CauseWizard({
   submitError,
   onSaveAndExit,
   draftHasFiles,
+  submitCalloutTitle = "Ready to share?",
+  submitCalloutDescription = "Once created, you'll get a unique link to share.",
   children,
-  eyebrow = "Campaign builder",
-  stepperLabels = causeSteps,
-  headerBadge = "Milestone protected",
 }: Props) {
   const flowTopRef = useRef<HTMLDivElement>(null);
   const stepHeadingRef = useRef<HTMLElement>(null);
   const previousStepRef = useRef(currentStep);
+
   const activeStep = stepMeta[currentStep - 1];
-  const nextStep = causeSteps[currentStep];
-  const isReview = currentStep === LAST_CAUSE_STEP;
+  const nextStepLabel = stepperLabels[currentStep] || `Step ${currentStep + 1}`;
+  const isReview = currentStep === stepMeta.length; // Dynamic last step check
 
   useEffect(() => {
     if (previousStepRef.current === currentStep) return;
@@ -79,14 +86,15 @@ export function CauseWizard({
   return (
     <div className="w-full bg-cream px-4 py-6 text-ink sm:px-6 lg:px-8 lg:py-9">
       <div className="mx-auto grid max-w-6xl gap-5 lg:grid-cols-[11rem_minmax(0,1fr)] lg:gap-8">
+        {/* Left Rail */}
         <nav aria-label={title} className="space-y-3 lg:self-start lg:pt-1">
-          <Eyebrow className="lg:px-3">{title}</Eyebrow>
+          <Eyebrow className="lg:px-3">{eyebrow}</Eyebrow>
           <Stepper
             variant="rail"
-            steps={causeSteps.map((label, index) => {
+            steps={stepMeta.map((meta, index) => {
               const step = index + 1;
               return {
-                label,
+                label: stepperLabels[index] || meta.title,
                 status:
                   step < currentStep
                     ? "done"
@@ -118,6 +126,7 @@ export function CauseWizard({
           )}
         </nav>
 
+        {/* Main Content */}
         <div ref={flowTopRef} className="min-w-0 scroll-mt-28 space-y-5">
           <header ref={stepHeadingRef} tabIndex={-1} className="space-y-2">
             <Heading
@@ -127,6 +136,9 @@ export function CauseWizard({
             >
               {activeStep.title}
             </Heading>
+            {description && (
+              <P className="text-sm leading-6 text-ink/70">{description}</P>
+            )}
             <P className="text-sm leading-6 text-ink/70">
               {activeStep.description}
             </P>
@@ -143,14 +155,16 @@ export function CauseWizard({
               className="space-y-6 rounded-2xl border-0 p-4 shadow-none sm:p-6"
             >
               {children}
+
+              {/* Submit Action for Last Step */}
               {isReview && (
                 <>
-                  <FieldError message={submitError} />
+                  <FieldError message={submitError ?? undefined} />
                   <CalloutBanner
                     variant="sand"
                     className="flex-col sm:flex-row sm:items-center"
-                    title="Send for review"
-                    description="RefreeG reviews submissions before they appear publicly."
+                    title={submitCalloutTitle}
+                    description={submitCalloutDescription}
                     action={
                       <Button
                         type="button"
@@ -170,6 +184,7 @@ export function CauseWizard({
               )}
             </Card>
 
+            {/* Navigation Buttons */}
             <div className="flex flex-wrap items-center gap-2.5">
               {!isReview && (
                 <Button
@@ -178,7 +193,7 @@ export function CauseWizard({
                   onClick={onNext}
                   className="h-11 rounded-xl px-5"
                 >
-                  Continue to {nextStep.toLowerCase()}
+                  Continue to {nextStepLabel.toLowerCase()}
                 </Button>
               )}
               {currentStep > 1 && (

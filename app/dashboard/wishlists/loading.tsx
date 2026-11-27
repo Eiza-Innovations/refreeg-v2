@@ -1,11 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
-/**
- * Streamed while /dashboard/wishlists renders. Mirrors the real page
- * container (px-4 pb-20 pt-4) and the MyWishlists card grid, so the
- * skeleton sits inside the same gutters as the content instead of
- * touching the screen edge.
- */
 export default function WishlistsLoading() {
   return (
     <section
@@ -15,7 +9,6 @@ export default function WishlistsLoading() {
       aria-busy="true"
       aria-label="Loading your wishlists"
     >
-      {/* Header row (eyebrow chip + title + New wishlist button) */}
       <div className="flex flex-col gap-5 border-b border-hairline pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div className="max-w-2xl">
           <div className="flex items-center gap-2">
@@ -28,7 +21,6 @@ export default function WishlistsLoading() {
         <Skeleton className="h-11 w-full rounded-lg sm:w-44" />
       </div>
 
-      {/* Wishlist cards (surface, p-5, progress footer) */}
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
           <div

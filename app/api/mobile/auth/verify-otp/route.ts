@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
         userId: newProfile.id,
         title: "Welcome to RefreeG! 🌍",
         message:
-          "Your account is verified. Explore verified causes, sign petitions, or start a campaign.",
+          "Your account is verified. Explore verified causes, give to a wishlist, sign petitions, or start a campaign.",
         type: "general",
       }).catch((err) =>
         console.error("Mobile welcome notification error:", err),

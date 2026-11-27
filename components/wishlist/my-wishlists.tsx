@@ -18,11 +18,6 @@ import { WishlistRowActions } from "@/components/wishlist/wishlist-row-actions";
 import { formatNaira } from "@/components/giving/format";
 import { formatDate } from "@/lib/format-date";
 
-/**
- * Dashboard section list: one card per wishlist with funded totals and
- * quick archive/delete actions. Rendered server-side; only the row actions
- * are a client island.
- */
 export async function MyWishlists() {
   const result = await listUserWishlists();
   const username = result.data?.username ?? null;
@@ -68,8 +63,6 @@ export async function MyWishlists() {
           target > 0
             ? Math.min(100, Math.round((contributed / target) * 100))
             : 0;
-        // The public page is /<username>/<slug>; an owner still onboarding
-        // has no public URL, so the card falls back to the dashboard section.
         const shareHref = username
           ? `/${username}/${wishlist.slug}`
           : "/dashboard/wishlists";

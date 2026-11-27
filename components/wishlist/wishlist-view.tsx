@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Gift, Landmark } from "lucide-react";
 
@@ -30,6 +30,7 @@ import { WishlistItemCard } from "@/components/wishlist/wishlist-item-card";
 import { WishlistSummaryPanel } from "@/components/wishlist/wishlist-summary-panel";
 import { toast } from "@/hooks/use-toast";
 import { formatNaira } from "@/components/giving/format";
+import { scheduleWishlistGiftReminder } from "@/lib/wishlist/gift-reminder";
 import type {
   Wishlist,
   WishlistItem,
@@ -39,17 +40,12 @@ import type {
 
 export interface WishlistViewProps {
   wishlist: WishlistWithItems;
-  /** Owner's username; the share URL is /<ownerUsername>/<slug>. */
   ownerUsername: string;
   viewerIsOwner: boolean;
-  /** Owner's payout setup is complete, so gifts split straight to them. */
   ownerPayoutReady?: boolean;
-  /** Why gifts would collect on the platform: KYC or bank details pending. */
   ownerPayoutState?: WishlistOwnerPayoutState;
-  /** Signed-in giver prefill for the give sheet; null for guests. */
   viewer: { id: string; name: string; email: string } | null;
   seasonal: boolean;
-  /** Server-rendered owner-only contributor list (delivery coordination). */
   givers?: React.ReactNode;
 }
 
@@ -70,9 +66,11 @@ export function WishlistView({
   const [editorItem, setEditorItem] = useState<WishlistItem | null>(null);
   const [deleteItem, setDeleteItem] = useState<WishlistItem | null>(null);
 
+  useEffect(() => {
+    scheduleWishlistGiftReminder();
+  }, []);
+
   const archived = wishlist.status === "archived";
-  // The state flag is authoritative; the boolean is the back-compat path
-  // for callers that have not been taught the state yet.
   const payoutState: WishlistOwnerPayoutState =
     ownerPayoutState ?? (ownerPayoutReady ? "ready" : "bank_missing");
   const payoutNotice =
@@ -176,8 +174,6 @@ export function WishlistView({
           </div>
         )}
 
-        {/* Gold means waiting, not error: gifts still collect, they just
-            land on the platform account until payout setup is complete. */}
         {viewerIsOwner && payoutState !== "ready" && (
           <div className="mt-5">
             <CalloutBanner
@@ -272,8 +268,6 @@ export function WishlistView({
         </div>
       </div>
 
-      {/* Mounted only with a chosen item: the sheet reads item fields on
-          render, and an empty wishlist has nothing to give toward. */}
       {giveItem && (
         <ContributeSheet
           item={giveItem}

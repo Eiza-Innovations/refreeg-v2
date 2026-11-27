@@ -22,11 +22,6 @@ import {
 import { formatNaira } from "@/components/giving/format";
 import { toast } from "@/hooks/use-toast";
 
-/**
- * Archive and delete island for a dashboard wishlist card. Both flows
- * confirm first; archiving states the amount involved and deleting states
- * that it is irreversible (design rule 3).
- */
 export function WishlistRowActions({
   wishlistId,
   title,

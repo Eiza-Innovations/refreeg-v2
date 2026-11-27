@@ -126,3 +126,41 @@ describe("wishlist email templates seasonal voice", () => {
     expect(withoutNote).not.toContain("giftNote");
   });
 });
+
+describe("wishlist gift reminder template", () => {
+  const render = (patch: Record<string, unknown> = {}) =>
+    load("wishlist-gift-reminder")({
+      giverName: "Adaeze",
+      itemName: "A new study desk",
+      wishlistTitle: "Nomso's Wishlist",
+      wishlistUrl: "https://refreeg.com/nomso/nomsos-wishlist",
+      currentYear: 2026,
+      ...patch,
+    });
+
+  it("points the giver back at the unfinished gift", () => {
+    const html = render();
+
+    expect(html).toContain("You didn&rsquo;t finish your gift");
+    expect(html).toContain("Hi Adaeze");
+    expect(html).toContain("&ldquo;A new study desk&rdquo;");
+    expect(html).toContain("Finish your gift");
+    expect(html).toContain("https://refreeg.com/nomso/nomsos-wishlist");
+  });
+
+  it("uses the unified footer with a settings link and the contact line", () => {
+    const html = render();
+
+    expect(html).toContain("Manage email preferences in");
+    expect(html).toContain("hello@refreeg.com");
+    expect(html).toContain("+234 901 744 6760");
+    expect(html).toContain("&copy; 2026 RefreeG");
+  });
+
+  it("falls back to a neutral greeting when no name was given", () => {
+    const html = render({ giverName: "" });
+
+    expect(html).toContain("Hi, you started giving towards");
+    expect(html).not.toContain("Hi ,");
+  });
+});

@@ -27,8 +27,6 @@ const STEPS = [
   },
 ];
 
-/** The public wishlist landing. Seasonal flag comes from the server page:
- * the override env var is not available in the browser bundle. */
 export function WishlistLanding({ seasonal }: { seasonal: boolean }) {
   const sectionRef = useRef<HTMLElement>(null);
 
@@ -159,13 +157,20 @@ export function WishlistLanding({ seasonal }: { seasonal: boolean }) {
         <div className="wl-landing-preview mx-auto mt-12 max-w-md">
           <Eyebrow className="text-ink/45">What givers see</Eyebrow>
           <div className="mt-3 rounded-2xl border border-hairline bg-surface p-5 shadow-card">
-            <div className="flex items-baseline justify-between gap-3">
-              <p className="font-semibold text-ink">A new study desk</p>
-              <p className="text-sm font-semibold text-ink">₦80,000</p>
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-hairline bg-bone">
+                <Gift className="h-5 w-5 text-ink/30" aria-hidden />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline justify-between gap-3">
+                  <p className="font-semibold text-ink">A new study desk</p>
+                  <p className="text-sm font-semibold text-ink">₦80,000</p>
+                </div>
+                <p className="mt-1 text-[13px] text-ink/55">
+                  ₦52,400 contributed by 6 givers
+                </p>
+              </div>
             </div>
-            <p className="mt-1 text-[13px] text-ink/55">
-              ₦52,400 contributed by 6 givers
-            </p>
             <Progress
               value={65.5}
               indicatorVariant="forest"
