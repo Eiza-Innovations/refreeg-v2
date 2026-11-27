@@ -135,6 +135,9 @@ export default async function MyGivingPage({
     filter === "all"
       ? [
           `Across ${headline.campaignCount} ${headline.campaignCount === 1 ? "campaign" : "campaigns"}`,
+          headline.wishlistCount > 0
+            ? ` and ${headline.wishlistCount} ${headline.wishlistCount === 1 ? "wishlist" : "wishlists"}`
+            : "",
           period === "all" && headline.since
             ? ` since ${formatMonthYear(headline.since)}`
             : ` ${periodLabel}`,

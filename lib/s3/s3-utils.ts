@@ -19,7 +19,12 @@ export const getBucketName = () => {
 };
 
 export type S3EntityType =
-  "profiles" | "causes" | "petitions" | "kyc" | "organizations";
+  | "profiles"
+  | "causes"
+  | "petitions"
+  | "kyc"
+  | "organizations"
+  | "wishlist-items";
 export type S3MediaType = "images" | "videos" | "documents";
 
 const OWNED_ENTITY_TYPES: readonly S3EntityType[] = [
@@ -28,6 +33,7 @@ const OWNED_ENTITY_TYPES: readonly S3EntityType[] = [
   "causes",
   "petitions",
   "organizations",
+  "wishlist-items",
 ];
 
 const ALLOWED_USER_PREFIX_RE =

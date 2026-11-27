@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getGiftByReference } from "@/actions/donations/gift-actions";
 import { PrintButton } from "./print-button";
@@ -50,11 +51,15 @@ export default async function ReceiptPage({
 
         <article className="rounded-3xl bg-surface p-8 print:rounded-none print:p-0">
           <header className="flex items-start justify-between gap-6 border-b border-hairline pb-6">
-            <div>
-              <p className="font-fraunces text-2xl text-ink">RefreeG</p>
-              <p className="mt-1 text-xs uppercase tracking-[0.14em] text-ink/50">
-                Donation receipt
-              </p>
+            <div className="flex items-center gap-3">
+              <Image
+                src="/logo.png"
+                alt="RefreeG Logo"
+                width={120}
+                height={32}
+                className="h-8 w-auto object-contain"
+                priority
+              />
             </div>
             <div className="text-right">
               <p className="text-xs text-ink/50">Reference</p>
@@ -115,8 +120,9 @@ export default async function ReceiptPage({
 
           <p className="mt-6 text-xs leading-5 text-ink/55">
             This receipt confirms a gift made through RefreeG to the campaign
-            above. {gift.cause.orgName} posts proof of how donations are spent
-            on the campaign page, and donors are emailed when it does.
+            above. {gift.cause.orgName} shares proof of how donations are spent
+            on the campaign page, and donors receive an email notification when
+            it is posted.
           </p>
         </article>
       </div>

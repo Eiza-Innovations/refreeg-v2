@@ -25,6 +25,7 @@ const footerColumns = [
     links: [
       { label: "Discover causes", href: "/causes" },
       { label: "Recurring giving", href: "/causes" },
+      { label: "Give to a wishlist", href: "/wishlist" },
       // { label: "Import portfolio", href: "/businesses" },
       // { label: "Tax receipts", href: "/healthcare" },
     ],
@@ -33,6 +34,7 @@ const footerColumns = [
     title: "RAISE",
     links: [
       { label: "Launch a campaign", href: "/dashboard/causes/create" },
+      { label: "Create a wishlist", href: "/dashboard/wishlists/create" },
       // { label: "Steward program", href: "/#faq" },
       // { label: "Verification", href: "/crowdfund/fees" },
       // { label: "Embed receipts", href: "/docs/api" },
@@ -285,7 +287,8 @@ export function Footer() {
             governance layer, not a traditional financial institution or
             charitable trust.
             <br />
-            <br />© 2026 RefreeG Labs Inc. All rights reserved.
+            <br />© 2026 Eiza Innovations Limited (RC 8032815). All rights
+            reserved.
           </p>
         </div>
       </div>

@@ -53,6 +53,23 @@ export async function POST(request: NextRequest) {
             "flutterwave",
             meta.ref_v1 ? String(meta.ref_v1) : undefined,
           );
+        } else if (meta.wishlist_item_id) {
+          const { recordWishlistContribution } =
+            await import("@/actions/wishlists/wishlist-actions");
+          await recordWishlistContribution(
+            String(meta.wishlist_item_id),
+            meta.user_id ? String(meta.user_id) : null,
+            {
+              amount: Number(meta.amount),
+              name: String(meta.customer_name || ""),
+              email: String(meta.email || full.customer?.email || ""),
+              message: String(meta.message || ""),
+              isAnonymous:
+                meta.is_anonymous === "true" || meta.is_anonymous === true,
+            },
+            reference,
+            "flutterwave",
+          );
         }
       } catch (donationErr) {
         console.warn(

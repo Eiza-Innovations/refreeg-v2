@@ -1,0 +1,83 @@
+jest.mock("@/lib/wishlist/season", () => ({
+  isWishlistSeasonActive: jest.fn(),
+}));
+
+import { render, screen } from "@testing-library/react";
+import { WishlistLanding } from "@/components/wishlist/wishlist-landing";
+import { isWishlistSeasonActive } from "@/lib/wishlist/season";
+
+describe("WishlistLanding", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  // The accent word renders in its own span (the "lands." styling), so
+  // match the eyebrow element by its full text.
+  const eyebrow = (text: string) =>
+    screen.getByText(
+      (_, el) =>
+        el?.classList.contains("label-eyebrow") === true &&
+        el.textContent === text,
+    );
+
+  it("renders the everyday registry voice outside the season", () => {
+    (isWishlistSeasonActive as jest.Mock).mockReturnValue(false);
+
+    render(<WishlistLanding seasonal={false} />);
+
+    expect(eyebrow("The Refreeg wishlist")).toBeInTheDocument();
+    expect(
+      screen.queryByText(/The Refreeg holiday wishlist/i),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: "Show them what would actually make you smile.",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/This Christmas/)).not.toBeInTheDocument();
+  });
+
+  it("switches to the holiday voice in season", () => {
+    (isWishlistSeasonActive as jest.Mock).mockReturnValue(true);
+
+    render(<WishlistLanding seasonal={true} />);
+
+    expect(eyebrow("The Refreeg holiday wishlist")).toBeInTheDocument();
+    // The hero variant swaps with the season, per the seasonal contract:
+    // eyebrow, hero headline, body copy and placeholder all read the helper.
+    expect(
+      screen.getByRole("heading", {
+        name: "This Christmas, ask for the gifts you'd actually love.",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", {
+        name: "Show them what would actually make you smile.",
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("keeps exactly one create CTA and the sample item card visible", () => {
+    (isWishlistSeasonActive as jest.Mock).mockReturnValue(false);
+
+    render(<WishlistLanding seasonal={false} />);
+
+    const cta = screen.getAllByRole("link", { name: "Create your wishlist" });
+    expect(cta).toHaveLength(1);
+    expect(cta[0]).toHaveAttribute("href", "/dashboard/wishlists/create");
+
+    expect(screen.getByText("A new study desk")).toBeInTheDocument();
+    expect(screen.getByText("What givers see")).toBeInTheDocument();
+    expect(screen.getByText("How it works")).toBeInTheDocument();
+  });
+
+  it("walks through the three steps", () => {
+    (isWishlistSeasonActive as jest.Mock).mockReturnValue(false);
+
+    render(<WishlistLanding seasonal={false} />);
+
+    expect(screen.getByText("Name your gifts")).toBeInTheDocument();
+    expect(screen.getByText("Share one link")).toBeInTheDocument();
+    expect(screen.getByText("Watch gifts fund")).toBeInTheDocument();
+  });
+});

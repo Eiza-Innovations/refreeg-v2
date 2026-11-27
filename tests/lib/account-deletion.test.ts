@@ -4,6 +4,11 @@ const mockTx = {
   cause: { findFirst: jest.fn(), findMany: jest.fn(), deleteMany: jest.fn() },
   kyc_verifications: { findMany: jest.fn(), deleteMany: jest.fn() },
   petitions: { findMany: jest.fn(), deleteMany: jest.fn() },
+  wishlists: {
+    findMany: jest.fn(),
+    deleteMany: jest.fn(),
+  },
+  wishlist_contributions: { updateMany: jest.fn() },
   pledges: { findMany: jest.fn(), updateMany: jest.fn() },
   subscriptions: { findMany: jest.fn(), updateMany: jest.fn() },
   organization: { findUnique: jest.fn(), deleteMany: jest.fn() },
@@ -110,6 +115,9 @@ describe("executeUserAccountDeletion", () => {
     mockTx.kyc_verifications.findMany.mockResolvedValue([]);
     mockTx.cause.findMany.mockResolvedValue([]);
     mockTx.petitions.findMany.mockResolvedValue([]);
+    mockTx.wishlists.findMany.mockResolvedValue([]);
+    mockTx.wishlist_contributions.updateMany.mockResolvedValue({ count: 0 });
+    mockTx.wishlists.deleteMany.mockResolvedValue({ count: 0 });
     mockTx.organization.findUnique.mockResolvedValue(null);
     mockTx.api_webhooks.findMany.mockResolvedValue([]);
     mockTx.api_campaigns.findMany.mockResolvedValue([]);

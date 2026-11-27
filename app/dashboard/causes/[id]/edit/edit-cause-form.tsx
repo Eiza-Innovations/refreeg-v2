@@ -119,6 +119,8 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
       busyLabel="Sending…"
       busy={submitMutation.isPending}
       submitError={submitMutation.error?.message}
+      submitCalloutTitle="Send changes for review"
+      submitCalloutDescription="RefreeG reviews edits before they appear publicly."
     >
       {currentStep === 1 && (
         <CauseBasicsStep

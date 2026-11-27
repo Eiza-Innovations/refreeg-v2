@@ -63,6 +63,26 @@ describe("sendMail and the Triggers switches", () => {
     expect(mockTransportSend.mock.calls[0][0].from).toBe("hello@refreeg.com");
   });
 
+  it("sends receipts and money alerts from noreply@", async () => {
+    for (const template of [
+      "wishlist-gift-receipt",
+      "cause-donation-receipt",
+      "donation-received",
+      "wishlist-contribution-received",
+    ]) {
+      await sendMail(mail(template));
+    }
+    const senders = mockTransportSend.mock.calls.map(
+      (call) => (call[0] as { from: string }).from,
+    );
+    expect(senders).toEqual([
+      "noreply@refreeg.com",
+      "noreply@refreeg.com",
+      "noreply@refreeg.com",
+      "noreply@refreeg.com",
+    ]);
+  });
+
   it("does not leave the 10 second timeout running after a send", async () => {
     jest.useFakeTimers();
     try {

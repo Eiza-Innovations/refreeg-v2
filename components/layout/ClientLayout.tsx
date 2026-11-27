@@ -5,14 +5,7 @@ import dynamic from "next/dynamic";
 import { Header } from "@/components/layout/Header";
 import { AppShell } from "@/components/app-shell/app-shell";
 import { AdminShell } from "@/components/admin-shell/AdminShell";
-
-const AIAgentBot = dynamic(
-  () => import("@/app/ai-agent/_components/ai-agent-bot"),
-  {
-    ssr: false,
-    loading: () => null,
-  },
-);
+import { HelpButton } from "@/components/layout/HelpButton";
 
 const Footer = dynamic(
   () => import("@/components/layout/Footer").then((mod) => mod.Footer),
@@ -56,11 +49,21 @@ export function ClientLayout({ children }: ClientLayoutProps) {
     !hideLayout && appShellRoutes.some((route) => pathname.startsWith(route));
 
   if (pathname.startsWith("/dashboard/admin")) {
-    return <AdminShell>{children}</AdminShell>;
+    return (
+      <>
+        <AdminShell>{children}</AdminShell>
+        <HelpButton />
+      </>
+    );
   }
 
   if (useAppShell) {
-    return <AppShell>{children}</AppShell>;
+    return (
+      <>
+        <AppShell>{children}</AppShell>
+        <HelpButton />
+      </>
+    );
   }
 
   return (
@@ -69,8 +72,8 @@ export function ClientLayout({ children }: ClientLayoutProps) {
       <div className="flex min-h-screen flex-col">
         <main className="flex-1">{children}</main>
       </div>
-      {!hideLayout && <AIAgentBot />}
       {!hideLayout && <Footer />}
+      <HelpButton />
     </>
   );
 }

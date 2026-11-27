@@ -159,8 +159,8 @@ export function KycTab({ profile, user }: KycTabProps) {
             <p className="text-slate-600 max-w-2xl mx-auto mb-10 text-base md:text-lg">
               Identity verification keeps the RefreeG community safe and
               trusted. By verifying your identity, you can create petitions,
-              launch donation campaigns, and access all premium platform
-              features.
+              launch donation campaigns, build wishlists, and access all premium
+              platform features.
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-3xl mb-12 text-left">

@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function DashboardLoading() {
   return (
     <div
-      className="min-h-[640px] space-y-5 px-4 py-5 sm:px-6 sm:py-7"
+      className="mx-auto min-h-[640px] w-full max-w-[1440px] space-y-5 px-4 py-5 sm:px-6 sm:py-7"
       aria-label="Loading dashboard content"
       aria-busy="true"
     >
