@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface MediaItem {
   type: "image" | "video";
@@ -29,10 +30,12 @@ export default function MultimediaCarousel({
   media,
   coverImage,
   title,
+  variant = "default",
 }: {
-  media: string[];
+  media: (string | MediaItem)[];
   coverImage?: string;
   title: string;
+  variant?: "default" | "flush";
 }) {
   const [current, setCurrent] = useState(0);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -91,19 +94,25 @@ export default function MultimediaCarousel({
   };
 
   const slides = useMemo(() => {
-    const urls = [coverImage, ...media].filter((url): url is string =>
-      Boolean(url?.trim()),
-    );
+    const items = new Map<string, MediaItem>();
+    for (const entry of [coverImage, ...media]) {
+      const url = typeof entry === "string" ? entry : entry?.url;
+      if (!url?.trim() || items.has(url)) continue;
 
-    return Array.from(new Set(urls)).map<MediaItem>((url) => ({
-      type:
-        url.match(/\.(mp4|mov|webm)(?:[?#].*)?$/i) ||
-        url.includes("/videos/") ||
-        url.match(/(youtube\.com|youtu\.be|tiktok\.com|drive\.google\.com)/i)
-          ? "video"
-          : "image",
-      url: getMediaUrl(url),
-    }));
+      const isVideo =
+        typeof entry === "object"
+          ? entry.type === "video"
+          : /\.(mp4|mov|webm)(?:[?#].*)?$/i.test(url) ||
+            url.includes("/videos/") ||
+            /(youtube\.com|youtu\.be|tiktok\.com|drive\.google\.com)/i.test(
+              url,
+            );
+      items.set(url, {
+        type: isVideo ? "video" : "image",
+        url: getMediaUrl(url),
+      });
+    }
+    return [...items.values()];
   }, [coverImage, media]);
 
   useEffect(() => {
@@ -374,9 +383,17 @@ export default function MultimediaCarousel({
 
   return (
     <>
-      <div className="rounded-[22px] border border-slate-200/80 bg-white p-2 shadow-[0_18px_45px_rgba(15,23,42,0.08)] sm:p-3">
+      <div
+        className={cn(
+          variant === "default" &&
+            "rounded-[22px] border border-slate-200/80 bg-white p-2 shadow-[0_18px_45px_rgba(15,23,42,0.08)] sm:p-3",
+        )}
+      >
         <div
-          className="relative mx-auto aspect-[var(--mobile-media-ratio)] max-h-[68svh] w-full touch-pan-y overflow-hidden rounded-[14px] bg-slate-100 transition-[aspect-ratio] duration-200 sm:aspect-video sm:max-h-none sm:rounded-[18px]"
+          className={cn(
+            "relative mx-auto aspect-[var(--mobile-media-ratio)] max-h-[68svh] w-full touch-pan-y overflow-hidden bg-slate-100 transition-[aspect-ratio] duration-200 sm:aspect-video sm:max-h-none",
+            variant === "default" && "rounded-[14px] sm:rounded-[18px]",
+          )}
           style={
             {
               "--mobile-media-ratio": String(mobileRatio),
@@ -395,7 +412,9 @@ export default function MultimediaCarousel({
               {renderMediaItem(item, idx)}
             </div>
           ))}
-          <div className="pointer-events-none absolute inset-0 rounded-[18px] ring-1 ring-inset ring-black/10" />
+          {variant === "default" && (
+            <div className="pointer-events-none absolute inset-0 rounded-[18px] ring-1 ring-inset ring-black/10" />
+          )}
           {slides.length > 1 && (
             <>
               <button

@@ -2,13 +2,7 @@ import { auth } from "@/lib/auth/auth";
 import { type NextRequest, NextResponse } from "next/server";
 import { hasCompletedOnboarding } from "@/actions/users/profile-actions";
 import { prisma } from "@/lib/prisma";
-
-function normalizeRedirectPath(target: string | null): string | null {
-  if (!target) return null;
-  if (!target.startsWith("/")) return null;
-  if (target.startsWith("//")) return null;
-  return target;
-}
+import { safeRedirect } from "@/lib/auth/safe-redirect";
 
 function absoluteUrl(path: string, request: NextRequest): URL {
   const host =
@@ -21,7 +15,7 @@ function absoluteUrl(path: string, request: NextRequest): URL {
 
 export async function GET(request: NextRequest) {
   const session = await auth();
-  const requestedRedirect = normalizeRedirectPath(
+  const requestedRedirect = safeRedirect(
     request.nextUrl.searchParams.get("redirect"),
   );
 

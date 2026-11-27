@@ -1,7 +1,11 @@
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { fieldClass } from "@/components/ui/field-styles";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,8 +13,8 @@ import { useObjectUrl } from "@/hooks/use-object-urls";
 import { isProxyMediaUrl } from "@/lib/s3/media";
 import { MAX_PETITION_FILES } from "@/lib/schemas/petition.schema";
 import { FieldError } from "@/components/ui/field-error";
-import type { PetitionCopy } from "./petition-copy";
-import type { PetitionFormApi } from "@/hooks/use-petition-form";
+import { StepHeading } from "./StepHeading";
+import type { PetitionMediaStepProps } from "@/types/petition-types";
 
 const ImageUpload = dynamic(
   () => import("@/components/ui/image-upload").then((mod) => mod.ImageUpload),
@@ -25,21 +29,6 @@ const SelectedMediaCarousel = dynamic(
   { loading: () => <Skeleton className="h-[200px] w-full" />, ssr: false },
 );
 
-const labelClass = "text-base font-semibold text-gray-700 block";
-
-type Props = Pick<
-  PetitionFormApi,
-  | "form"
-  | "errors"
-  | "uploadCover"
-  | "removeCover"
-  | "uploadGallery"
-  | "removeGalleryFile"
-  | "setVideoLink"
-  | "addVideoLink"
-  | "removeVideoLink"
-> & { copy: PetitionCopy };
-
 export function PetitionMediaStep({
   form,
   errors,
@@ -51,24 +40,21 @@ export function PetitionMediaStep({
   addVideoLink,
   removeVideoLink,
   copy,
-}: Props) {
+}: PetitionMediaStepProps) {
   const pickedCover = useObjectUrl(form.coverImage);
   const coverSrc = pickedCover || form.image;
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="space-y-2">
-        <h3 className="text-xl font-bold text-gradient">Visual Impact</h3>
-        <p className="text-sm text-gray-500">{copy.mediaText}</p>
-      </div>
+      <StepHeading title="Photos and video" text={copy.mediaText} />
 
       <div className="space-y-6">
         <div className="space-y-4">
-          <Label className={labelClass}>Cover Image</Label>
-          <div className="glass-panel p-6 rounded-2xl border-brand/10 transition-all hover:border-brand/30">
-            <ImageUpload onUpload={uploadCover} maxFiles={1} />
+          <Label className="block">Cover image</Label>
+          <Card variant="surface" className="p-6">
+            <ImageUpload onUpload={uploadCover} maxFiles={1} tone="new" />
             {coverSrc && (
-              <div className="mt-4 relative group aspect-video rounded-xl overflow-hidden shadow-sm border border-brand/10">
+              <div className="group relative mt-4 aspect-video overflow-hidden rounded-xl border border-hairline">
                 <Image
                   src={coverSrc}
                   alt="Cover preview"
@@ -80,7 +66,7 @@ export function PetitionMediaStep({
                   className="object-cover transition-transform duration-300 group-hover:scale-105"
                 />
                 {form.coverImage && (
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <div className="absolute inset-0 bg-ink/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <Button
                       type="button"
                       variant="destructive"
@@ -95,18 +81,17 @@ export function PetitionMediaStep({
               </div>
             )}
             <FieldError message={errors.coverImage} className="mt-2" />
-          </div>
+          </Card>
         </div>
 
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <Label className={labelClass}>{copy.galleryLabel}</Label>
-            <span className="text-xs text-brand font-medium bg-brand/5 px-2 py-1 rounded-full border border-brand/10">
-              Max {MAX_PETITION_FILES} files
-            </span>
+            <Label className="block">{copy.galleryLabel}</Label>
+            <Badge variant="held">Max {MAX_PETITION_FILES} files</Badge>
           </div>
-          <div className="glass-panel p-6 rounded-2xl border-brand/10">
+          <Card variant="surface" className="p-6">
             <ImageUpload
+              tone="new"
               onUpload={uploadGallery}
               maxFiles={MAX_PETITION_FILES - form.multimedia.length}
               description={`Upload up to ${MAX_PETITION_FILES} files`}
@@ -120,11 +105,11 @@ export function PetitionMediaStep({
                 />
               </div>
             )}
-          </div>
+          </Card>
         </div>
 
         <div className="space-y-4">
-          <Label className={labelClass}>{copy.linksLabel}</Label>
+          <Label className="block">{copy.linksLabel}</Label>
           <div className="space-y-3">
             {form.videoLinks.map((link, index) => (
               <div
@@ -135,13 +120,13 @@ export function PetitionMediaStep({
                   value={link}
                   onChange={(e) => setVideoLink(index, e.target.value)}
                   placeholder={copy.linkPlaceholder}
-                  className="premium-input bg-white"
+                  className={cn(fieldClass, "h-12")}
                 />
                 <Button
                   type="button"
                   variant="ghost"
                   onClick={() => removeVideoLink(index)}
-                  className="text-red-500 hover:bg-red-50 rounded-lg h-12"
+                  className="h-12 rounded-lg text-rust hover:bg-rust/10 hover:text-rust"
                 >
                   Remove
                 </Button>
@@ -151,7 +136,7 @@ export function PetitionMediaStep({
               type="button"
               onClick={addVideoLink}
               variant="outline"
-              className="h-12 w-full rounded-xl border-2 border-dashed border-gray-200 bg-transparent text-gray-500 transition-colors hover:border-brand/30 hover:bg-brand/5 hover:text-brand"
+              className="h-12 w-full rounded-xl border-2 border-dashed border-ink/20 bg-transparent text-ink/60 hover:border-ink hover:bg-bone hover:text-ink"
             >
               {copy.addLink}
             </Button>

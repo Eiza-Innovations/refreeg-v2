@@ -1,6 +1,16 @@
 "use server";
 
+import { auth } from "@/lib/auth/auth";
 import { prisma } from "@/lib/prisma";
+
+async function requireSessionUserId(): Promise<string> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) {
+    throw new Error("You must be signed in.");
+  }
+  return userId;
+}
 
 function mapUserToCommentUser(user: {
   fullName: string | null;
@@ -16,14 +26,15 @@ function mapUserToCommentUser(user: {
 
 export async function createPetitionComment(
   petitionId: string,
-  userId: string,
+  _userId: string,
   content: string,
   parentId?: string,
 ) {
+  const actorId = await requireSessionUserId();
   const comment = await prisma.petition_comments.create({
     data: {
       petition_id: petitionId,
-      user_id: userId,
+      user_id: actorId,
       content,
       parent_id: parentId || null,
       is_edited: false,
@@ -44,11 +55,12 @@ export async function createPetitionComment(
 
 export async function updatePetitionComment(
   commentId: string,
-  userId: string,
+  _userId: string,
   content: string,
 ) {
+  const actorId = await requireSessionUserId();
   const result = await prisma.petition_comments.updateMany({
-    where: { id: commentId, user_id: userId },
+    where: { id: commentId, user_id: actorId },
     data: {
       content,
       is_edited: true,
@@ -79,9 +91,13 @@ export async function updatePetitionComment(
   };
 }
 
-export async function deletePetitionComment(commentId: string, userId: string) {
+export async function deletePetitionComment(
+  commentId: string,
+  _userId: string,
+) {
+  const actorId = await requireSessionUserId();
   const result = await prisma.petition_comments.deleteMany({
-    where: { id: commentId, user_id: userId },
+    where: { id: commentId, user_id: actorId },
   });
 
   if (result.count === 0) {
@@ -120,7 +136,9 @@ export async function listPetitionComments(petitionId: string) {
 
   return comments.map((comment) => ({
     ...comment,
+    cause_id: comment.petition_id,
     created_at: comment.created_at.toISOString(),
+    updated_at: comment.created_at.toISOString(),
     user: mapUserToCommentUser(comment.user),
     replies_count: replyCountMap.get(comment.id) || 0,
   }));

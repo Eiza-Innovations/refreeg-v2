@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { normalizeOptionalUrl } from "@/lib/url/normalize-optional-url";
 
 export const organizationDetailsSchema = z.object({
   name: z
@@ -27,11 +28,28 @@ export const organizationDetailsSchema = z.object({
     .string()
     .trim()
     .regex(/^\S+@\S+\.\S+$/, "Enter a valid work email"),
+  // Count digits, not characters: "+234 901 744 6760" is the form's own
+  // placeholder and is longer than 15 characters once spaces are included.
   phone: z
     .string()
     .trim()
-    .regex(/^\+?[\d\s-]{7,15}$/, "Enter a valid phone number"),
-  websiteUrl: z.string().trim().optional().or(z.literal("")),
+    .refine((value) => {
+      if (!/^\+?[\d\s\-()]+$/.test(value)) return false;
+      const digits = value.replace(/\D/g, "").length;
+      return digits >= 7 && digits <= 15;
+    }, "Enter a valid phone number"),
+  websiteUrl: z
+    .string()
+    .trim()
+    .optional()
+    .refine((value) => {
+      try {
+        normalizeOptionalUrl(value, "website");
+        return true;
+      } catch {
+        return false;
+      }
+    }, "Enter a valid website URL, like korahq.com"),
   username: z
     .string()
     .trim()

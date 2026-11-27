@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { FieldError } from "@/components/ui/field-error";
 import {
   Select,
@@ -24,30 +23,27 @@ import {
   csrFocusCauseOptions,
   financialYearStartOptions,
 } from "@/lib/options/organization.options";
-import { CsrInviteRows, type InviteRow } from "./csr-invite-rows";
+import { getOrganizationOnboardingData } from "@/actions/users/profile-actions";
+import { formatThousands } from "@/lib/format-number-input";
+import { CsrInviteRows } from "./csr-invite-rows";
 import {
   inviteOrganizationMember,
   saveCsrSetup,
 } from "@/actions/users/organization-actions";
+import type {
+  CsrForm,
+  CsrSetupStepProps,
+  InviteRow,
+} from "@/types/onboarding-types";
+import {
+  fieldClass,
+  selectTriggerClass,
+  selectContentClass,
+  selectItemClass,
+} from "@/components/ui/field-styles";
+import { onboardingSplitClass } from "@/components/onboarding/split-layout";
 
-interface CsrSetupStepProps {
-  user: any;
-  onNext: () => void;
-  onBack: () => void;
-  onboardingData: any;
-}
-
-interface CsrForm {
-  csrBudget: string;
-  csrFinancialYearStart: string;
-  csrFocusCauses: string[];
-  csrMatchEmployeeDonations: boolean;
-  csrMatchCap: string;
-  csrPublicReport: boolean;
-  invites: InviteRow[];
-}
-
-export default function CsrSetupStep({ onNext, onBack }: CsrSetupStepProps) {
+export default function CsrSetupStep({ user, onNext }: CsrSetupStepProps) {
   const [form, setForm] = useState<CsrForm>({
     csrBudget: "",
     csrFinancialYearStart: "",
@@ -79,6 +75,31 @@ export default function CsrSetupStep({ onNext, onBack }: CsrSetupStepProps) {
     }));
   };
 
+  const queryClient = useQueryClient();
+
+  // Fill the form once with what an earlier visit saved, so Back and refresh
+  // do not make people re-enter their budget.
+  const { data: saved } = useQuery({
+    queryKey: ["onboarding-csr", user.id],
+    queryFn: () => getOrganizationOnboardingData(user.id),
+  });
+  const prefilled = useRef(false);
+  useEffect(() => {
+    if (!saved || prefilled.current) return;
+    prefilled.current = true;
+    setForm((prev) => ({
+      ...prev,
+      csrBudget: saved.csrBudget
+        ? formatThousands(String(saved.csrBudget))
+        : prev.csrBudget,
+      csrFinancialYearStart:
+        saved.csrFinancialYearStart || prev.csrFinancialYearStart,
+      csrFocusCauses: saved.csrFocusCauses.length
+        ? saved.csrFocusCauses
+        : prev.csrFocusCauses,
+    }));
+  }, [saved]);
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       const inviteFailures: string[] = [];
@@ -107,6 +128,10 @@ export default function CsrSetupStep({ onNext, onBack }: CsrSetupStepProps) {
       return inviteFailures;
     },
     onSuccess: (inviteFailures) => {
+      queryClient.invalidateQueries({ queryKey: ["onboarding-csr"] });
+      queryClient.invalidateQueries({
+        queryKey: ["organization-onboarding-summary"],
+      });
       if (inviteFailures.length) {
         toast({
           title: "Some invites could not be sent",
@@ -132,7 +157,7 @@ export default function CsrSetupStep({ onNext, onBack }: CsrSetupStepProps) {
   };
 
   return (
-    <div className="grid w-full gap-10 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-16">
+    <div className={onboardingSplitClass}>
       <div className="flex flex-col">
         <h1 className="font-fraunces text-4xl font-medium text-ink sm:text-5xl">
           Set up CSR giving
@@ -142,14 +167,6 @@ export default function CsrSetupStep({ onNext, onBack }: CsrSetupStepProps) {
           who can act on its behalf.
         </p>
         <div className="mt-8 flex gap-3 lg:mt-auto lg:pt-8">
-          <Button
-            type="button"
-            variant="surface"
-            onClick={onBack}
-            className="h-12 px-8"
-          >
-            Back
-          </Button>
           <Button
             type="button"
             variant="ink"
@@ -182,12 +199,12 @@ export default function CsrSetupStep({ onNext, onBack }: CsrSetupStepProps) {
                   id="csrBudget"
                   inputMode="numeric"
                   placeholder="25,000,000"
-                  className="pl-8"
+                  className={cn(fieldClass, "pl-8")}
                   value={form.csrBudget}
                   onChange={(event) =>
                     setFormFields(
                       "csrBudget",
-                      event.target.value.replace(/[^\d,]/g, ""),
+                      formatThousands(event.target.value),
                     )
                   }
                 />
@@ -204,12 +221,19 @@ export default function CsrSetupStep({ onNext, onBack }: CsrSetupStepProps) {
                     setFormFields("csrFinancialYearStart", value)
                   }
                 >
-                  <SelectTrigger id="csrYearStart">
+                  <SelectTrigger
+                    id="csrYearStart"
+                    className={selectTriggerClass}
+                  >
                     <SelectValue placeholder="Select month" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className={selectContentClass}>
                     {financialYearStartOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
+                      <SelectItem
+                        key={option.value}
+                        value={option.value}
+                        className={selectItemClass}
+                      >
                         {option.label}
                       </SelectItem>
                     ))}
@@ -248,69 +272,7 @@ export default function CsrSetupStep({ onNext, onBack }: CsrSetupStepProps) {
           </div>
         </Card>
 
-        <Card variant="surface" className="divide-y divide-hairline">
-          <div className="flex items-start justify-between gap-4 p-5 sm:p-6">
-            <div>
-              <p className="text-base font-semibold text-ink">
-                Match employee donations
-              </p>
-              <p className="mt-1 text-sm leading-6 text-ink/60">
-                Staff give from their own accounts and the company adds the same
-                amount, up to the cap you set for each person a year.
-              </p>
-            </div>
-            <Switch
-              checked={form.csrMatchEmployeeDonations}
-              onCheckedChange={(checked) =>
-                setFormFields("csrMatchEmployeeDonations", checked)
-              }
-            />
-          </div>
-
-          {form.csrMatchEmployeeDonations ? (
-            <div className="p-5 sm:p-6">
-              <Label htmlFor="csrMatchCap">
-                Matching cap per employee (₦ a year)
-              </Label>
-              <div className="relative mt-1.5 max-w-xs">
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-ink/50">
-                  ₦
-                </span>
-                <Input
-                  id="csrMatchCap"
-                  inputMode="numeric"
-                  className="pl-8"
-                  value={form.csrMatchCap}
-                  onChange={(event) =>
-                    setFormFields(
-                      "csrMatchCap",
-                      event.target.value.replace(/[^\d,]/g, ""),
-                    )
-                  }
-                />
-              </div>
-              <FieldError message={errors.csrMatchCap} />
-            </div>
-          ) : null}
-
-          <div className="flex items-start justify-between gap-4 p-5 sm:p-6">
-            <div>
-              <p className="text-base font-semibold text-ink">
-                Publish a public CSR report page
-              </p>
-              <p className="mt-1 text-sm leading-6 text-ink/60">
-                Shows totals, campaigns supported and proof of delivery.
-              </p>
-            </div>
-            <Switch
-              checked={form.csrPublicReport}
-              onCheckedChange={(checked) =>
-                setFormFields("csrPublicReport", checked)
-              }
-            />
-          </div>
-        </Card>
-
+        {/* Employee matching and a public CSR report are not built yet, so they are not offered here. */}
         <CsrInviteRows
           invites={form.invites}
           error={errors.invites}

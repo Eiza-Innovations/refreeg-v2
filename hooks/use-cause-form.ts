@@ -3,8 +3,10 @@
 import { useState } from "react";
 import {
   hasCauseErrors,
+  stepErrorKeys,
   stepHasErrors,
-  validateCauseForm,
+  causeIssueErrors,
+  causeSchemas,
   type CauseFormErrors,
   type CauseFormMode,
   type CauseFormValues,
@@ -14,6 +16,7 @@ import {
   prepareCoverImage,
   prepareGalleryFiles,
 } from "@/lib/causes/cause-media";
+import { useValidator } from "@/hooks/use-validator";
 
 export const LAST_CAUSE_STEP = 5;
 
@@ -29,9 +32,12 @@ export function useCauseForm({
   mode: CauseFormMode;
 }) {
   const [form, setForm] = useState(initialValues);
-  const [errors, setErrors] = useState<CauseFormErrors>({});
+  const { errors, setErrors, getErrors, validate } = useValidator({
+    store: form,
+    schema: causeSchemas[mode],
+    mapErrors: causeIssueErrors,
+  });
   const [currentStep, setCurrentStep] = useState(1);
-  const [attemptedStep, setAttemptedStep] = useState<number | null>(null);
 
   const setError = (key: keyof CauseFormErrors, message: string | undefined) =>
     setErrors((current) => ({ ...current, [key]: message }));
@@ -84,11 +90,17 @@ export function useCauseForm({
       sections: [...current.sections, { heading: "", description: "" }],
     }));
 
-  const removeSection = (index: number) =>
+  const removeSection = (index: number) => {
     setForm((current) => ({
       ...current,
       sections: current.sections.filter((_, i) => i !== index),
     }));
+    setErrors((current) => {
+      const sections = current.sections?.slice();
+      sections?.splice(index, 1);
+      return { ...current, sections };
+    });
+  };
 
   const updateSection = (
     index: number,
@@ -114,10 +126,7 @@ export function useCauseForm({
   };
 
   const nextStep = () => {
-    setAttemptedStep(currentStep);
-    const found = validateCauseForm(form, mode);
-    setErrors(found);
-    if (currentStep < LAST_CAUSE_STEP && !stepHasErrors(found, currentStep)) {
+    if (currentStep < LAST_CAUSE_STEP && validate(stepErrorKeys[currentStep])) {
       setCurrentStep((step) => step + 1);
     }
   };
@@ -126,9 +135,15 @@ export function useCauseForm({
 
   /** Validates everything; returns true when the form can be submitted. */
   const validateAll = () => {
-    const found = validateCauseForm(form, mode);
+    const found = getErrors();
     if (!hasCauseErrors(found)) return true;
     setErrors(found);
+    for (let step = 1; step < LAST_CAUSE_STEP; step++) {
+      if (stepHasErrors(found, step)) {
+        setCurrentStep(step);
+        break;
+      }
+    }
     return false;
   };
 
@@ -140,7 +155,6 @@ export function useCauseForm({
     setError,
     currentStep,
     setCurrentStep,
-    attemptedStep,
     uploadCover,
     clearCover,
     uploadGallery,

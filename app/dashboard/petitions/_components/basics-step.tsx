@@ -1,3 +1,4 @@
+import { Eyebrow } from "@/components/ui/eyebrow";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -9,38 +10,35 @@ import {
 } from "@/components/ui/select";
 import { petitionCategoryOptions } from "@/lib/options/petition.options";
 import { cn } from "@/lib/utils";
+import {
+  fieldClass,
+  selectContentClass,
+  selectItemClass,
+  selectTriggerClass,
+} from "@/components/ui/field-styles";
 import { FieldError } from "@/components/ui/field-error";
-import type { PetitionCopy } from "./petition-copy";
-import type { PetitionFormApi } from "@/hooks/use-petition-form";
-
-const labelClass = "text-base font-semibold text-gray-700";
-
-type Props = Pick<PetitionFormApi, "form" | "errors" | "setFormFields"> & {
-  copy: PetitionCopy;
-};
+import { StepHeading } from "./StepHeading";
+import type { PetitionFieldsStepProps } from "@/types/petition-types";
 
 export function PetitionBasicsStep({
   form,
   errors,
   setFormFields,
   copy,
-}: Props) {
+}: PetitionFieldsStepProps) {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {copy.basics && (
-        <div className="space-y-2">
-          <h3 className="text-xl font-bold text-gradient">
-            {copy.basics.title}
-          </h3>
-          <p className="text-sm text-gray-500">{copy.basics.text}</p>
-        </div>
-      )}
+      <StepHeading
+        title={copy.basics?.title ?? "The basics"}
+        text={
+          copy.basics?.text ??
+          "Name your petition and set how many signatures you need."
+        }
+      />
 
       <div className="space-y-6">
         <div className="space-y-2">
-          <Label htmlFor="title" className={labelClass}>
-            Petition Title
-          </Label>
+          <Label htmlFor="title">Petition Title</Label>
           <Input
             id="title"
             name="title"
@@ -48,8 +46,9 @@ export function PetitionBasicsStep({
             value={form.title}
             onChange={(e) => setFormFields("title", e.target.value)}
             className={cn(
-              "h-12 text-lg premium-input",
-              errors.title && "border-red-500",
+              fieldClass,
+              "h-12 text-lg",
+              errors.title && "border-rust",
             )}
           />
           <FieldError message={errors.title} />
@@ -57,9 +56,7 @@ export function PetitionBasicsStep({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label htmlFor="category" className={labelClass}>
-              Category
-            </Label>
+            <Label htmlFor="category">Category</Label>
             <Select
               value={form.category}
               // Radix reports "" when a restored draft value is applied after mount.
@@ -69,15 +66,20 @@ export function PetitionBasicsStep({
             >
               <SelectTrigger
                 className={cn(
-                  "h-12 premium-input",
-                  errors.category && "border-red-500",
+                  selectTriggerClass,
+                  "h-12",
+                  errors.category && "border-rust",
                 )}
               >
                 <SelectValue placeholder="Select Category" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className={selectContentClass}>
                 {petitionCategoryOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
+                  <SelectItem
+                    key={option.value}
+                    value={option.value}
+                    className={selectItemClass}
+                  >
                     {option.label}
                   </SelectItem>
                 ))}
@@ -87,9 +89,7 @@ export function PetitionBasicsStep({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="goal" className={labelClass}>
-              Signature Goal
-            </Label>
+            <Label htmlFor="goal">Signature Goal</Label>
             <div className="relative">
               <Input
                 id="goal"
@@ -99,13 +99,14 @@ export function PetitionBasicsStep({
                 value={form.goal}
                 onChange={(e) => setFormFields("goal", e.target.value)}
                 className={cn(
-                  "h-12 pl-4 premium-input text-lg font-mono",
-                  errors.goal && "border-red-500",
+                  fieldClass,
+                  "h-12 pl-4 text-lg",
+                  errors.goal && "border-rust",
                 )}
               />
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-brand/40 uppercase tracking-tighter">
+              <Eyebrow className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[10px] text-ink/40">
                 Signatures
-              </div>
+              </Eyebrow>
             </div>
             <FieldError message={errors.goal} />
           </div>

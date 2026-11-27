@@ -51,6 +51,8 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Heading, P } from "@/components/marketing/Typography";
+import { formatHours } from "@/lib/campaign-analytics/format";
 
 export default function AdminAnalytics() {
   const router = useRouter();
@@ -236,10 +238,12 @@ export default function AdminAnalytics() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
-          <p className="text-muted-foreground">
+          <Heading as="h1" size="subsection" className="font-bold md:text-3xl">
+            Analytics
+          </Heading>
+          <P className="text-muted-foreground md:text-sm">
             Platform statistics and performance metrics.
-          </p>
+          </P>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="w-full sm:w-auto">
@@ -267,10 +271,10 @@ export default function AdminAnalytics() {
             >
               <AlertTriangle className="h-5 w-5" />
               <div className="flex-1">
-                <p className="font-semibold">{alert.message}</p>
-                <p className="text-sm opacity-90">
+                <P className="font-semibold">{alert.message}</P>
+                <P className="opacity-90 md:text-sm">
                   {alert.metric}: {alert.value} (Threshold: {alert.threshold})
-                </p>
+                </P>
               </div>
               <Button variant="ghost" size="sm">
                 Dismiss
@@ -509,34 +513,52 @@ export default function AdminAnalytics() {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">
+                    <P className="font-medium text-muted-foreground md:text-sm">
                       Total Requests
-                    </p>
-                    <p className="text-2xl font-bold">{kyc?.total || 0}</p>
+                    </P>
+                    <Heading
+                      as="p"
+                      size="subsection"
+                      className="font-bold md:text-2xl"
+                    >
+                      {kyc?.total || 0}
+                    </Heading>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">
+                    <P className="font-medium text-muted-foreground md:text-sm">
                       Approval Rate
-                    </p>
-                    <p
-                      className={`text-2xl font-bold ${(kyc?.approvalRate || 0) > 80 ? "text-green-600" : "text-yellow-600"}`}
+                    </P>
+                    <Heading
+                      as="p"
+                      size="subsection"
+                      className={`font-bold md:text-2xl ${(kyc?.approvalRate || 0) > 80 ? "text-green-600" : "text-yellow-600"}`}
                     >
                       {kyc?.approvalRate.toFixed(1)}%
-                    </p>
+                    </Heading>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">
+                    <P className="font-medium text-muted-foreground md:text-sm">
                       Pending
-                    </p>
-                    <p className="text-2xl font-bold">{kyc?.pending || 0}</p>
+                    </P>
+                    <Heading
+                      as="p"
+                      size="subsection"
+                      className="font-bold md:text-2xl"
+                    >
+                      {kyc?.pending || 0}
+                    </Heading>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Avg Time
-                    </p>
-                    <p className="text-2xl font-bold">
-                      {kyc?.avgProcessingTimeHours.toFixed(1)}h
-                    </p>
+                    <P className="font-medium text-muted-foreground md:text-sm">
+                      Median time to decision
+                    </P>
+                    <Heading
+                      as="p"
+                      size="subsection"
+                      className="font-bold md:text-2xl"
+                    >
+                      {formatHours(kyc?.avgProcessingTimeHours ?? null)}
+                    </Heading>
                   </div>
                 </div>
               </CardContent>
@@ -554,31 +576,43 @@ export default function AdminAnalytics() {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">
+                    <P className="font-medium text-muted-foreground md:text-sm">
                       Total Txns
-                    </p>
-                    <p className="text-2xl font-bold">{payments?.total || 0}</p>
+                    </P>
+                    <Heading
+                      as="p"
+                      size="subsection"
+                      className="font-bold md:text-2xl"
+                    >
+                      {payments?.total || 0}
+                    </Heading>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">
+                    <P className="font-medium text-muted-foreground md:text-sm">
                       Failure Rate
-                    </p>
-                    <p
-                      className={`text-2xl font-bold ${(payments?.failureRate || 0) < 5 ? "text-green-600" : "text-red-600"}`}
+                    </P>
+                    <Heading
+                      as="p"
+                      size="subsection"
+                      className={`font-bold md:text-2xl ${(payments?.failureRate || 0) < 5 ? "text-green-600" : "text-red-600"}`}
                     >
                       {payments?.failureRate.toFixed(1)}%
-                    </p>
+                    </Heading>
                   </div>
                   <div className="col-span-2">
-                    <p className="text-sm font-medium text-muted-foreground">
+                    <P className="font-medium text-muted-foreground md:text-sm">
                       Failed Amount
-                    </p>
-                    <p className="text-xl font-bold text-red-600">
+                    </P>
+                    <Heading
+                      as="p"
+                      size="subsection"
+                      className="font-bold text-red-600 md:text-xl"
+                    >
                       {new Intl.NumberFormat("en-NG", {
                         style: "currency",
                         currency: "NGN",
                       }).format(payments?.failedAmount || 0)}
-                    </p>
+                    </Heading>
                   </div>
                 </div>
               </CardContent>
@@ -614,12 +648,16 @@ export default function AdminAnalytics() {
                     </span>
                   </div>
                   <div className="pt-4 border-t">
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Avg Approval Time
-                    </p>
-                    <p className="text-xl font-bold">
-                      {lifecycle?.avgApprovalTimeHours.toFixed(1)} hours
-                    </p>
+                    <P className="font-medium text-muted-foreground md:text-sm">
+                      Median time to decision
+                    </P>
+                    <Heading
+                      as="p"
+                      size="subsection"
+                      className="font-bold md:text-xl"
+                    >
+                      {formatHours(lifecycle?.avgApprovalTimeHours ?? null)}
+                    </Heading>
                   </div>
                 </div>
               </CardContent>

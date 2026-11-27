@@ -3,7 +3,8 @@ import { PetitionsList } from "@/components/causes/PetitionsList";
 import { PetitionsFilter } from "@/components/causes/PetitionsFilter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { categories } from "@/lib/causes/categories";
-import AdBanner from "@/components/marketing/AdBanner";
+import { Eyebrow } from "@/components/ui/eyebrow";
+import { Heading, Lead } from "@/components/marketing/Typography";
 
 import { Metadata } from "next";
 
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
 export default async function PetitionsPage({
   searchParams,
 }: {
-  searchParams: { category?: string; page?: string };
+  searchParams: Promise<{ category?: string; page?: string }>;
 }) {
   const params = await searchParams;
   const category = params.category || "all";
@@ -24,32 +25,27 @@ export default async function PetitionsPage({
   const pageSize = 9;
 
   return (
-    <div className="p-10">
-      <div className="space-y-6">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">
-            Explore Petitions
-          </h1>
-          <p className="text-muted-foreground">
+    <div className="w-full bg-cream">
+      <div className="mx-auto w-full max-w-[1440px] space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+        <div className="space-y-2 pt-2">
+          <Eyebrow>Petitions</Eyebrow>
+          <Heading as="h1" size="subsection">
+            Explore petitions
+          </Heading>
+          <Lead className="max-w-xl text-sm text-ink/60">
             Discover and support petitions that are making a difference.
-          </p>
+          </Lead>
         </div>
 
         <PetitionsFilter categories={categories} selectedCategory={category} />
 
         <Suspense
           fallback={
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {Array(pageSize)
                 .fill(null)
                 .map((_, i) => (
-                  <div key={i} className="space-y-3">
-                    <Skeleton className="h-[200px] w-full rounded-xl" />
-                    <div className="space-y-2">
-                      <Skeleton className="h-4 w-full" />
-                      <Skeleton className="h-4 w-3/4" />
-                    </div>
-                  </div>
+                  <Skeleton key={i} className="h-[280px] w-full rounded-2xl" />
                 ))}
             </div>
           }

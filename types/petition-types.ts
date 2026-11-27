@@ -4,6 +4,9 @@ import type {
   subHeadings,
   subHeadingWithSubDescription,
 } from "./common-types";
+import type { usePetitionForm } from "@/hooks/use-petition-form";
+import type { usePetitionSignForm } from "@/hooks/use-petition-sign-form";
+import type { PetitionCopy } from "@/app/dashboard/petitions/_components/petition-copy";
 
 export interface Petition {
   id: string;
@@ -62,3 +65,49 @@ export interface PetitionFilterOptions {
   sortBy?: "recommended" | "latest" | "most-funded" | "ending-soon";
   verifiedOnly?: boolean;
 }
+
+export type SocialLinks = {
+  twitter: string;
+  facebook: string;
+  instagram: string;
+  linkedin: string;
+};
+
+export type PetitionFormApi = ReturnType<typeof usePetitionForm>;
+
+export type PetitionSignFormApi = ReturnType<typeof usePetitionSignForm>;
+
+/** Props of the petition wizard steps that edit the basic fields and dates. */
+export type PetitionFieldsStepProps = Pick<
+  PetitionFormApi,
+  "form" | "errors" | "setFormFields"
+> & { copy: PetitionCopy };
+
+export type PetitionStoryStepProps = Pick<
+  PetitionFormApi,
+  "form" | "addSection" | "removeSection" | "updateSection"
+> & { copy: PetitionCopy };
+
+export type PetitionMediaStepProps = Pick<
+  PetitionFormApi,
+  | "form"
+  | "errors"
+  | "uploadCover"
+  | "removeCover"
+  | "uploadGallery"
+  | "removeGalleryFile"
+  | "setVideoLink"
+  | "addVideoLink"
+  | "removeVideoLink"
+> & { copy: PetitionCopy };
+
+export type SignFormFieldsProps = Pick<
+  PetitionSignFormApi,
+  "form" | "errors" | "setFormFields"
+> & {
+  /** Keeps element ids unique when two forms share a page. */
+  idPrefix: string;
+  disabled?: boolean;
+};
+
+export type MediaErrors = { coverImage?: string; multimedia?: string };

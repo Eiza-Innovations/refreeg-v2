@@ -43,19 +43,21 @@ model Cause {
   /// Set once the "your campaign was recovered" notice (services/mail.ts
   /// sendCauseRecoveredEmail, via scripts/send-recovery-emails.mjs) has gone
   /// out for recovered_owner_email  prevents re-sending on a re-run.
-  recovery_email_sent_at DateTime?                     @db.Timestamptz(6)
-  follows                campaign_follows[]
-  edits                  cause_edits[]
-  sections               cause_sections[]
-  shares                 cause_shares[]
-  user                   User                          @relation(fields: [userId], references: [id])
-  comments               comments[]
-  crypto_donations       crypto_donations[]
-  donations              Donation[]
-  proof_requirements     campaign_proof_requirements[]
-  proof_updates          campaign_proof_updates[]
+  recovery_email_sent_at DateTime?                    @db.Timestamptz(6)
+  follows              campaign_follows[]
+  edits                cause_edits[]
+  sections             cause_sections[]
+  shares               cause_shares[]
+  user                 User                          @relation(fields: [userId], references: [id])
+  comments             comments[]
+  crypto_donations     crypto_donations[]
+  donations            Donation[]
+  proof_requirements   campaign_proof_requirements[]
+  proof_updates        campaign_proof_updates[]
+  funnel_events        campaign_funnel_events[]
 
   @@index([daysActive], map: "idx_causes_days_active")
+  @@index([image], map: "idx_causes_image")
   @@index([status], map: "idx_causes_status")
   @@index([title(ops: raw("gin_trgm_ops"))], type: Gin, map: "idx_causes_title_trgm")
   @@index([userId], map: "idx_causes_user_id")
@@ -342,4 +344,26 @@ model subscriptions {
   created_at                 DateTime @default(now()) @db.Timestamptz(6)
 
   @@index([user_id], map: "idx_subscriptions_user_id")
+}
+
+/// One row per browser session, campaign and giving step (view, give, amount,
+/// payment, paid, failed). Feeds the admin drop-off funnel.
+model campaign_funnel_events {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cause_id   String   @db.Uuid
+  session_id String
+  step       String
+  reason     String?
+  device     String?
+  amount     Decimal? @db.Decimal(18, 2)
+  reference  String?
+  user_id    String?  @db.Uuid
+  first_time Boolean?
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  cause      Cause    @relation(fields: [cause_id], references: [id], onDelete: Cascade)
+
+  @@unique([session_id, cause_id, step])
+  @@index([cause_id])
+  @@index([created_at])
+  @@index([reference])
 }

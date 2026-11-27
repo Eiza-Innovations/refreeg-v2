@@ -34,6 +34,10 @@ export async function GET(request: NextRequest) {
     });
     if (rateLimited) return rateLimited;
 
+    if (isStoreReviewDemoAccount(user.email)) {
+      return apiSuccess({ cards: [STORE_REVIEW_DEMO_SAVED_CARD] });
+    }
+
     const cards = await prisma.user_saved_cards.findMany({
       where: { user_id: user.id },
       orderBy: [{ is_default: "desc" }, { created_at: "desc" }],
@@ -49,10 +53,6 @@ export async function GET(request: NextRequest) {
         created_at: true,
       },
     });
-
-    if (cards.length === 0 && isStoreReviewDemoAccount(user.email)) {
-      return apiSuccess({ cards: [STORE_REVIEW_DEMO_SAVED_CARD] });
-    }
 
     return apiSuccess({ cards });
   } catch (error: any) {

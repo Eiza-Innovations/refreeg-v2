@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "nextjs-toploader/app";
+import { ErrorPageLayout } from "@/components/engagement/ErrorPageLayout";
 import { SupportErrorCta } from "@/components/engagement/SupportErrorCta";
 import { reportClientError } from "@/lib/api/client-error-reporter";
 
@@ -20,7 +21,7 @@ export default function Error({
   }, [error]);
 
   return (
-    <main className="mx-auto flex min-h-[70vh] w-full max-w-3xl items-center px-4 py-12 sm:px-6">
+    <ErrorPageLayout>
       <SupportErrorCta
         title="We hit an error loading this page"
         description="Please follow us on X and join our Telegram community for customer support while we sort this out."
@@ -28,6 +29,6 @@ export default function Error({
         onRetry={() => router.push("/")}
         retryLabel="Go home"
       />
-    </main>
+    </ErrorPageLayout>
   );
 }

@@ -151,6 +151,7 @@ export function UserNav() {
         <DropdownMenuGroup>
           <MenuLink href="/dashboard">Dashboard</MenuLink>
           <MenuLink href="/dashboard/settings/profile">Your profile</MenuLink>
+          <MenuLink href="/dashboard/causes">Your causes</MenuLink>
           <MenuLink href="/dashboard/settings/kyc">
             Verification
             <span
@@ -180,6 +181,9 @@ export function UserNav() {
               <MenuLink href={organizationProfileHref}>
                 Organisation profile
               </MenuLink>
+              <MenuLink href="/dashboard/partner-credits">
+                Partner credits
+              </MenuLink>
               <MenuLink href="/dashboard/settings/organization">
                 Team &amp; organisation
               </MenuLink>
@@ -197,6 +201,9 @@ export function UserNav() {
               <MenuLink href="/dashboard/admin/analytics">Analytics</MenuLink>
               <MenuLink href="/dashboard/admin/causes">Manage causes</MenuLink>
               <MenuLink href="/dashboard/admin/users">Manage users</MenuLink>
+              <MenuLink href="/dashboard/admin/partners">
+                Partner credits
+              </MenuLink>
               <MenuLink href="/dashboard/admin/petitions">
                 Manage petitions
               </MenuLink>

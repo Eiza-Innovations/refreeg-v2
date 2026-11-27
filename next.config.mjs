@@ -88,6 +88,7 @@ const nextConfig = {
   },
   images: {
     formats: ["image/avif", "image/webp"],
+    localPatterns: [{ pathname: "/api/s3/image" }, { pathname: "/**" }],
     minimumCacheTTL: 60 * 60 * 24 * 30,
     deviceSizes: [640, 1080, 1920],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
@@ -128,6 +129,13 @@ const nextConfig = {
         hostname: "flagcdn.com",
       },
     ],
+  },
+
+  // Same alias as the webpack hook below, for `pnpm dev:turbo`.
+  turbopack: {
+    resolveAlias: {
+      handlebars: "handlebars/dist/handlebars.js",
+    },
   },
 
   webpack(config) {

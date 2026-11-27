@@ -49,6 +49,9 @@ const mockPrisma = prisma as unknown as {
 };
 
 describe("user-actions", () => {
+  const originalDemoEnabled = process.env.STORE_REVIEW_DEMO_ENABLED;
+  const originalDemoEmail = process.env.STORE_REVIEW_DEMO_EMAIL;
+
   beforeEach(() => {
     jest.clearAllMocks();
     mockAuth.mockResolvedValue({ user: { id: "admin-1" } });
@@ -58,6 +61,11 @@ describe("user-actions", () => {
     mockPrisma.user.update.mockResolvedValue({});
     mockLogAdminActivity.mockResolvedValue(undefined);
     mockExecuteDeletion.mockResolvedValue({ success: true, statusCode: 200 });
+  });
+
+  afterEach(() => {
+    process.env.STORE_REVIEW_DEMO_ENABLED = originalDemoEnabled;
+    process.env.STORE_REVIEW_DEMO_EMAIL = originalDemoEmail;
   });
 
   describe("blockUser", () => {
@@ -165,6 +173,44 @@ describe("user-actions", () => {
       expect(await deleteUserAccount("admin-1")).toEqual({
         error: "Not authenticated",
       });
+    });
+
+    it("simulates deletion without deleting the DB row for the active Store Review Demo account", async () => {
+      process.env.STORE_REVIEW_DEMO_ENABLED = "true";
+      delete process.env.STORE_REVIEW_DEMO_EMAIL;
+      mockAuth.mockResolvedValue({
+        user: { id: "demo-reviewer", email: "playreview@refreeg.com" },
+      });
+
+      const result = await deleteUserAccount("demo-reviewer");
+
+      expect(result).toEqual({ error: null });
+      expect(mockExecuteDeletion).not.toHaveBeenCalled();
+      expect(revalidatePath).toHaveBeenCalledWith("/dashboard/settings");
+    });
+
+    it("executes real deletion for playreview@refreeg.com when STORE_REVIEW_DEMO_ENABLED is not 'true'", async () => {
+      process.env.STORE_REVIEW_DEMO_ENABLED = "false";
+      mockAuth.mockResolvedValue({
+        user: { id: "demo-reviewer", email: "playreview@refreeg.com" },
+      });
+
+      const result = await deleteUserAccount("demo-reviewer");
+
+      expect(result).toEqual({ error: null });
+      expect(mockExecuteDeletion).toHaveBeenCalledWith("demo-reviewer");
+    });
+
+    it("executes real deletion for regular users even when STORE_REVIEW_DEMO_ENABLED is 'true'", async () => {
+      process.env.STORE_REVIEW_DEMO_ENABLED = "true";
+      mockAuth.mockResolvedValue({
+        user: { id: "regular-user", email: "donor@example.com" },
+      });
+
+      const result = await deleteUserAccount("regular-user");
+
+      expect(result).toEqual({ error: null });
+      expect(mockExecuteDeletion).toHaveBeenCalledWith("regular-user");
     });
   });
 

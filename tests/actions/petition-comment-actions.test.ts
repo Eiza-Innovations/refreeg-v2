@@ -1,3 +1,7 @@
+jest.mock("@/lib/auth/auth", () => ({
+  auth: jest.fn(),
+}));
+
 jest.mock("@/lib/prisma", () => ({
   prisma: {
     petition_comments: {
@@ -11,6 +15,7 @@ jest.mock("@/lib/prisma", () => ({
   },
 }));
 
+import { auth } from "@/lib/auth/auth";
 import { prisma } from "@/lib/prisma";
 import {
   createPetitionComment,
@@ -37,9 +42,12 @@ const mockUser = {
   username: "jane",
 };
 
+const mockAuth = auth as jest.Mock;
+
 describe("petition-comment-actions", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockAuth.mockResolvedValue({ user: { id: "user-1" } });
   });
 
   describe("createPetitionComment", () => {
@@ -133,6 +141,7 @@ describe("petition-comment-actions", () => {
       mockPrisma.petition_comments.findMany.mockResolvedValue([
         {
           id: "comment-1",
+          petition_id: "petition-1",
           content: "Top level",
           created_at: createdAt,
           user: mockUser,
@@ -147,6 +156,8 @@ describe("petition-comment-actions", () => {
       expect(result).toEqual([
         expect.objectContaining({
           id: "comment-1",
+          cause_id: "petition-1",
+          updated_at: createdAt.toISOString(),
           replies_count: 2,
           user: {
             full_name: "Jane Doe",

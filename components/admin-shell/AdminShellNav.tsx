@@ -9,10 +9,12 @@ import {
   Contact,
   Database,
   Flag,
+  Handshake,
   LayoutGrid,
   Megaphone,
   Receipt,
   ScrollText,
+  TrendingUp,
   TriangleAlert,
   Users,
 } from "lucide-react";
@@ -42,6 +44,11 @@ const navGroups: { label: string; items: NavItem[] }[] = [
         title: "Analytics",
         href: "/dashboard/admin/analytics",
         icon: BarChart3,
+      },
+      {
+        title: "Campaign analytics",
+        href: "/dashboard/admin/campaign-analytics",
+        icon: TrendingUp,
       },
       {
         title: "API monitoring",
@@ -91,7 +98,14 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   },
   {
     label: "People & growth",
-    items: [{ title: "Users", href: "/dashboard/admin/users", icon: Users }],
+    items: [
+      { title: "Users", href: "/dashboard/admin/users", icon: Users },
+      {
+        title: "Partners",
+        href: "/dashboard/admin/partners",
+        icon: Handshake,
+      },
+    ],
   },
   {
     label: "System",

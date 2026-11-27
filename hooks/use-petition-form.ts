@@ -7,15 +7,15 @@ import {
   MAX_PETITION_MEDIA_BYTES,
   mediaBytes,
   petitionSchemas,
+  fieldsForStep,
   stepHasErrors,
   type PetitionFormFields,
   type PetitionFormMode,
   type PetitionSection,
 } from "@/lib/schemas/petition.schema";
+import type { MediaErrors } from "@/types/petition-types";
 
 export const LAST_PETITION_STEP = 5;
-
-type MediaErrors = { coverImage?: string; multimedia?: string };
 
 /**
  * State for the create and edit petition wizards: one form object, zod
@@ -39,9 +39,9 @@ export function usePetitionForm({
 
   const errors = { ...fieldErrors, ...mediaErrors };
 
-  const validate = () => {
+  const validate = (only?: readonly string[]) => {
     setMediaErrors({});
-    return validateFields();
+    return validateFields(only);
   };
 
   const setFormFields = <K extends keyof PetitionFormFields>(
@@ -154,7 +154,7 @@ export function usePetitionForm({
     );
 
   const nextStep = () => {
-    validate();
+    validate(fieldsForStep(currentStep));
     if (
       currentStep < LAST_PETITION_STEP &&
       !stepHasErrors(form, mode, currentStep)
@@ -186,5 +186,3 @@ export function usePetitionForm({
     prevStep,
   };
 }
-
-export type PetitionFormApi = ReturnType<typeof usePetitionForm>;

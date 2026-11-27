@@ -262,6 +262,8 @@ jobs:
           NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY }}
           NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          STORE_REVIEW_DEMO_ENABLED: ${{ secrets.STORE_REVIEW_DEMO_ENABLED }}
+          STORE_REVIEW_DEMO_EMAIL: ${{ secrets.STORE_REVIEW_DEMO_EMAIL }}
         run: |
           cat > secrets.env <<EOF
           DIDIT_WEBHOOK_SECRET=${DIDIT_WEBHOOK_SECRET}
@@ -308,6 +310,8 @@ jobs:
           NEXT_PUBLIC_SENTRY_DSN=${NEXT_PUBLIC_SENTRY_DSN}
           NEXT_PUBLIC_SENTRY_ENVIRONMENT=production
           SENTRY_DSN=${SENTRY_DSN}
+          STORE_REVIEW_DEMO_ENABLED=${STORE_REVIEW_DEMO_ENABLED:-false}
+          STORE_REVIEW_DEMO_EMAIL=${STORE_REVIEW_DEMO_EMAIL}
           NODE_ENV=production
           PORT=3000
           EOF

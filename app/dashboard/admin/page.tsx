@@ -1,6 +1,4 @@
-import { notFound, redirect } from "next/navigation";
 import { AdminOverview } from "@/components/admin/overview/admin-overview";
-import { getUserRole } from "@/lib/auth/admin-auth";
 import { auth } from "@/lib/auth/auth";
 
 export const metadata = {
@@ -27,14 +25,8 @@ function greetingFor(now: Date) {
 
 export default async function AdminOverviewPage() {
   const session = await auth();
-  if (!session?.user?.id) {
-    redirect(`/auth/signin?redirect=${encodeURIComponent("/dashboard/admin")}`);
-  }
-  const role = await getUserRole(session.user.id);
-  if (role !== "admin" && role !== "manager") notFound();
-
   const now = new Date();
-  const firstName = session.user.name?.trim().split(/\s+/)[0];
+  const firstName = session?.user?.name?.trim().split(/\s+/)[0];
 
   return (
     <AdminOverview

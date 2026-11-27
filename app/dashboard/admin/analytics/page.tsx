@@ -1,8 +1,5 @@
-import { notFound, redirect } from "next/navigation";
 import { AnalyticsWorkspace } from "@/components/admin/analytics-workspace";
-import { getWorkspaceData } from "@/lib/admin-analytics/workspace-data";
-import { getUserRole } from "@/lib/auth/admin-auth";
-import { auth } from "@/lib/auth/auth";
+import { getWorkspaceData } from "@/actions/admin/admin-analytics-actions";
 import type { Period } from "@/components/admin/workspace/types";
 
 export const metadata = {
@@ -17,15 +14,6 @@ export default async function AdminAnalyticsPage({
 }: {
   searchParams: Promise<{ period?: string }>;
 }) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    redirect(
-      `/auth/signin?redirect=${encodeURIComponent("/dashboard/admin/analytics")}`,
-    );
-  }
-  const role = await getUserRole(session.user.id);
-  if (role !== "admin" && role !== "manager") notFound();
-
   const { period: requested } = await searchParams;
   const period = PERIODS.includes(requested as Period)
     ? (requested as Period)
