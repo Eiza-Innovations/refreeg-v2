@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useObjectUrl, useObjectUrls } from "@/hooks/use-object-urls";
 import { categories } from "@/lib/causes/categories";
 import { isVideoFile } from "@/lib/media/video";
+import { formatCurrency } from "@/lib/utils";
 import type { CauseFormValues } from "@/lib/schemas/cause.schema";
 
 const MultimediaCarousel = dynamic(
@@ -63,10 +64,7 @@ export function CauseReviewStep({ form, onEdit, busy }: Props) {
     Number(Boolean(form.coverImage || form.image)) +
     multimedia.length +
     videoLinks.filter((link) => link.trim()).length;
-  const formattedGoal = new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency,
-  }).format(Number(goal));
+  const formattedGoal = formatCurrency(Number(goal), currency);
   const rows = [
     {
       label: "Cause",
