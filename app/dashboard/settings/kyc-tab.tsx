@@ -2,32 +2,17 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import {
-  AlertCircle,
-  CheckCircle2,
-  Clock,
-  Lock,
-  Shield,
-  ShieldCheck,
-  XCircle,
-} from "lucide-react";
+import { CheckCircle2, Clock, Lock, Shield, ShieldCheck } from "lucide-react";
+import { Heading, P, Small } from "@/components/marketing/Typography";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CalloutBanner } from "@/components/ui/callout-banner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Eyebrow } from "@/components/ui/eyebrow";
-import { Heading, P, Small } from "@/components/marketing/Typography";
-import type { KycStatus, KycTabProps } from "@/types/kyc-types";
+import type { KycTabProps } from "@/types/kyc-types";
 import { KycLegacyDetailsCard } from "./kyc/kyc-legacy-details-card";
-import { kycBenefits, kycStatusMeta } from "./kyc/kyc-status-meta";
-
-const STATUS_ICONS: Record<KycStatus, typeof Shield> = {
-  approved: CheckCircle2,
-  rejected: XCircle,
-  resubmitted: AlertCircle,
-  pending: Clock,
-  in_progress: Clock,
-};
+import { KycStatusCard } from "./kyc/kyc-status-card";
+import { kycBenefits } from "./kyc/kyc-status-meta";
 
 const BENEFIT_ICONS = {
   trust: ShieldCheck,
@@ -40,13 +25,6 @@ export function KycTab({ profile, initialKyc, initialError }: KycTabProps) {
     profile.account_type === "organization"
       ? "Organisation verification"
       : "Account verification";
-
-  const statusMeta = initialKyc
-    ? kycStatusMeta[initialKyc.status] ?? kycStatusMeta.pending
-    : null;
-  const StatusIcon = initialKyc
-    ? STATUS_ICONS[initialKyc.status] ?? Shield
-    : Shield;
 
   return (
     <div className="space-y-6">
@@ -121,50 +99,7 @@ export function KycTab({ profile, initialKyc, initialError }: KycTabProps) {
           </div>
         </div>
       ) : (
-        <Card variant="surface" className="overflow-hidden rounded-2xl shadow-none">
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-hairline bg-bone/50 px-6 py-5">
-            <div className="flex items-center gap-4">
-              <div className="rounded-xl border border-hairline bg-surface p-2.5">
-                <StatusIcon className="h-6 w-6 text-forest" />
-              </div>
-              <div>
-                <Heading as="h2" size="card" className="font-semibold">Identity verification</Heading>
-                <P className="mt-0.5 text-sm text-ink/60">{statusMeta?.summary}</P>
-              </div>
-            </div>
-            {statusMeta && <Badge variant={statusMeta.badge.variant}>{statusMeta.badge.label}</Badge>}
-          </div>
-
-          <CardContent className="space-y-4 p-6">
-            {statusMeta && (
-              <CalloutBanner
-                variant={statusMeta.callout.variant}
-                title={statusMeta.callout.title}
-                description={statusMeta.callout.description}
-              />
-            )}
-
-            {(initialKyc.status === "rejected" || initialKyc.status === "resubmitted") &&
-              initialKyc.verification_notes && (
-                <CalloutBanner
-                  variant={initialKyc.status === "rejected" ? "rust" : "gold"}
-                  title={initialKyc.status === "rejected" ? "Why it wasn't approved" : "What to update"}
-                  description={initialKyc.verification_notes}
-                />
-              )}
-
-            {statusMeta?.ctaLabel && (
-              <div>
-                <Button asChild variant="ink">
-                  <Link href="/dashboard/settings/kyc-setup">
-                    <Shield className="mr-2 h-4 w-4" />
-                    {statusMeta.ctaLabel}
-                  </Link>
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <KycStatusCard kycData={initialKyc} context="overview" />
       )}
 
       {initialKyc && initialKyc.document_type !== "didit" && (

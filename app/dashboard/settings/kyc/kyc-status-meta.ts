@@ -96,3 +96,49 @@ export const diditChecklistSteps = [
     description: "Keep your face and document sharp and free of glare.",
   },
 ] as const;
+
+export const kycUnlockedFeatures = [
+  {
+    title: "Launch campaigns",
+    description: "Publish verified donation fundraisers for causes you run.",
+  },
+  {
+    title: "Create petitions",
+    description: "Rally public signatures and share verified civic campaigns.",
+  },
+  {
+    title: "Build wishlists",
+    description: "Accept direct contributions toward itemized community needs.",
+  },
+  {
+    title: "Direct payouts",
+    description: "Withdraw cleared funds straight to your linked bank account.",
+  },
+] as const;
+
+export const kycPendingSteps = [
+  {
+    step: "1",
+    label: "ID & selfie submitted",
+    detail: "Received securely via Didit",
+    state: "done",
+  },
+  {
+    step: "2",
+    label: "Automated Didit review",
+    detail: "Checking document & facial match",
+    state: "active",
+  },
+  {
+    step: "3",
+    label: "Verified & unlocked",
+    detail: "Email sent as soon as it clears",
+    state: "upcoming",
+  },
+] as const;
+
+export const kycRetryChecklist = [
+  "Use a valid, unexpired government-issued photo ID",
+  "Capture all four corners in bright, even lighting with no glare",
+  "Remove glasses, hats, or masks during the selfie scan",
+] as const;

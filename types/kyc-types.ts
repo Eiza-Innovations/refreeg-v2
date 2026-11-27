@@ -155,3 +155,9 @@ export interface DiditKycFormProps {
   rejectedNote?: string | null;
   kycFetchError?: string | null;
 }
+
+export interface KycStatusCardProps {
+  kycData: KycVerification;
+  context?: "overview" | "setup";
+  isPolling?: boolean;
+}
