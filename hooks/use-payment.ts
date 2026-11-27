@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useCallback } from "react";
 import { TransactionData, PaymentProviderType } from "@/types";
 import { toast } from "@/hooks/use-toast";
@@ -27,7 +28,12 @@ export const usePayment = (): UsePaymentReturn => {
     try {
       setIsLoading(true);
       setError(null);
-      trackFunnelStep(data.causeId, "amount", { amount: Number(data.amount) });
+
+      if (data.causeId) {
+        trackFunnelStep(data.causeId, "amount", {
+          amount: Number(data.amount),
+        });
+      }
 
       const response = await fetch("/api/payments/initialize", {
         method: "POST",
@@ -43,15 +49,19 @@ export const usePayment = (): UsePaymentReturn => {
         throw new Error(result.error || "Failed to initialize payment");
       }
 
-      trackFunnelStep(data.causeId, "payment", {
-        amount: Number(data.amount),
-        reference: result.data.reference,
-      });
+      if (data.causeId) {
+        trackFunnelStep(data.causeId, "payment", {
+          amount: Number(data.amount),
+          reference: result.data.reference,
+        });
+      }
+
       localStorage.setItem("payment_reference", result.data.reference);
       localStorage.setItem(
         "payment_provider",
         data.paymentProvider || "paystack",
       );
+
       // Shown on the declined screen, where no donation record exists.
       localStorage.setItem("payment_amount", String(data.amount));
 
@@ -96,7 +106,6 @@ export const usePayment = (): UsePaymentReturn => {
         }
 
         localStorage.setItem("payment_reference", result.data.reference);
-
         localStorage.setItem("payment_provider", "paystack");
 
         window.location.href = result.data.authorization_url;
