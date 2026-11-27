@@ -57,7 +57,9 @@ describe("CreateWishlistForm item rows", () => {
     fireEvent.change(screen.getByLabelText(/Wishlist name/), {
       target: { value: "Nomso's Wishlist" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /continue to add gifts/i }),
+    );
   };
 
   it("starts with one row and grows up to the 8-item cap", () => {
