@@ -81,7 +81,7 @@ export function ContributeSheet({
   const amount =
     form.preset === "other" ? Number(form.other) || 0 : form.preset;
   const remaining = Math.max(item.price - item.contributed, 0);
-  const { errors, validate, clearError, setError } = useValidator({
+  const { errors, validate, clearError, setErrors } = useValidator({
     store: {
       amount,
       name: viewer?.name || form.name,
@@ -110,10 +110,10 @@ export function ContributeSheet({
 
   const review = () => {
     if (amount > remaining) {
-      setError(
-        "amount",
-        `This item only needs ₦${remaining.toLocaleString()} more.`,
-      );
+      setErrors((current) => ({
+        ...current,
+        amount: `This item only needs ₦${remaining.toLocaleString()} more.`,
+      }));
       return;
     }
     if (!validate()) return;
