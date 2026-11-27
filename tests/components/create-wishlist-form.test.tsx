@@ -153,6 +153,7 @@ describe("CreateWishlistForm item rows", () => {
     expect(screen.getByText("1 of 8")).toBeInTheDocument();
     expect(screen.queryByLabelText("Item name 2")).not.toBeInTheDocument();
   });
+
   it("uploads a photo for a row and sends its key with the item", async () => {
     (uploadFileWithPresign as jest.Mock).mockResolvedValue({
       key: "uploads/wishlist-items/u1/images/desk.jpg",
@@ -186,7 +187,7 @@ describe("CreateWishlistForm item rows", () => {
     });
   });
 
-  it("rejects non-image files without uploading", () => {
+  it("rejects non-image files without uploading", async () => {
     render(<CreateWishlistForm seasonal={false} username="nomso" />);
     goToStep2();
 
@@ -196,10 +197,12 @@ describe("CreateWishlistForm item rows", () => {
       },
     });
 
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith({
+        title: "Use a JPG, PNG, WebP or GIF image",
+      }),
+    );
     expect(uploadFileWithPresign).not.toHaveBeenCalled();
-    expect(toast).toHaveBeenCalledWith({
-      title: "Use a JPG, PNG, WebP or GIF image",
-    });
   });
 
   it("lets the owner remove an uploaded photo", async () => {
