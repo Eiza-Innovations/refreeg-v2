@@ -7,6 +7,7 @@ import { isOwnUploadKey } from "@/lib/s3/owned-key";
 import { auth } from "@/lib/auth/auth";
 import { prisma } from "@/lib/prisma";
 import { sendOrganizationInvitationEmail } from "@/services/mail";
+import { normalizeOptionalUrl } from "@/lib/url/normalize-optional-url";
 
 const MANAGER_ROLES = new Set(["owner", "admin"]);
 const INVITATION_ROLES = new Set(["admin", "member", "approver", "viewer"]);
@@ -34,25 +35,6 @@ function mapPreferences(value: unknown): OrganizationPreferences {
     teamDigest: stored.teamDigest !== false,
     publicProfile: stored.publicProfile !== false,
   };
-}
-
-function normalizeOptionalUrl(value: string | undefined, label: string) {
-  const trimmed = value?.trim();
-  if (!trimmed) return null;
-
-  const candidate = /^https?:\/\//i.test(trimmed)
-    ? trimmed
-    : `https://${trimmed}`;
-
-  try {
-    const url = new URL(candidate);
-    if (!url.hostname || !["http:", "https:"].includes(url.protocol)) {
-      throw new Error();
-    }
-    return url.toString();
-  } catch {
-    throw new Error(`Enter a valid ${label} URL.`);
-  }
 }
 
 function normalizeOptionalWhatsAppNumber(value: string | undefined) {
