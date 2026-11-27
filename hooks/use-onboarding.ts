@@ -230,7 +230,23 @@ export function useOnboarding() {
         },
         user!.image,
       ),
-    onSuccess: () => goToStep("kyc"),
+    onSuccess: (saved, submitted) => {
+      updateOnboardingData("profile", {
+        ...onboardingData.profile,
+        firstName: submitted.firstName,
+        lastName: submitted.lastName,
+        username: submitted.username,
+        location: submitted.location,
+        phone: submitted.phone,
+        profilePhoto:
+          saved?.profilePhoto ||
+          submitted.profilePhoto ||
+          onboardingData.profile.profilePhoto ||
+          user?.image ||
+          "",
+      });
+      goToStep("kyc");
+    },
     onError: showSaveError("Error creating profile"),
   });
 
