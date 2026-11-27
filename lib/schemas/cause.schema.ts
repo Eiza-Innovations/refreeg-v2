@@ -127,25 +127,39 @@ function causeSchema(mode: CauseFormMode) {
     });
 }
 
-const schemas = { create: causeSchema("create"), edit: causeSchema("edit") };
+export const causeSchemas = {
+  create: causeSchema("create"),
+  edit: causeSchema("edit"),
+};
 
 /** Validates the whole form and returns the first message per field. */
 export function validateCauseForm(
   values: CauseFormValues,
   mode: CauseFormMode,
 ): CauseFormErrors {
-  const result = schemas[mode].safeParse(values);
+  const result = causeSchemas[mode].safeParse(values);
   if (result.success) return {};
 
+  return causeIssueErrors(result.error.issues);
+}
+
+export function causeIssueErrors(
+  issues: z.ZodIssue[],
+  only?: readonly string[],
+): CauseFormErrors {
   const errors: CauseFormErrors = {};
-  for (const issue of result.error.issues) {
+  for (const issue of issues) {
     const [key, index, field] = issue.path;
-    if (key === "sections" && typeof index === "number") {
-      const sections = (errors.sections ??= values.sections.map(
-        (): Partial<CauseSection> => ({}),
-      ));
-      sections[index][field as keyof CauseSection] ??= issue.message;
-    } else if (typeof key === "string") {
+    if (typeof key !== "string" || (only && !only.includes(key))) continue;
+    if (
+      key === "sections" &&
+      typeof index === "number" &&
+      (field === "heading" || field === "description")
+    ) {
+      const sections = (errors.sections ??= []);
+      const section = (sections[index] ??= {});
+      section[field] ??= issue.message;
+    } else if (key !== "sections") {
       const name = key as Exclude<keyof CauseFormErrors, "sections">;
       errors[name] ??= issue.message;
     }
@@ -163,12 +177,12 @@ export function hasCauseErrors(errors: CauseFormErrors) {
   );
 }
 
-/** Which error keys block each wizard step (steps 5 has none). */
+/** Which error keys belong to each step of the campaign form. */
 export const stepErrorKeys: Record<number, (keyof CauseFormErrors)[]> = {
-  1: ["title", "location", "category", "goal"],
-  2: ["sections"],
-  3: ["startDate", "endDate"],
-  4: ["coverImage"],
+  1: ["location", "category"],
+  2: ["title", "summary", "sections"],
+  3: ["goal", "startDate", "endDate"],
+  4: ["coverImage", "multimedia"],
 };
 
 export function stepHasErrors(errors: CauseFormErrors, step: number) {

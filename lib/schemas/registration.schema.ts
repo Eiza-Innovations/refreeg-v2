@@ -2,7 +2,6 @@ import { z } from "zod";
 import {
   normalizeRegistrationInput,
   validateRegistrationInput,
-  type SignupAccountType,
 } from "@/lib/auth/registration";
 
 /**
@@ -28,16 +27,6 @@ export const signupSchema = z
   });
 
 export type SignupFields = z.infer<typeof signupSchema>;
-
-/** Rules for one account type, used to read the first message per field. */
-export function getSignupErrors(
-  fields: SignupFields,
-  accountType: SignupAccountType = "individual",
-) {
-  return validateRegistrationInput(
-    normalizeRegistrationInput({ accountType, ...fields }),
-  );
-}
 
 export const changePasswordSchema = z
   .object({

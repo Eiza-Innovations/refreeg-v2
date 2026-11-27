@@ -5,6 +5,14 @@ import { otpMatches } from "@/lib/auth/otp";
 import { deriveFullNameFromEmail } from "@/lib/auth/registration";
 import { runPostSignupActions } from "@/lib/auth/welcome";
 
+/**
+ * Sign-up writes several rows over the network, so Prisma's 5s default
+ * interactive-transaction timeout can expire on a slow database round trip
+ * and fail an otherwise valid code (P2028). The pending row survives, so a
+ * retry works, but people should not have to.
+ */
+const VERIFY_TRANSACTION_OPTIONS = { maxWait: 10_000, timeout: 30_000 };
+
 const SIGNUP_EIZA_BONUS = 150;
 
 function createOrganizationSlug(name: string) {
@@ -169,7 +177,7 @@ export async function POST(req: Request) {
       });
 
       return profile;
-    });
+    }, VERIFY_TRANSACTION_OPTIONS);
 
     await runPostSignupActions({
       email: newProfile.email as string,

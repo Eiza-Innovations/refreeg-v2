@@ -154,105 +154,184 @@ export async function createOnboardingProfile(
   return data;
 }
 
+async function hasCompletedOnboardingOrThrow(userId: string): Promise<boolean> {
+  const profile = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      fullName: true,
+      phone: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      username: true,
+      location: true,
+      createdAt: true,
+      onboarding_completed: true,
+    },
+  });
+
+  if (!profile) {
+    return false;
+  }
+
+  if (profile.onboarding_completed === true) {
+    return true;
+  }
+
+  // Preserve access for legacy accounts that predate the onboarding wizard.
+  return new Date(profile.createdAt) < new Date("2024-12-21");
+}
+
 export async function hasCompletedOnboarding(userId: string): Promise<boolean> {
   try {
-    const profile = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        fullName: true,
-        phone: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        username: true,
-        location: true,
-        createdAt: true,
-        onboarding_completed: true,
-      },
-    });
-
-    if (!profile) {
-      return false;
-    }
-
-    if (profile.onboarding_completed === true) {
-      return true;
-    }
-
-    // Preserve access for legacy accounts that predate the onboarding wizard.
-    return new Date(profile.createdAt) < new Date("2024-12-21");
+    return await hasCompletedOnboardingOrThrow(userId);
   } catch (error) {
     console.error("Error checking onboarding completion:", error);
     return false;
   }
 }
 
+async function getCurrentOnboardingStepOrThrow(
+  userId: string,
+): Promise<number> {
+  const profile = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      accountType: true,
+      gender: true,
+      firstName: true,
+      lastName: true,
+      username: true,
+      location: true,
+      phone: true,
+      email: true,
+      profilePhoto: true,
+    },
+  });
+
+  if (!profile) {
+    return 1;
+  }
+
+  if (!profile.accountType) {
+    return 1;
+  }
+
+  // Organization onboarding skips the gender and profile steps; the
+  // organisation details step derives the owner profile server-side.
+  if (profile.accountType === "organization") {
+    const org = await prisma.organization.findFirst({
+      where: { ownerId: userId },
+      select: { purpose: true, csrBudget: true },
+    });
+    if (!org) return 3.5;
+    // Same rule as the step list: everything except a fundraising-only
+    // organisation (including one whose purpose was never chosen) has a CSR step.
+    if (org.purpose !== "fundraising" && org.csrBudget == null) {
+      return 3.6;
+    }
+    return 3.7;
+  }
+
+  if (!profile.gender) {
+    return 2;
+  }
+
+  const hasProfileData = !!(
+    profile.firstName &&
+    profile.lastName &&
+    profile.username &&
+    profile.location &&
+    profile.phone &&
+    profile.email
+  );
+
+  if (!hasProfileData) {
+    return 3;
+  }
+
+  return 4;
+}
+
 export async function getCurrentOnboardingStep(
   userId: string,
 ): Promise<number> {
   try {
-    const profile = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        accountType: true,
-        gender: true,
-        firstName: true,
-        lastName: true,
-        username: true,
-        location: true,
-        phone: true,
-        email: true,
-        profilePhoto: true,
-      },
-    });
-
-    if (!profile) {
-      return 1;
-    }
-
-    if (!profile.accountType) {
-      return 1;
-    }
-
-    // Organization onboarding skips the gender and profile steps; the
-    // organisation details step derives the owner profile server-side.
-    if (profile.accountType === "organization") {
-      const org = await prisma.organization.findFirst({
-        where: { ownerId: userId },
-        select: { purpose: true, csrBudget: true },
-      });
-      if (!org) return 3.5;
-      if (
-        (org.purpose === "csr" || org.purpose === "both") &&
-        org.csrBudget == null
-      ) {
-        return 3.6;
-      }
-      return 3.7;
-    }
-
-    if (!profile.gender) {
-      return 2;
-    }
-
-    const hasProfileData = !!(
-      profile.firstName &&
-      profile.lastName &&
-      profile.username &&
-      profile.location &&
-      profile.phone &&
-      profile.email
-    );
-
-    if (!hasProfileData) {
-      return 3;
-    }
-
-    return 4;
+    return await getCurrentOnboardingStepOrThrow(userId);
   } catch (error) {
     console.error("Error determining onboarding step:", error);
     return 1;
   }
+}
+
+async function getOnboardingDataOrThrow(userId: string): Promise<{
+  accountType: string;
+  organizationPurpose: string;
+  gender: string;
+  profile: {
+    firstName: string;
+    lastName: string;
+    displayName: string;
+    username: string;
+    bio: string;
+    location: string;
+    phone: string;
+    email: string;
+    profilePhoto?: string;
+  };
+}> {
+  const profile = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      accountType: true,
+      gender: true,
+      firstName: true,
+      lastName: true,
+      organizationPurpose: true,
+      displayName: true,
+      username: true,
+      bio: true,
+      location: true,
+      phone: true,
+      email: true,
+      profilePhoto: true,
+    },
+  });
+
+  if (!profile) {
+    return {
+      accountType: "",
+      organizationPurpose: "",
+      gender: "",
+      profile: {
+        firstName: "",
+        lastName: "",
+        displayName: "",
+        username: "",
+        bio: "",
+        location: "",
+        phone: "",
+        email: "",
+      },
+    };
+  }
+
+  return {
+    accountType: profile.accountType || "",
+    organizationPurpose: profile.organizationPurpose || "",
+    gender: profile.gender || "",
+    profile: {
+      firstName: profile.firstName || "",
+      lastName: profile.lastName || "",
+      displayName: profile.displayName || "",
+      username: profile.username || "",
+      bio: profile.bio || "",
+      location: profile.location || "",
+      phone: profile.phone || "",
+      email: profile.email || "",
+      profilePhoto: profile.profilePhoto || undefined,
+    },
+  };
 }
 
 export async function getOnboardingData(userId: string): Promise<{
@@ -272,58 +351,7 @@ export async function getOnboardingData(userId: string): Promise<{
   };
 }> {
   try {
-    const profile = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        accountType: true,
-        gender: true,
-        firstName: true,
-        lastName: true,
-        organizationPurpose: true,
-        displayName: true,
-        username: true,
-        bio: true,
-        location: true,
-        phone: true,
-        email: true,
-        profilePhoto: true,
-      },
-    });
-
-    if (!profile) {
-      return {
-        accountType: "",
-        organizationPurpose: "",
-        gender: "",
-        profile: {
-          firstName: "",
-          lastName: "",
-          displayName: "",
-          username: "",
-          bio: "",
-          location: "",
-          phone: "",
-          email: "",
-        },
-      };
-    }
-
-    return {
-      accountType: profile.accountType || "",
-      organizationPurpose: profile.organizationPurpose || "",
-      gender: profile.gender || "",
-      profile: {
-        firstName: profile.firstName || "",
-        lastName: profile.lastName || "",
-        displayName: profile.displayName || "",
-        username: profile.username || "",
-        bio: profile.bio || "",
-        location: profile.location || "",
-        phone: profile.phone || "",
-        email: profile.email || "",
-        profilePhoto: profile.profilePhoto || undefined,
-      },
-    };
+    return await getOnboardingDataOrThrow(userId);
   } catch (error) {
     console.error("Error fetching onboarding data:", error);
     return {
@@ -421,6 +449,9 @@ export async function getOrganizationOnboardingData(userId: string) {
         facebookUrl: true,
         whatsappNumber: true,
         preferences: true,
+        csrBudget: true,
+        csrFinancialYearStart: true,
+        csrFocusCauses: true,
       },
     });
 
@@ -447,6 +478,9 @@ export async function getOrganizationOnboardingData(userId: string) {
       facebookUrl: org.facebookUrl || "",
       whatsappNumber: org.whatsappNumber || "",
       preferences: (org.preferences || {}) as Record<string, boolean>,
+      csrBudget: org.csrBudget == null ? null : Number(org.csrBudget),
+      csrFinancialYearStart: org.csrFinancialYearStart || "",
+      csrFocusCauses: org.csrFocusCauses ?? [],
     };
   } catch (error) {
     console.error("Error fetching organization onboarding data:", error);
@@ -586,4 +620,24 @@ export async function getProfileByUsername(
     console.error("Error in getProfileByUsername:", error);
     return null;
   }
+}
+
+/**
+ * Where the onboarding wizard should start, for one signed-in person.
+ *
+ * Unlike the three helpers it is built from, this does not hide a database
+ * failure behind a default ("step 1", "not finished", "no data"): a dropped
+ * connection must not send someone who is half way through back to the start,
+ * where they could pick a different account type.
+ */
+export async function getOnboardingProgress(userId: string) {
+  await assertSelf(userId);
+  if (await hasCompletedOnboardingOrThrow(userId)) {
+    return { completed: true as const };
+  }
+  const [step, data] = await Promise.all([
+    getCurrentOnboardingStepOrThrow(userId),
+    getOnboardingDataOrThrow(userId),
+  ]);
+  return { completed: false as const, step, data };
 }

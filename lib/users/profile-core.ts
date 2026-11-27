@@ -18,6 +18,7 @@ import type {
   BankDetailsFormData,
   OnboardingProfileData,
 } from "@/types";
+import { MAX_NAME_LENGTH } from "@/lib/schemas/onboarding-profile.schema";
 
 const ALLOWED_ONBOARDING_ACCOUNT_TYPES = new Set([
   "individual",
@@ -331,6 +332,16 @@ export async function createOnboardingProfileCore(
       throw new OnboardingValidationError("Invalid OAuth avatar URL", 400);
     }
     profilePhotoUrl = resolvedAvatar;
+  }
+
+  if (
+    (profileData.firstName?.trim().length ?? 0) > MAX_NAME_LENGTH ||
+    (profileData.lastName?.trim().length ?? 0) > MAX_NAME_LENGTH
+  ) {
+    throw new OnboardingValidationError(
+      `Names must be ${MAX_NAME_LENGTH} characters or fewer`,
+      400,
+    );
   }
 
   const fullName = `${profileData.firstName ?? ""} ${

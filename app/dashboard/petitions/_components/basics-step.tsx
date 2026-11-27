@@ -15,22 +15,17 @@ import {
   selectContentClass,
   selectItemClass,
   selectTriggerClass,
-} from "@/components/petitions/field-styles";
+} from "@/components/ui/field-styles";
 import { FieldError } from "@/components/ui/field-error";
 import { StepHeading } from "./StepHeading";
-import type { PetitionCopy } from "./petition-copy";
-import type { PetitionFormApi } from "@/hooks/use-petition-form";
-
-type Props = Pick<PetitionFormApi, "form" | "errors" | "setFormFields"> & {
-  copy: PetitionCopy;
-};
+import type { PetitionFieldsStepProps } from "@/types/petition-types";
 
 export function PetitionBasicsStep({
   form,
   errors,
   setFormFields,
   copy,
-}: Props) {
+}: PetitionFieldsStepProps) {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <StepHeading

@@ -145,7 +145,7 @@ When the same expression, lookup or type-based branch appears twice in a file, c
 
 Before writing a function, component, hook, schema or Prisma query, search the repo for one that already does the job (`grep` the verb and the table) and use it. Do not write a second copy.
 
-If the same logic appears (or you are about to write it) in two or more files, extract it once and have every place import it: a function in `lib/`, a component in `components/<domain>/`, a hook in `hooks/`, a query in the domain action or a `lib/` loader. Update the existing copies in the same change; do not leave them behind. Typical repeats: percent of a goal (`goalPercent` in `lib/progress.ts`), days left and end dates (`lib/duration.ts`), form state plus schema for the same form (`hooks/use-petition-sign-form.ts`), the same field markup (`components/petitions/sign-form-fields.tsx`), and the same Prisma `findMany` or `groupBy` called from several pages.
+If the same logic appears (or you are about to write it) in two or more files, extract it once and have every place import it: a function in `lib/`, a component in `components/<domain>/`, a hook in `hooks/`, a query in the domain action or a `lib/` loader. Update the existing copies in the same change; do not leave them behind. Typical repeats: percent of a goal (`goalPercent` in `lib/progress.ts`), days left and end dates (`lib/duration.ts`), form state plus schema for the same form (`hooks/use-petition-sign-form.ts`), the same field markup (`components/petitions/sign-form-fields.tsx`), and the same Prisma `findMany` or `groupBy` called from several pages. The creator dashboards share `components/dashboard/MyItemsPage.tsx`, `MyItemCard.tsx`, `MyItemMenu.tsx` and `MyItemsEmptyState.tsx`; options use `optionLabel` and `optionValue` from `lib/options/option-label.ts`.
 
 Before writing raw HTML, check `components/ui/` and the shared components. Look for existing pieces first: `EmptyState`, `CalloutBanner`, `Eyebrow`, `Card`, `Button`, `Badge`, `AlertDialog`.
 
@@ -184,6 +184,8 @@ A dialog that calls a server action wraps the call in `useMutation` from `@tanst
 
 ## 13. Types live in `types/`, never in actions
 
+Every named `type` or `interface` lives in `types/<feature>-types.ts`: component props, hook options and return shapes, copy and variant shapes, as well as action results. Do not declare or export one from a component, hook or action file. Two exceptions: a type inferred from a zod schema sits next to that schema (`z.infer`), and a one-off inline annotation on a single small parameter, such as `{ label }: { label: string }`, may stay inline.
+
 Actions files export async functions only. Any type or interface a server action returns or accepts (result shapes, row types, input types) goes in `types/<feature>-types.ts` and is imported with `import type` by the action, the hook and the component. A `"use server"` file must not be the source of a type other layers import.
 
 ```ts
@@ -203,6 +205,7 @@ import type { AdminOverviewData } from "@/types/admin-overview-types";
 ## 14. Admin screens inherit the shell and WorkspaceFrame
 
 Never inject arbitrary layout wrappers (e.g. `ClientLayoutWrapper` with radial gradients or glassmorphic overlays) into dashboard routes. Every `/dashboard/admin/*` screen inherits chrome from `AdminShell` (`bg-cream`) and page padding from `<WorkspaceFrame>` (`components/admin/workspace/workspace-frame.tsx`, `px-4 py-8 sm:px-8 max-w-[1440px]`). Never add redundant server-side role checks (`if (role !== "admin")`) inside `/dashboard/admin/*` page components — `middleware.ts` already guards `/dashboard/admin/*` routes globally. Actions and overview queries must access recently migrated or optional models defensively (e.g. `(prisma as any).<model>?.aggregate`) with fallback defaults so schema evolution never crashes the overview.
+
 ## 15. Prisma: typed client first, safe schema and migrations
 
 - Use the typed client for CRUD. Reach for `$queryRaw` only for window functions, `percentile_cont`, CTEs or `DISTINCT ON` the client cannot express (rule 15).

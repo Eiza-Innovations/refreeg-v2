@@ -1,0 +1,71 @@
+model PartnerAccount {
+  id                      String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                    String
+  contactEmail            String                     @unique @map("contact_email")
+  organizationId          String?                    @map("organization_id") @db.Uuid
+  userId                  String?                    @map("user_id") @db.Uuid
+  status                  String                     @default("pending_approval") @db.VarChar(32)
+  creditsIssued           Decimal                    @default(0) @map("credits_issued") @db.Decimal(15, 2)
+  creditsUsed             Decimal                    @default(0) @map("credits_used") @db.Decimal(15, 2)
+  expiresAt               DateTime                   @map("expires_at") @db.Timestamptz(6)
+  eligibleCategories      String[]                   @default([]) @map("eligible_categories")
+  rulesNote               String?                    @map("rules_note")
+  maxPerCampaign          Decimal?                   @map("max_per_campaign") @db.Decimal(15, 2)
+  employeeMatchingEnabled Boolean                    @default(false) @map("employee_matching_enabled")
+  matchingRatio           String?                    @default("1:1") @map("matching_ratio") @db.VarChar(16)
+  reconciliationRef       String?                    @map("reconciliation_ref") @db.VarChar(128)
+  paymentReconciled       Boolean                    @default(false) @map("payment_reconciled")
+  createdById             String                     @map("created_by_id") @db.Uuid
+  approvedById            String?                    @map("approved_by_id") @db.Uuid
+  approvedAt              DateTime?                  @map("approved_at") @db.Timestamptz(6)
+  rejectionReason         String?                    @map("rejection_reason")
+  partnerSince            DateTime?                  @map("partner_since") @db.Timestamptz(6)
+  createdAt               DateTime                   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime                   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  transactions            PartnerCreditTransaction[]
+  creditRequests          PartnerCreditRequest[]
+
+  @@index([status], map: "idx_partner_accounts_status")
+  @@index([userId], map: "idx_partner_accounts_user_id")
+  @@index([expiresAt], map: "idx_partner_accounts_expires_at")
+  @@map("partner_accounts")
+}
+
+model PartnerCreditTransaction {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  partnerId       String         @map("partner_id") @db.Uuid
+  type            String         @db.VarChar(32)
+  amount          Decimal        @db.Decimal(15, 2)
+  causeId         String?        @map("cause_id") @db.Uuid
+  causeTitle      String?        @map("cause_title")
+  donationId      String?        @map("donation_id") @db.Uuid
+  showAsSupporter Boolean        @default(true) @map("show_as_supporter")
+  note            String?
+  createdById     String         @map("created_by_id") @db.Uuid
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  partner         PartnerAccount @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@index([partnerId, createdAt], map: "idx_partner_credit_tx_partner_created")
+  @@index([partnerId, causeId], map: "idx_partner_credit_tx_partner_cause")
+  @@map("partner_credit_transactions")
+}
+
+model PartnerCreditRequest {
+  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  partnerId         String         @map("partner_id") @db.Uuid
+  kind              String         @db.VarChar(32)
+  amount            Decimal        @db.Decimal(15, 2)
+  reconciliationRef String?        @map("reconciliation_ref") @db.VarChar(128)
+  note              String?
+  status            String         @default("pending_approval") @db.VarChar(32)
+  requestedById     String         @map("requested_by_id") @db.Uuid
+  reviewedById      String?        @map("reviewed_by_id") @db.Uuid
+  reviewedAt        DateTime?      @map("reviewed_at") @db.Timestamptz(6)
+  rejectionReason   String?        @map("rejection_reason")
+  createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  partner           PartnerAccount @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt], map: "idx_partner_credit_req_status_created")
+  @@index([partnerId], map: "idx_partner_credit_req_partner_id")
+  @@map("partner_credit_requests")
+}

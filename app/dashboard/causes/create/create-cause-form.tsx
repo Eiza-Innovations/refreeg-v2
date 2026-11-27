@@ -1,14 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "nextjs-toploader/app";
 import { addDays, startOfDay } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
-import { useCause } from "@/hooks/use-cause";
+import { createCause } from "@/actions/causes/cause-actions";
 import { useCauseDraft } from "@/hooks/use-cause-draft";
 import { useCauseForm } from "@/hooks/use-cause-form";
-import { useToast } from "@/hooks/use-toast";
 import { createCauseStepMeta } from "@/lib/options/cause.options";
 import { campaignCategoryStyles } from "@/lib/causes/campaign-categories";
 import type { CauseFormValues } from "@/lib/schemas/cause.schema";
@@ -49,31 +48,22 @@ export default function CreateCauseForm() {
     ? rawCategory
     : "";
   const { user } = useAuth();
-  const { isLoading, createCause } = useCause();
-  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const router = useRouter();
-  const [submitting, setSubmitting] = useState(false);
   const wizard = useCauseForm({
     initialValues: initialValues(preselectedCategory),
     mode: "create",
   });
   const { form, errors, setFormFields, currentStep } = wizard;
-  const { clearDraft } = useCauseDraft({
+  const { clearDraft, saveDraft } = useCauseDraft({
     form,
     setForm: wizard.setForm,
     isSignedIn: Boolean(user),
   });
 
-  const handleSubmit = async () => {
-    if (!user) return;
-
-    setSubmitting(true);
-    if (!wizard.validateAll()) {
-      setSubmitting(false);
-      return;
-    }
-
-    try {
+  const submitMutation = useMutation({
+    mutationFn: async () => {
+      if (!user) return;
       const draftEntityId = crypto.randomUUID();
       let coverImage: File | string | null = form.coverImage;
 
@@ -105,8 +95,10 @@ export default function CreateCauseForm() {
         multimedia,
         video_links: form.videoLinks,
       });
+    },
+    onSuccess: () => {
       clearDraft();
-
+      void queryClient.invalidateQueries({ queryKey: ["causes"] });
       sendCauseUnderReviewEmail({
         causeName: form.title,
         reviewTimeframe: "3-5 business days",
@@ -116,41 +108,32 @@ export default function CreateCauseForm() {
       });
 
       router.push("/dashboard/causes");
-    } catch (error) {
-      console.error("Error submitting cause:", error);
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Failed to upload media or create cause";
-      if (/location|position|city/i.test(message)) {
-        wizard.setError("location", message);
-        wizard.setCurrentStep(1);
-      } else {
-        wizard.setError("multimedia", message);
-      }
-      toast({
-        title: "Launch Failed",
-        description: message,
-        variant: "destructive",
-      });
-    } finally {
-      setSubmitting(false);
-    }
+    },
+  });
+
+  const handleSubmit = () => {
+    if (!user || !wizard.validateAll() || submitMutation.isPending) return;
+    submitMutation.mutate();
   };
 
   return (
     <CauseWizard
-      title="Create a cause"
-      description="Set up your campaign, explain the need, and submit it for review. Your progress is saved as you go."
+      title="Create a campaign"
       stepMeta={createCauseStepMeta}
       currentStep={currentStep}
       onStepSelect={wizard.setCurrentStep}
       onBack={wizard.prevStep}
       onNext={wizard.nextStep}
       onSubmit={handleSubmit}
-      submitLabel="Launch Cause"
-      busyLabel="Launching..."
-      busy={isLoading || submitting}
+      submitLabel="Send for review"
+      busyLabel="Sending…"
+      busy={submitMutation.isPending}
+      submitError={submitMutation.error?.message}
+      onSaveAndExit={() => {
+        saveDraft();
+        router.push("/dashboard/causes");
+      }}
+      draftHasFiles={Boolean(form.coverImage || form.multimedia.length)}
     >
       {currentStep === 1 && (
         <CauseBasicsStep
@@ -160,24 +143,8 @@ export default function CreateCauseForm() {
           setFormFields={setFormFields}
         />
       )}
-      {currentStep === 2 && (
-        <CauseStoryStep
-          sections={form.sections}
-          errors={errors}
-          showErrors={wizard.attemptedStep === 2}
-          onAdd={wizard.addSection}
-          onRemove={wizard.removeSection}
-          onUpdate={wizard.updateSection}
-        />
-      )}
-      {currentStep === 3 && (
-        <CauseTimelineStep
-          startDate={form.startDate}
-          endDate={form.endDate}
-          errors={errors}
-          setFormFields={setFormFields}
-        />
-      )}
+      {currentStep === 2 && <CauseStoryStep {...wizard} />}
+      {currentStep === 3 && <CauseTimelineStep {...wizard} />}
       {currentStep === 4 && (
         <CauseMediaStep
           form={form}
@@ -189,7 +156,13 @@ export default function CreateCauseForm() {
           onGalleryRemove={wizard.removeMedia}
         />
       )}
-      {currentStep === 5 && <CauseReviewStep form={form} />}
+      {currentStep === 5 && (
+        <CauseReviewStep
+          form={form}
+          onEdit={wizard.setCurrentStep}
+          busy={submitMutation.isPending}
+        />
+      )}
     </CauseWizard>
   );
 }

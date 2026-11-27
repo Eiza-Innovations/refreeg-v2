@@ -1,9 +1,7 @@
 "use client";
 
-import {
-  SignupScreen,
-  type SignupVariant,
-} from "@/components/auth/signup-screen";
+import { SignupScreen } from "@/components/auth/SignupScreen";
+import type { SignupVariant } from "@/types/auth-types";
 
 const variant: SignupVariant = {
   accountType: "organization",
@@ -52,8 +50,6 @@ const variant: SignupVariant = {
     description: "Setting up your workspace.",
   },
   codeSentDescription: "We've sent a 6-digit code to verify your admin email.",
-  reviewDescription: "Correct the organization details and try again.",
-  fallbackError: "Could not create organization account",
 };
 
 export default function OrganizationSignUpPage() {

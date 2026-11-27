@@ -46,6 +46,26 @@ describe("createOnboardingProfileCore", () => {
     }));
   });
 
+  it("rejects names longer than 60 characters before saving anything", async () => {
+    mockPrisma.user.findUnique.mockResolvedValue({
+      profilePhoto: null,
+      accountType: "individual",
+    });
+
+    await expect(
+      createOnboardingProfileCore("user-1", {
+        firstName: "Amina",
+        lastName: "B".repeat(61),
+        username: "amina_bello",
+        location: "Lagos",
+        phone: "+2348000000000",
+        email: "amina@refreeg.com",
+        accountType: "individual",
+      }),
+    ).rejects.toThrow("Names must be 60 characters or fewer");
+    expect(mockPrisma.user.update).not.toHaveBeenCalled();
+  });
+
   it("persists trimmed bio, displayName, and normalized username using a safe non-PII select", async () => {
     mockPrisma.user.findUnique.mockResolvedValue({
       profilePhoto: null,

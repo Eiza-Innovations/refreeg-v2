@@ -194,6 +194,8 @@ jobs:
           NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY }}
           NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          STORE_REVIEW_DEMO_ENABLED: ${{ secrets.STORE_REVIEW_DEMO_ENABLED }}
+          STORE_REVIEW_DEMO_EMAIL: ${{ secrets.STORE_REVIEW_DEMO_EMAIL }}
           # HEALTH_CHECK_TOKEN intentionally NOT written - the ALB target group
           # health check can't send custom headers, so /api/health must stay
           # unauthenticated (it fails open with no token configured).
@@ -237,6 +239,8 @@ jobs:
             [NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY]="$NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY"
             [NEXT_PUBLIC_SENTRY_DSN]="$NEXT_PUBLIC_SENTRY_DSN"
             [SENTRY_DSN]="$SENTRY_DSN"
+            [STORE_REVIEW_DEMO_ENABLED]="${STORE_REVIEW_DEMO_ENABLED:-false}"
+            [STORE_REVIEW_DEMO_EMAIL]="${STORE_REVIEW_DEMO_EMAIL:-playreview@refreeg.com}"
             [NEXT_PUBLIC_SENTRY_ENVIRONMENT]="production"
             [NODE_ENV]="production"
           )

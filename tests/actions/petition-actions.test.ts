@@ -32,6 +32,10 @@ jest.mock("@/lib/prisma", () => ({
   },
 }));
 
+jest.mock("@/lib/petitions/remove-petition", () => ({
+  removePetition: jest.fn(),
+}));
+
 jest.mock("@/actions/users/auth-actions", () => ({
   getCurrentUser: jest.fn(),
 }));
@@ -57,6 +61,7 @@ jest.mock("@/lib/s3/s3-utils", () => ({
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { removePetition } from "@/lib/petitions/remove-petition";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/actions/users/auth-actions";
 import { isAdminOrManager } from "@/actions/admin/role-actions";
@@ -348,14 +353,55 @@ describe("petition-actions", () => {
   });
 
   describe("deletePetition", () => {
-    it("deletes a petition by id", async () => {
-      mockPrisma.petitions.delete.mockResolvedValue({});
+    beforeEach(() => {
+      mockGetCurrentUser.mockResolvedValue({ id: "owner-1" });
+      mockIsAdminOrManager.mockResolvedValue(false);
+      mockPrisma.petitions.findUnique.mockResolvedValue({ user_id: "owner-1" });
+      (removePetition as jest.Mock).mockResolvedValue(undefined);
+    });
+
+    it("lets the owner delete a petition", async () => {
+      await deletePetition("petition-1");
+
+      expect(removePetition).toHaveBeenCalledWith("petition-1");
+      expect(revalidatePath).toHaveBeenCalledWith("/dashboard/petitions");
+    });
+
+    it("lets an admin delete someone else's petition", async () => {
+      mockGetCurrentUser.mockResolvedValue({ id: "admin-1" });
+      mockIsAdminOrManager.mockResolvedValue(true);
 
       await deletePetition("petition-1");
 
-      expect(mockPrisma.petitions.delete).toHaveBeenCalledWith({
-        where: { id: "petition-1" },
-      });
+      expect(removePetition).toHaveBeenCalled();
+    });
+
+    it("rejects other users", async () => {
+      mockGetCurrentUser.mockResolvedValue({ id: "stranger-1" });
+
+      await expect(deletePetition("petition-1")).rejects.toThrow(
+        "You can only delete your own petitions",
+      );
+      expect(removePetition).not.toHaveBeenCalled();
+    });
+
+    it("hides database errors behind a stable message", async () => {
+      (removePetition as jest.Mock).mockRejectedValue(new Error("P2003 raw"));
+      const log = jest.spyOn(console, "error").mockImplementation(() => {});
+
+      await expect(deletePetition("petition-1")).rejects.toThrow(
+        "Could not delete this petition. Please try again.",
+      );
+      log.mockRestore();
+    });
+
+    it("rejects signed-out callers", async () => {
+      mockGetCurrentUser.mockResolvedValue(null);
+
+      await expect(deletePetition("petition-1")).rejects.toThrow(
+        "Not authenticated",
+      );
+      expect(removePetition).not.toHaveBeenCalled();
     });
   });
 

@@ -33,6 +33,7 @@ describe("ImageUpload required crop", () => {
   });
 
   afterEach(() => {
+    jest.restoreAllMocks();
     global.ResizeObserver = originalResizeObserver;
     Object.defineProperty(window, "Image", {
       configurable: true,
@@ -75,13 +76,75 @@ describe("ImageUpload required crop", () => {
     expect(
       screen.getByText(/drag the frame to position the crop/i),
     ).toBeVisible();
-    expect(
-      screen.getByRole("button", { name: "Apply" }),
-    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Apply" })).toBeVisible();
     expect(
       screen.queryByRole("button", { name: "Use Original" }),
     ).not.toBeInTheDocument();
     await waitFor(() => expect(onUpload).not.toHaveBeenCalled());
+  });
+
+  it("fits a whole portrait into the required landscape frame", async () => {
+    const drawImage = jest.fn();
+    jest.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+      drawImage,
+      fillRect: jest.fn(),
+      save: jest.fn(),
+      restore: jest.fn(),
+    } as unknown as CanvasRenderingContext2D);
+    const encode = jest.spyOn(HTMLCanvasElement.prototype, "toBlob");
+    encode.mockImplementation((callback) =>
+      callback(new Blob(["fitted"], { type: "image/jpeg" })),
+    );
+    const onUpload = jest.fn();
+    const { container } = render(
+      <ImageUpload
+        onUpload={onUpload}
+        cropRequired
+        cropOutputWidth={1600}
+        cropOutputHeight={900}
+      />,
+    );
+
+    fireEvent.change(container.querySelector("input[type='file']")!, {
+      target: {
+        files: [new File(["photo"], "portrait.jpg", { type: "image/jpeg" })],
+      },
+    });
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Keep full photo" }),
+    );
+
+    await waitFor(() => expect(onUpload).toHaveBeenCalledTimes(1));
+    expect(encode.mock.contexts[0]).toMatchObject({ width: 1600, height: 900 });
+    const [, left, top, width, height] = drawImage.mock.lastCall!;
+    expect(top).toBe(0);
+    expect(height).toBe(900);
+    expect(left).toBeCloseTo((1600 - width) / 2);
+    expect(width / height).toBeCloseTo(3000 / 4499);
+    expect(onUpload).toHaveBeenCalledWith([
+      expect.objectContaining({
+        name: "portrait-fitted.jpg",
+        type: "image/jpeg",
+      }),
+    ]);
+  });
+
+  it("explains when a file type cannot be uploaded", async () => {
+    const onUpload = jest.fn();
+    const { container } = render(
+      <ImageUpload onUpload={onUpload} accept={{ "image/jpeg": [".jpg"] }} />,
+    );
+
+    fireEvent.change(container.querySelector("input[type='file']")!, {
+      target: {
+        files: [new File(["photo"], "portrait.heic", { type: "image/heic" })],
+      },
+    });
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "This file type is unsupported",
+    );
+    expect(onUpload).not.toHaveBeenCalled();
   });
 
   it("offers a crop step for each image in a mixed multimedia batch", async () => {

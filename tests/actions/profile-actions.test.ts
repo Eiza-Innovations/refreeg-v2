@@ -12,6 +12,7 @@ jest.mock("@/lib/prisma", () => ({
       update: jest.fn(),
     },
     donation: { count: jest.fn() },
+    organization: { findFirst: jest.fn() },
   },
 }));
 
@@ -36,12 +37,15 @@ import {
   hasCompletedOnboarding,
   getCurrentOnboardingStep,
   getOnboardingData,
+  getOrganizationOnboardingData,
+  getOnboardingProgress,
 } from "@/actions/users/profile-actions";
 
 const mockPrisma = prisma as unknown as {
   user: { findUnique: jest.Mock; update: jest.Mock };
   kyc_verifications: { findFirst: jest.Mock; update: jest.Mock };
   donation: { count: jest.Mock };
+  organization: { findFirst: jest.Mock };
 };
 
 const baseUser = {
@@ -304,6 +308,131 @@ describe("profile-actions", () => {
       const result = await getCurrentOnboardingStep("user-1");
 
       expect(result).toBe(4);
+    });
+  });
+
+  describe("getCurrentOnboardingStep for organisations", () => {
+    const orgUser = {
+      accountType: "organization",
+      gender: null,
+      firstName: null,
+      lastName: null,
+      username: null,
+      location: null,
+      phone: null,
+      email: null,
+      profilePhoto: null,
+    };
+
+    it("resumes at CSR setup when the purpose was never chosen and no budget is saved", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(orgUser);
+      mockPrisma.organization.findFirst.mockResolvedValue({
+        purpose: "",
+        csrBudget: null,
+      });
+
+      expect(await getCurrentOnboardingStep("user-1")).toBe(3.6);
+    });
+
+    it("skips CSR setup for a fundraising-only organisation", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(orgUser);
+      mockPrisma.organization.findFirst.mockResolvedValue({
+        purpose: "fundraising",
+        csrBudget: null,
+      });
+
+      expect(await getCurrentOnboardingStep("user-1")).toBe(3.7);
+    });
+
+    it("goes to the checklist once a budget is saved", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(orgUser);
+      mockPrisma.organization.findFirst.mockResolvedValue({
+        purpose: "",
+        csrBudget: 5000000,
+      });
+
+      expect(await getCurrentOnboardingStep("user-1")).toBe(3.7);
+    });
+  });
+
+  describe("getOrganizationOnboardingData", () => {
+    it("returns the saved CSR setup so the step can be refilled", async () => {
+      mockPrisma.organization.findFirst.mockResolvedValue({
+        id: "org-1",
+        name: "Kora",
+        preferences: null,
+        csrBudget: { toString: () => "5000000", valueOf: () => 5000000 },
+        csrFinancialYearStart: "January",
+        csrFocusCauses: ["education"],
+      });
+
+      const result = await getOrganizationOnboardingData("user-1");
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          csrBudget: 5000000,
+          csrFinancialYearStart: "January",
+          csrFocusCauses: ["education"],
+        }),
+      );
+    });
+
+    it("reports no budget as null rather than zero", async () => {
+      mockPrisma.organization.findFirst.mockResolvedValue({
+        id: "org-1",
+        name: "Kora",
+        preferences: null,
+        csrBudget: null,
+        csrFinancialYearStart: null,
+        csrFocusCauses: null,
+      });
+
+      const result = await getOrganizationOnboardingData("user-1");
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          csrBudget: null,
+          csrFinancialYearStart: "",
+          csrFocusCauses: [],
+        }),
+      );
+    });
+  });
+
+  describe("getOnboardingProgress", () => {
+    beforeEach(() => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "user-1" } });
+      jest.spyOn(console, "error").mockImplementation(() => {});
+    });
+
+    it("throws on a database failure instead of defaulting to step 1", async () => {
+      mockPrisma.user.findUnique.mockRejectedValue(
+        new Error("Server has closed the connection"),
+      );
+
+      await expect(getOnboardingProgress("user-1")).rejects.toThrow(
+        "Server has closed the connection",
+      );
+      // The older helpers keep their forgiving fallback for other callers.
+      await expect(getCurrentOnboardingStep("user-1")).resolves.toBe(1);
+      await expect(hasCompletedOnboarding("user-1")).resolves.toBe(false);
+    });
+
+    it("reports a finished account without loading the rest", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({
+        onboarding_completed: true,
+        createdAt: new Date(),
+      });
+
+      await expect(getOnboardingProgress("user-1")).resolves.toEqual({
+        completed: true,
+      });
+    });
+
+    it("refuses to read someone else's progress", async () => {
+      await expect(getOnboardingProgress("someone-else")).rejects.toThrow(
+        "You can only manage your own profile.",
+      );
     });
   });
 
