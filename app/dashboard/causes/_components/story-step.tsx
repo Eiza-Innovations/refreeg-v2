@@ -129,9 +129,9 @@ export function CauseStoryStep({
         })}
       </div>
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs text-ink/70">
+        <P className="text-xs text-ink/70">
           {wordCount} {wordCount === 1 ? "word" : "words"}
-        </p>
+        </P>
         <Button
           type="button"
           variant="link"
@@ -145,3 +145,4 @@ export function CauseStoryStep({
     </div>
   );
 }
+import { P } from "@/components/marketing/Typography";

@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import dynamic from "next/dynamic";
 import { format } from "date-fns";
+import { Heading, P } from "@/components/marketing/Typography";
 import {
   Accordion,
   AccordionContent,
@@ -102,11 +103,11 @@ export function CauseReviewStep({ form, onEdit, busy }: Props) {
           variant="flush"
         />
         <div className="space-y-2 p-4">
-          <h2 className="break-words font-fraunces text-2xl font-medium">
+          <Heading as="h2" size="panel" className="break-words font-medium">
             {form.title}
-          </h2>
+          </Heading>
           {form.summary && (
-            <p className="break-words text-sm text-ink/70">{form.summary}</p>
+            <P className="break-words text-sm text-ink/70">{form.summary}</P>
           )}
           <Accordion type="single" collapsible>
             <AccordionItem value="story" className="border-b-0">
@@ -116,10 +117,16 @@ export function CauseReviewStep({ form, onEdit, busy }: Props) {
               <AccordionContent className="space-y-4">
                 {sections.map((section, index) => (
                   <div key={index} className="space-y-1 break-words">
-                    <h3 className="font-semibold">{section.heading}</h3>
-                    <p className="whitespace-pre-line leading-6 text-ink/70">
+                    <Heading
+                      as="h3"
+                      size="panel"
+                      className="font-montserrat text-base font-semibold"
+                    >
+                      {section.heading}
+                    </Heading>
+                    <P className="whitespace-pre-line leading-6 text-ink/70">
                       {section.description}
-                    </p>
+                    </P>
                   </div>
                 ))}
               </AccordionContent>
@@ -138,7 +145,7 @@ export function CauseReviewStep({ form, onEdit, busy }: Props) {
             <dd className="col-start-1 break-words text-sm font-medium">
               {value}
               {note && (
-                <p className="mt-1 text-xs font-normal text-ink/70">{note}</p>
+                <P className="mt-1 text-xs font-normal text-ink/70">{note}</P>
               )}
             </dd>
             <dd className="col-start-2 row-span-2 row-start-1">

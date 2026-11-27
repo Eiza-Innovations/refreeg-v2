@@ -4,6 +4,7 @@ import { getCampaignCategoryStyle } from "@/lib/causes/campaign-categories";
 import { categories } from "@/lib/causes/categories";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
+import { Span } from "@/components/marketing/Typography";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
@@ -68,14 +69,14 @@ export function CampaignCategorySelect({
         aria-invalid={invalid}
         className={cn(
           "premium-input h-11 sm:h-12",
-          invalid && "border-red-500",
+          invalid && "border-rust",
           className,
         )}
       >
         <SelectValue placeholder="What's this about?">
           {selectedCategory && SelectedIcon ? (
-            <span className="flex items-center gap-2.5">
-              <span
+            <Span className="flex items-center gap-2.5">
+              <Span
                 className={cn(
                   "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg",
                   selectedCategory.iconBackgroundClassName,
@@ -84,16 +85,16 @@ export function CampaignCategorySelect({
                 <SelectedIcon
                   className={cn("h-4 w-4", selectedCategory.iconClassName)}
                 />
-              </span>
-              <span className="font-medium text-slate-800">
+              </Span>
+              <Span className="font-medium text-ink">
                 {selectedCategory.name}
-              </span>
-            </span>
+              </Span>
+            </Span>
           ) : undefined}
         </SelectValue>
       </SelectTrigger>
 
-      <SelectContent className="rounded-xl border-slate-200 p-1 shadow-xl">
+      <SelectContent className="rounded-xl border-hairline p-1 shadow-xl">
         {categories.map((category) => {
           const categoryStyle = getCampaignCategoryStyle(category.id);
           const CategoryIcon = categoryStyle.icon;
@@ -102,10 +103,10 @@ export function CampaignCategorySelect({
             <SelectItem
               key={category.id}
               value={category.id}
-              className="rounded-lg py-2.5 pl-9 pr-3 focus:bg-slate-50 data-[state=checked]:bg-blue-50"
+              className="rounded-lg py-2.5 pl-9 pr-3 focus:bg-bone data-[state=checked]:bg-blue-accent/5"
             >
-              <span className="flex items-center gap-3">
-                <span
+              <Span className="flex items-center gap-3">
+                <Span
                   className={cn(
                     "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
                     categoryStyle.iconBackgroundClassName,
@@ -114,11 +115,11 @@ export function CampaignCategorySelect({
                   <CategoryIcon
                     className={cn("h-4 w-4", categoryStyle.iconClassName)}
                   />
-                </span>
-                <span className="font-medium text-slate-800">
+                </Span>
+                <Span className="font-medium text-ink">
                   {categoryStyle.name}
-                </span>
-              </span>
+                </Span>
+              </Span>
             </SelectItem>
           );
         })}

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 import { Icons } from "@/components/layout/Icons";
+import { Heading, P } from "@/components/marketing/Typography";
 import { Button } from "@/components/ui/button";
 import { CalloutBanner } from "@/components/ui/callout-banner";
 import { Card } from "@/components/ui/card";
@@ -48,7 +49,7 @@ export function CauseWizard({
   children,
 }: Props) {
   const flowTopRef = useRef<HTMLDivElement>(null);
-  const stepHeadingRef = useRef<HTMLHeadingElement>(null);
+  const stepHeadingRef = useRef<HTMLElement>(null);
   const previousStepRef = useRef(currentStep);
   const activeStep = stepMeta[currentStep - 1];
   const nextStep = causeSteps[currentStep];
@@ -100,26 +101,26 @@ export function CauseWizard({
                 Save and exit
               </Button>
               {draftHasFiles && (
-                <p className="text-xs leading-5 text-ink/70">
+                <P className="text-xs leading-5 text-ink/70">
                   You’ll need to add your selected files again when you return.
-                </p>
+                </P>
               )}
             </div>
           )}
         </nav>
 
         <div ref={flowTopRef} className="min-w-0 scroll-mt-28 space-y-5">
-          <header className="space-y-2">
-            <h1
-              ref={stepHeadingRef}
+          <header ref={stepHeadingRef} tabIndex={-1} className="space-y-2">
+            <Heading
+              as="h1"
               tabIndex={-1}
               className="font-fraunces text-3xl font-medium tracking-tight sm:text-4xl"
             >
               {activeStep.title}
-            </h1>
-            <p className="text-sm leading-6 text-ink/70">
+            </Heading>
+            <P className="text-sm leading-6 text-ink/70">
               {activeStep.description}
-            </p>
+            </P>
           </header>
 
           <form

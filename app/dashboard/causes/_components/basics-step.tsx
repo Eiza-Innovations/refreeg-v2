@@ -57,12 +57,13 @@ export function CauseBasicsStep({ mode, form, errors, setFormFields }: Props) {
           />
         )}
         {usesSuggestions && (
-          <p className="text-xs text-ink/70">
+          <P className="text-xs text-ink/70">
             Type at least two letters, then select a place from the list.
-          </p>
+          </P>
         )}
         <FieldError message={errors.location} />
       </div>
     </div>
   );
 }
+import { P } from "@/components/marketing/Typography";

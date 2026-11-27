@@ -129,11 +129,11 @@ export function CauseMediaStep({
 
         <section aria-labelledby="gallery-label" className="min-w-0 space-y-3">
           <Eyebrow id="gallery-label">Gallery</Eyebrow>
-          <p className="text-xs text-ink/70">
+          <P className="text-xs text-ink/70">
             Up to {MAX_GALLERY_FILES} files, including {MAX_VIDEOS_PER_CAUSE}{" "}
             videos (MP4 or WebM, {MAX_VIDEO_BYTES / bytesPerMegabyte} MB and{" "}
             {MAX_VIDEO_DURATION_SEC} seconds each).
-          </p>
+          </P>
           {form.multimedia.length > 0 && (
             <SelectedMediaCarousel
               files={form.multimedia}
@@ -203,3 +203,4 @@ export function CauseMediaStep({
     </div>
   );
 }
+import { P } from "@/components/marketing/Typography";

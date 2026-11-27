@@ -84,7 +84,7 @@ export function CauseTimelineStep({
                 !value && "text-muted-foreground",
               )}
             >
-              {value ? format(value, "PPP") : <span>Pick a date</span>}
+              {value ? format(value, "PPP") : <Span>Pick a date</Span>}
               <ChevronDown aria-hidden="true" className="h-4 w-4 text-ink/60" />
             </Button>
           </PopoverTrigger>
@@ -166,10 +166,11 @@ export function CauseTimelineStep({
         {datePicker("endDate", "Runs Until", "end-date")}
       </div>
       {duration !== null && duration > 0 && (
-        <p className="w-fit rounded-xl bg-blue-accent/5 px-4 py-2 text-sm font-medium">
+        <P className="w-fit rounded-xl bg-blue-accent/5 px-4 py-2 text-sm font-medium">
           {duration} {duration === 1 ? "day" : "days"}
-        </p>
+        </P>
       )}
     </div>
   );
 }
+import { P, Span } from "@/components/marketing/Typography";

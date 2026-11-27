@@ -1,14 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "nextjs-toploader/app";
 import { addDays, startOfDay } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
-import { useCause } from "@/hooks/use-cause";
+import { createCause } from "@/actions/causes/cause-actions";
 import { useCauseDraft } from "@/hooks/use-cause-draft";
 import { useCauseForm } from "@/hooks/use-cause-form";
-import { useToast } from "@/hooks/use-toast";
 import { createCauseStepMeta } from "@/lib/options/cause.options";
 import { campaignCategoryStyles } from "@/lib/causes/campaign-categories";
 import type { CauseFormValues } from "@/lib/schemas/cause.schema";
@@ -49,10 +48,8 @@ export default function CreateCauseForm() {
     ? rawCategory
     : "";
   const { user } = useAuth();
-  const { isLoading, createCause } = useCause();
-  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const router = useRouter();
-  const [submitting, setSubmitting] = useState(false);
   const wizard = useCauseForm({
     initialValues: initialValues(preselectedCategory),
     mode: "create",
@@ -64,11 +61,9 @@ export default function CreateCauseForm() {
     isSignedIn: Boolean(user),
   });
 
-  const handleSubmit = async () => {
-    if (!user || !wizard.validateAll() || submitting || isLoading) return;
-    setSubmitting(true);
-
-    try {
+  const submitMutation = useMutation({
+    mutationFn: async () => {
+      if (!user) return;
       const draftEntityId = crypto.randomUUID();
       let coverImage: File | string | null = form.coverImage;
 
@@ -100,8 +95,10 @@ export default function CreateCauseForm() {
         multimedia,
         video_links: form.videoLinks,
       });
+    },
+    onSuccess: () => {
       clearDraft();
-
+      void queryClient.invalidateQueries({ queryKey: ["causes"] });
       sendCauseUnderReviewEmail({
         causeName: form.title,
         reviewTimeframe: "3-5 business days",
@@ -111,26 +108,12 @@ export default function CreateCauseForm() {
       });
 
       router.push("/dashboard/causes");
-    } catch (error) {
-      console.error("Error submitting cause:", error);
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Failed to upload media or create cause";
-      if (/location|position|city/i.test(message)) {
-        wizard.setError("location", message);
-        wizard.setCurrentStep(1);
-      } else {
-        wizard.setError("multimedia", message);
-      }
-      toast({
-        title: "Launch Failed",
-        description: message,
-        variant: "destructive",
-      });
-    } finally {
-      setSubmitting(false);
-    }
+    },
+  });
+
+  const handleSubmit = () => {
+    if (!user || !wizard.validateAll() || submitMutation.isPending) return;
+    submitMutation.mutate();
   };
 
   return (
@@ -144,8 +127,8 @@ export default function CreateCauseForm() {
       onSubmit={handleSubmit}
       submitLabel="Send for review"
       busyLabel="Sending…"
-      busy={isLoading || submitting}
-      submitError={errors.multimedia}
+      busy={submitMutation.isPending}
+      submitError={submitMutation.error?.message}
       onSaveAndExit={() => {
         saveDraft();
         router.push("/dashboard/causes");
@@ -177,7 +160,7 @@ export default function CreateCauseForm() {
         <CauseReviewStep
           form={form}
           onEdit={wizard.setCurrentStep}
-          busy={isLoading || submitting}
+          busy={submitMutation.isPending}
         />
       )}
     </CauseWizard>
