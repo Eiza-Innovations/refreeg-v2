@@ -3,18 +3,19 @@
 import { motion } from "framer-motion";
 import { CheckCircle, Loader2, XCircle } from "lucide-react";
 import { LocationSelector } from "@/components/causes/LocationSelector";
+import { Heading, P } from "@/components/marketing/Typography";
 import { OnboardingField } from "@/components/onboarding/OnboardingField";
 import { ProfilePhotoPicker } from "@/components/onboarding/ProfilePhotoPicker";
+import { onboardingSplitClass } from "@/components/onboarding/split-layout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { FieldError } from "@/components/ui/field-error";
+import { fieldClass } from "@/components/ui/field-styles";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useProfileStepForm } from "@/hooks/use-profile-step-form";
-import type { Step3Props } from "@/types/onboarding-types";
-import { fieldClass } from "@/components/ui/field-styles";
 import { cn } from "@/lib/utils";
-import { onboardingSplitClass } from "@/components/onboarding/split-layout";
+import type { Step3Props } from "@/types/onboarding-types";
 
 export default function Step3({
   user,
@@ -30,6 +31,7 @@ export default function Step3({
     usernameStatus,
     photoUrl,
     photoError,
+    isUploadingPhoto,
     pickPhoto,
     submit,
   } = useProfileStepForm({
@@ -39,24 +41,31 @@ export default function Step3({
     onNext,
   });
 
+  const isBusy = isSubmitting || isUploadingPhoto;
+
   return (
     <div className={onboardingSplitClass}>
       <div className="flex flex-col">
-        <h1 className="font-fraunces text-4xl font-medium text-ink sm:text-5xl">
+        <Heading as="h1" size="section" className="font-medium sm:text-5xl">
           Create your RefreeG profile
-        </h1>
-        <p className="mt-4 text-base leading-7 text-ink/70">
+        </Heading>
+        <P className="mt-4 text-base leading-7 text-ink/70">
           It takes less than a minute. This is how people will see you.
-        </p>
+        </P>
         <div className="mt-8 flex gap-3 lg:mt-auto lg:pt-8">
           <Button
             type="button"
             variant="ink"
             onClick={submit}
-            disabled={isSubmitting}
+            disabled={isBusy}
             className="h-12 px-10"
           >
-            {isSubmitting ? (
+            {isUploadingPhoto ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Uploading photo...
+              </>
+            ) : isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Saving profile...
@@ -77,6 +86,7 @@ export default function Step3({
           <ProfilePhotoPicker
             photoUrl={photoUrl}
             error={photoError}
+            isUploading={isUploadingPhoto}
             onPick={pickPhoto}
           />
 
@@ -123,7 +133,7 @@ export default function Step3({
                   onChange={(e) => setFormFields("username", e.target.value)}
                   className={cn(fieldClass, "pr-10")}
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2">
+                <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
                   {usernameStatus === "checking" && (
                     <Loader2 className="h-5 w-5 animate-spin text-ink/40" />
                   )}
@@ -139,7 +149,7 @@ export default function Step3({
                       aria-label="Username is already taken"
                     />
                   )}
-                </span>
+                </div>
               </div>
             </OnboardingField>
             <div>
