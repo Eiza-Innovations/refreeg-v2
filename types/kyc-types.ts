@@ -1,3 +1,4 @@
+import type { Profile } from "@/types";
 import type { DecisionSummary, RecordCheckRow } from "@/lib/didit";
 
 export type KycStatus =
@@ -93,4 +94,64 @@ export interface AdminKycDetail {
   recordRows: RecordCheckRow[];
   recordSource: string | null;
   error: string | null;
+}
+
+export type KycBadgeVariant =
+  | "verified"
+  | "pending"
+  | "blue"
+  | "gold"
+  | "critical"
+  | "held";
+
+export type KycCalloutVariant = "forest" | "gold" | "sand" | "rust";
+
+export interface KycStatusMeta {
+  badge: {
+    variant: KycBadgeVariant;
+    label: string;
+  };
+  callout: {
+    variant: KycCalloutVariant;
+    title: string;
+    description: string;
+  };
+  summary: string;
+  ctaLabel: string | null;
+}
+
+export interface KycDocumentPreviewDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  documentUrl: string;
+}
+
+export interface KycLegacyDetailsCardProps {
+  kycData: KycVerification;
+}
+
+export interface KycTabProps {
+  profile: Profile;
+  initialKyc: KycVerification | null;
+  initialError: string | null;
+}
+
+export interface KycSettingsContentProps {
+  profile: Profile | null;
+  userId: string;
+  initialKyc: KycVerification | null;
+  initialError: string | null;
+}
+
+export interface KycSetupClientProps {
+  userId: string;
+  rejectedKyc: KycVerification | null;
+  kycFetchError: string | null;
+  currentKyc: KycVerification | null;
+}
+
+export interface DiditKycFormProps {
+  userId: string;
+  rejectedNote?: string | null;
+  kycFetchError?: string | null;
 }
