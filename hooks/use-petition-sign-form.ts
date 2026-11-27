@@ -36,5 +36,3 @@ export function usePetitionSignForm({
 
   return { form, setFormFields, errors, validate };
 }
-
-export type PetitionSignFormApi = ReturnType<typeof usePetitionSignForm>;

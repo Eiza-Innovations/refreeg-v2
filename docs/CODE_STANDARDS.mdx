@@ -184,6 +184,8 @@ A dialog that calls a server action wraps the call in `useMutation` from `@tanst
 
 ## 13. Types live in `types/`, never in actions
 
+Every named `type` or `interface` lives in `types/<feature>-types.ts`: component props, hook options and return shapes, copy and variant shapes, as well as action results. Do not declare or export one from a component, hook or action file. Two exceptions: a type inferred from a zod schema sits next to that schema (`z.infer`), and a one-off inline annotation on a single small parameter, such as `{ label }: { label: string }`, may stay inline.
+
 Actions files export async functions only. Any type or interface a server action returns or accepts (result shapes, row types, input types) goes in `types/<feature>-types.ts` and is imported with `import type` by the action, the hook and the component. A `"use server"` file must not be the source of a type other layers import.
 
 ```ts

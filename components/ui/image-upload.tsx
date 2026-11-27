@@ -701,11 +701,7 @@ export function ImageUpload({
           ) : null}
         </div>
       </div>
-      {uploadError && (
-        <div role="alert">
-          <FieldError message={uploadError} />
-        </div>
-      )}
+      <FieldError message={uploadError ?? undefined} />
       <Dialog
         open={Boolean(pendingFile && cropSource)}
         onOpenChange={(open) => {
