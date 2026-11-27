@@ -25,6 +25,7 @@ const footerColumns = [
     links: [
       { label: "Discover causes", href: "/causes" },
       { label: "Recurring giving", href: "/causes" },
+      { label: "Give to a wishlist", href: "/wishlist" },
       // { label: "Import portfolio", href: "/businesses" },
       // { label: "Tax receipts", href: "/healthcare" },
     ],
@@ -33,6 +34,7 @@ const footerColumns = [
     title: "RAISE",
     links: [
       { label: "Launch a campaign", href: "/dashboard/causes/create" },
+      { label: "Create a wishlist", href: "/wishlist/new" },
       // { label: "Steward program", href: "/#faq" },
       // { label: "Verification", href: "/crowdfund/fees" },
       // { label: "Embed receipts", href: "/docs/api" },

@@ -88,7 +88,13 @@ export async function getDashboardStats(userId: string) {
 
 export async function getUserDonorGivingStats(userId: string) {
   try {
-    const [donationAgg, donations, livePledgesCount] = await Promise.all([
+    const [
+      donationAgg,
+      donations,
+      livePledgesCount,
+      wishlistAgg,
+      wishlistGifts,
+    ] = await Promise.all([
       prisma.donation.aggregate({
         _sum: { amount: true },
         where: { userId },
@@ -103,18 +109,34 @@ export async function getUserDonorGivingStats(userId: string) {
             where: { user_id: userId, status: "pending" },
           })
         : Promise.resolve(0),
+      // Wishlist gifts count as giving too: they join the headline total
+      // and are broken out on the Your giving card.
+      prisma.wishlist_contributions.aggregate({
+        _sum: { amount: true },
+        where: { user_id: userId },
+      }),
+      prisma.wishlist_contributions.count({ where: { user_id: userId } }),
     ]);
 
+    const causesGiven = Number(donationAgg._sum.amount || 0);
+    const wishlistsGiven = Number(wishlistAgg._sum.amount || 0);
+
     return {
-      givenSoFar: Number(donationAgg._sum.amount || 0),
+      givenSoFar: causesGiven + wishlistsGiven,
+      causesGiven,
+      wishlistsGiven,
       campaignsBacked: donations.length,
+      wishlistGifts: wishlistGifts,
       livePledges: Number(livePledgesCount || 0),
     };
   } catch (error) {
     console.error("Error fetching user donor giving stats:", error);
     return {
       givenSoFar: 0,
+      causesGiven: 0,
+      wishlistsGiven: 0,
       campaignsBacked: 0,
+      wishlistGifts: 0,
       livePledges: 0,
     };
   }

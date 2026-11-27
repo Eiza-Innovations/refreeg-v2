@@ -60,6 +60,9 @@ describe("POST /api/payments/initialize", () => {
     });
 
     (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      // The JIT block now resolves the owner row itself (shared with the
+      // wishlist path), so the mock covers the id it selects.
+      id: "user-123",
       accountNumber: "1234567890",
       bankName: "Access Bank",
       fullName: "Test User",

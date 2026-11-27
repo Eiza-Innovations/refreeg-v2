@@ -10,6 +10,7 @@ import { getClientIp } from "@/lib/api/client-ip";
 import { getCurrentUser } from "@/actions/users/auth-actions";
 import { getProfile } from "@/actions/users/profile-actions";
 import { isTemplateEnabled } from "@/lib/email/triggers";
+import { isWishlistSeasonActive } from "@/lib/wishlist/season";
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.gmail.com",
@@ -50,12 +51,16 @@ const SENDERS = {
 type SenderKey = keyof typeof SENDERS;
 
 // Template name -> sender; anything not listed sends as support@.
+// Wishlist gift alerts are one-way notifications, so they go from noreply@;
+// the footer still points at support@ for anyone who needs help.
 const SENDER_BY_TEMPLATE: Partial<Record<string, SenderKey>> = {
   "otp-verification": "noreply",
   "password-reset": "noreply",
   "email-change-confirm": "noreply",
   "login-notification": "noreply",
   "bank-account-added": "noreply",
+  "wishlist-contribution-received": "noreply",
+  "wishlist-item-funded": "noreply",
   "welcome-email": "hello",
   announcement: "hello",
   "organization-invitation": "hello",
@@ -1084,6 +1089,120 @@ export async function sendDonationReceivedEmail({
       goalAmount: goalAmount?.toLocaleString() ?? "0",
       percent,
       currentYear,
+    },
+  });
+}
+
+export async function sendWishlistContributionEmail({
+  to,
+  ownerName,
+  giverName,
+  wishlistTitle,
+  itemName,
+  amount,
+  wishlistUrl,
+  giftNote,
+}: {
+  to: string;
+  ownerName: string;
+  giverName: string;
+  wishlistTitle: string;
+  itemName: string;
+  amount: number;
+  wishlistUrl: string;
+  giftNote?: string | null;
+}) {
+  const note = giftNote?.trim();
+  return sendMail({
+    to,
+    subject: `💚 A gift was just given on "${wishlistTitle}"!`,
+    templateName: "wishlist-contribution-received",
+    context: {
+      ownerName,
+      giverName,
+      wishlistTitle,
+      itemName,
+      amount: amount.toLocaleString(),
+      wishlistUrl,
+      showNote: Boolean(note),
+      giftNote: note,
+      seasonal: isWishlistSeasonActive(),
+      currentYear: new Date().getFullYear(),
+    },
+  });
+}
+
+export async function sendWishlistItemFundedEmail({
+  to,
+  ownerName,
+  wishlistTitle,
+  itemName,
+  amount,
+  wishlistUrl,
+}: {
+  to: string;
+  ownerName: string;
+  wishlistTitle: string;
+  itemName: string;
+  amount: number;
+  wishlistUrl: string;
+}) {
+  return sendMail({
+    to,
+    subject: `🎉 "${itemName}" is fully funded!`,
+    templateName: "wishlist-item-funded",
+    context: {
+      ownerName,
+      wishlistTitle,
+      itemName,
+      amount: amount.toLocaleString(),
+      wishlistUrl,
+      seasonal: isWishlistSeasonActive(),
+      currentYear: new Date().getFullYear(),
+    },
+  });
+}
+
+// Receipts are money mail a giver might answer (wrong amount, refund
+// request), so per the policy table above this one stays on support@.
+export async function sendWishlistGiftReceiptEmail({
+  to,
+  giverName,
+  wishlistTitle,
+  itemName,
+  amount,
+  wishlistUrl,
+  reference,
+  giftNote,
+  isAnonymous,
+}: {
+  to: string;
+  giverName: string | null;
+  wishlistTitle: string;
+  itemName: string;
+  amount: number;
+  wishlistUrl: string;
+  reference?: string | null;
+  giftNote?: string | null;
+  isAnonymous?: boolean;
+}) {
+  const note = giftNote?.trim();
+  return sendMail({
+    to,
+    subject: `💚 Your gift to "${wishlistTitle}" went through`,
+    templateName: "wishlist-gift-receipt",
+    context: {
+      giverName: giverName?.trim() || "there",
+      wishlistTitle,
+      itemName,
+      amount: amount.toLocaleString(),
+      wishlistUrl,
+      reference: reference?.trim() || null,
+      showNote: Boolean(note),
+      giftNote: note,
+      isAnonymous: Boolean(isAnonymous),
+      seasonal: isWishlistSeasonActive(),
+      currentYear: new Date().getFullYear(),
     },
   });
 }

@@ -17,30 +17,21 @@ import {
   ChevronRight,
   Bell,
   Compass,
-  CircleDollarSign,
+  Gift,
   ClipboardCheckIcon,
   FileText,
   Flag,
-  HandHeart,
-  HeartHandshake,
-  HelpCircle,
   Home,
   LayoutDashboard,
   Lightbulb,
   LogOut,
   Menu,
   Megaphone,
-  Palette,
-  Shield,
   Share2,
   Sparkles,
-  // Star,
-  Target,
-  // TargetIcon,
   Trophy,
   UserCog,
   Users,
-  // Wallet,
   X,
 } from "lucide-react";
 
@@ -82,90 +73,29 @@ const publicNavItems: NavItem[] = [
     icon: Compass,
   },
   {
+    title: "Wishlists",
+    href: "/wishlist",
+    type: "link",
+    icon: Gift,
+  },
+  {
     title: "Community",
     href: "/community",
     type: "link",
     icon: Users,
   },
   {
-    title: "What can I crowdfund?",
-    header: "Curious about what you crowdfund for? Here are some ideas:",
-    icon: HandHeart,
-    type: "dropdown",
-    items: [
-      {
-        title: "RefreeG for Businesses",
-        description:
-          "Launch CSR campaigns, support community-driven causes, and connect with customers who care about impact.",
-        href: "/crowdfund#businesses",
-        icon: CircleDollarSign,
-      },
-      {
-        title: "RefreeG for Nonprofits",
-        description:
-          "Raise more, reach more. Build trust with transparent fundraising tools designed to help nonprofits thrive and grow their donor communities.",
-        href: "/crowdfund#nonprofits",
-        icon: Target,
-      },
-      {
-        title: "RefreeG for Disaster Relief",
-        description:
-          "Rally urgent support for communities hit by disasters and get aid to those who need it; quickly and securely.",
-        href: "/crowdfund#disaster-relief",
-        icon: HeartHandshake,
-      },
-      {
-        title: "RefreeG for Healthcare",
-        description:
-          "Give hope a platform. Raise funds for medical bills, healthcare projects, or critical treatments with transparency and community support.",
-        href: "/crowdfund#healthcare",
-        icon: FileText,
-      },
-      {
-        title: "RefreeG for Creators",
-        description:
-          "Fund your next project, tour or release with a page your audience can find, share and trust.",
-        href: "/crowdfund#creators",
-        icon: Palette,
-      },
-    ],
-  },
-  {
     title: "FAQs",
     href: "/faq",
     type: "link",
-    // header: "Everything you need to launch, manage, and grow a campaign.",
     icon: Lightbulb,
-    // items: [
-    //   // Hidden until /rewards and /crypto pages exist.
-    //   // {
-    //   //   title: "RefreeG Rewards",
-    //   //   description:
-    //   //     "Get rewarded in points, crypto and recognition for driving impact.",
-    //   //   href: "/rewards",
-    //   //   icon: Star,
-    //   // },
-    //   // {
-    //   //   title: "Crypto on RefreeG",
-    //   //   description:
-    //   //     "Support global causes seamlessly with fast, transparent crypto donations. Real-time tracking and low fees.",
-    //   //   href: "/crypto",
-    //   //   icon: Wallet,
-    //   // },
-    //   {
-    //     title: "FAQ",
-    //     description:
-    //       "Find answers to common questions about using the platform, campaigns, and donations.",
-    //     href: "/faq",
-    //     icon: HelpCircle,
-    //   },
-    // ],
   },
 ];
 
 const userDashboardItems = [
   { title: "Overview", href: "/dashboard", icon: Home },
   { title: "My Causes", href: "/dashboard/causes", icon: FileText },
+  { title: "My Wishlists", href: "/dashboard/wishlists", icon: Gift },
   { title: "My Petitions", href: "/dashboard/petitions", icon: FileText },
   { title: "My Donations", href: "/dashboard/donations", icon: Users },
   // Hidden until /dashboard/crypto exists.
@@ -547,6 +477,13 @@ export function Header() {
                   >
                     <FileText className="h-4 w-4" />
                     Launch Petition
+                  </Link>
+                  <Link
+                    href="/wishlist/new"
+                    className="flex h-11 items-center justify-center gap-2 rounded-full border border-ink text-sm font-medium text-ink transition-colors hover:bg-black/5 sm:col-span-2"
+                  >
+                    <Gift className="h-4 w-4" />
+                    Create a Wishlist
                   </Link>
                 </div>
               </div>

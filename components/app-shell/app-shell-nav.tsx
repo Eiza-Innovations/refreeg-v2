@@ -10,6 +10,7 @@ import {
   Flag,
   Trophy,
   Bookmark,
+  Gift,
   Share2,
   Settings,
 } from "lucide-react";
@@ -36,6 +37,12 @@ const mainNavItems: NavItem[] = [
     title: "My giving",
     href: "/dashboard/donations",
     icon: HeartHandshake,
+    requiresAuth: true,
+  },
+  {
+    title: "Wishlists",
+    href: "/dashboard/wishlists",
+    icon: Gift,
     requiresAuth: true,
   },
   { title: "Wallet", href: "/wallet", icon: Wallet, requiresAuth: true },
