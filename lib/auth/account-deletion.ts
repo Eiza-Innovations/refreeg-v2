@@ -143,11 +143,12 @@ export async function executeUserAccountDeletion(
           };
         }
 
-        // 2. Gather KYC records, causes, petitions, organization, webhooks, and API campaigns
+        // 2. Gather KYC records, causes, petitions, wishlists, organization, webhooks, and API campaigns
         const [
           kycRecords,
           userCauses,
           userPetitions,
+          userWishlists,
           ownedOrganization,
           userWebhooks,
           userApiCampaigns,
@@ -177,6 +178,18 @@ export async function executeUserAccountDeletion(
               id: true,
               image: true,
               multimedia: true,
+            },
+          }),
+          tx.wishlists.findMany({
+            where: { user_id: userId },
+            select: {
+              id: true,
+              items: {
+                select: {
+                  image_url: true,
+                  _count: { select: { contributions: true } },
+                },
+              },
             },
           }),
           tx.organization.findUnique({
@@ -305,6 +318,18 @@ export async function executeUserAccountDeletion(
           extraS3Keys.push(petition.image);
           for (const item of petition.multimedia ?? []) {
             extraS3Keys.push(item);
+          }
+        }
+
+        const deletableWishlistIds: string[] = [];
+        for (const wishlist of userWishlists) {
+          const hasGiftHistory = wishlist.items.some(
+            (item) => item._count.contributions > 0,
+          );
+          if (hasGiftHistory) continue;
+          deletableWishlistIds.push(wishlist.id);
+          for (const item of wishlist.items) {
+            extraS3Keys.push(item.image_url);
           }
         }
 
@@ -589,12 +614,28 @@ export async function executeUserAccountDeletion(
           });
         }
 
-        // 3g. Delete OAuth accounts, sessions, and roles
+        await tx.wishlist_contributions.updateMany({
+          where: { user_id: userId },
+          data: {
+            user_id: null,
+            name: anonymizedName,
+            email: anonymizedEmail,
+            message: null,
+            is_anonymous: true,
+          },
+        });
+        if (deletableWishlistIds.length > 0) {
+          await tx.wishlists.deleteMany({
+            where: { id: { in: deletableWishlistIds } },
+          });
+        }
+
+        // 3h. Delete OAuth accounts, sessions, and roles
         await tx.session.deleteMany({ where: { userId } });
         await tx.account.deleteMany({ where: { userId } });
         await tx.role.deleteMany({ where: { user_id: userId } });
 
-        // 3h. Tombstone if historical funded causes remain; hard-delete otherwise.
+        // 3i. Tombstone if historical funded causes remain; hard-delete otherwise.
         if (historicalFundedCauseIds.length > 0) {
           await tx.user.update({
             where: { id: userId },

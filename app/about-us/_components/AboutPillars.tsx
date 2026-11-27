@@ -17,6 +17,11 @@ const pillars = [
     title: "No borders",
     description: "Give to any cause, from anywhere.",
   },
+  {
+    icon: "/about/heart.svg",
+    title: "Wishlists, too",
+    description: "List the gifts you want and let friends fund them directly.",
+  },
 ];
 
 export function AboutPillars() {
@@ -29,7 +34,7 @@ export function AboutPillars() {
           <span className="text-lime">where did my money go?</span>
         </Heading>
 
-        <div className="mt-14 grid gap-10 sm:grid-cols-3 md:mt-20">
+        <div className="mt-14 grid gap-10 sm:grid-cols-2 md:mt-20 lg:grid-cols-4">
           {pillars.map((pillar) => (
             <div
               key={pillar.title}
