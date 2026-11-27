@@ -80,13 +80,11 @@ const mockSuccessPath = () => {
         },
         wishlist_items: {
           update: jest.fn().mockResolvedValue({}),
-          findUnique: jest
-            .fn()
-            .mockResolvedValue({
-              price: 80000,
-              contributed: 52500,
-              funded_at: null,
-            }),
+          findUnique: jest.fn().mockResolvedValue({
+            price: 80000,
+            contributed: 52500,
+            funded_at: null,
+          }),
         },
       };
       return fn(tx);

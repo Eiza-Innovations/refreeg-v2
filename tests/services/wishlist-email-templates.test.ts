@@ -9,6 +9,9 @@ const load = (name: string) =>
     fs.readFileSync(path.join(TEMPLATE_DIR, `${name}.html`), "utf-8"),
   );
 
+// Normalize HTML whitespace so assertions are not affected by template formatting.
+const normalize = (html: string) => html.replace(/\s+/g, " ").trim();
+
 const baseContext = {
   ownerName: "Nomso",
   giverName: "Adaeze",
@@ -31,7 +34,7 @@ describe("wishlist gift receipt template", () => {
   };
 
   it("addresses the giver, shows the amount, reference and wishlist link", () => {
-    const html = load("wishlist-gift-receipt")(base);
+    const html = normalize(load("wishlist-gift-receipt")(base));
 
     expect(html).toContain("Your gift went through, thank you");
     expect(html).toContain("Hi Adaeze");
@@ -39,39 +42,46 @@ describe("wishlist gift receipt template", () => {
     expect(html).toContain("Reference: PSK_abc123");
     expect(html).toContain("View the wishlist");
     expect(html).toContain("Keep this email for your records");
-    // An anonymous line would be wrong for a named giver.
     expect(html).not.toContain("give anonymously");
   });
 
   it("tells anonymous givers their name stays hidden", () => {
-    const html = load("wishlist-gift-receipt")({ ...base, isAnonymous: true });
+    const html = normalize(
+      load("wishlist-gift-receipt")({ ...base, isAnonymous: true }),
+    );
 
     expect(html).toContain("the owner won&rsquo;t see your name");
   });
 
   it("echoes the giver's own note when there is one", () => {
-    const html = load("wishlist-gift-receipt")({
-      ...base,
-      showNote: true,
-      giftNote: "Merry Christmas, Nomso!",
-    });
+    const html = normalize(
+      load("wishlist-gift-receipt")({
+        ...base,
+        showNote: true,
+        giftNote: "Merry Christmas, Nomso!",
+      }),
+    );
 
     expect(html).toContain("Your note: &ldquo;Merry Christmas, Nomso!&rdquo;");
   });
 
   it("hides the reference row when no reference exists", () => {
-    const html = load("wishlist-gift-receipt")({ ...base, reference: null });
+    const html = normalize(
+      load("wishlist-gift-receipt")({ ...base, reference: null }),
+    );
 
     expect(html).not.toContain("Reference:");
   });
 
   it("carries the seasonal line in season and stays plain otherwise", () => {
-    const everyday = load("wishlist-gift-receipt")({ ...base });
+    const render = load("wishlist-gift-receipt");
+
+    const everyday = normalize(render({ ...base }));
     expect(everyday).not.toContain("Christmas");
 
-    const seasonal = load("wishlist-gift-receipt")({ ...base, seasonal: true });
+    const seasonal = normalize(render({ ...base, seasonal: true }));
     expect(seasonal).toContain(
-      "your gift counts toward a Christmas wish on this list",
+      "It&rsquo;s the season, and your gift counts toward a Christmas wish on this list.",
     );
   });
 });
@@ -80,15 +90,15 @@ describe("wishlist email templates seasonal voice", () => {
   it("adds the one seasonal line to the contribution email only in season", () => {
     const render = load("wishlist-contribution-received");
 
-    const everyday = render({ ...baseContext, seasonal: false });
+    const everyday = normalize(render({ ...baseContext, seasonal: false }));
     expect(everyday).not.toContain("Christmas");
     expect(everyday).toContain("Adaeze just gave towards");
 
-    const seasonal = render({ ...baseContext, seasonal: true });
+    const seasonal = normalize(render({ ...baseContext, seasonal: true }));
     expect(seasonal).toContain(
       "It&rsquo;s the season, and this gift counts toward a Christmas wish on your list.",
     );
-    // The seasonal line never displaces the substantive copy.
+
     expect(seasonal).toContain("Adaeze just gave towards");
     expect(seasonal).toContain("View your wishlist");
   });
@@ -96,11 +106,11 @@ describe("wishlist email templates seasonal voice", () => {
   it("adds the one seasonal line to the funded email only in season", () => {
     const render = load("wishlist-item-funded");
 
-    const everyday = render({ ...baseContext, seasonal: false });
+    const everyday = normalize(render({ ...baseContext, seasonal: false }));
     expect(everyday).not.toContain("Christmas");
     expect(everyday).toContain("just added up to its full price");
 
-    const seasonal = render({ ...baseContext, seasonal: true });
+    const seasonal = normalize(render({ ...baseContext, seasonal: true }));
     expect(seasonal).toContain(
       "A Christmas wish, fully paid for. Just like that.",
     );
@@ -110,19 +120,25 @@ describe("wishlist email templates seasonal voice", () => {
   it("keeps the gift-note block working alongside the seasonal flag", () => {
     const render = load("wishlist-contribution-received");
 
-    const withNote = render({
-      ...baseContext,
-      seasonal: true,
-      showNote: true,
-      giftNote: "Merry Christmas, Nomso!",
-    });
+    const withNote = normalize(
+      render({
+        ...baseContext,
+        seasonal: true,
+        showNote: true,
+        giftNote: "Merry Christmas, Nomso!",
+      }),
+    );
+
     expect(withNote).toContain("Merry Christmas, Nomso!");
 
-    const withoutNote = render({
-      ...baseContext,
-      seasonal: true,
-      showNote: false,
-    });
+    const withoutNote = normalize(
+      render({
+        ...baseContext,
+        seasonal: true,
+        showNote: false,
+      }),
+    );
+
     expect(withoutNote).not.toContain("giftNote");
   });
 });
@@ -139,7 +155,7 @@ describe("wishlist gift reminder template", () => {
     });
 
   it("points the giver back at the unfinished gift", () => {
-    const html = render();
+    const html = normalize(render());
 
     expect(html).toContain("You didn&rsquo;t finish your gift");
     expect(html).toContain("Hi Adaeze");
@@ -149,16 +165,16 @@ describe("wishlist gift reminder template", () => {
   });
 
   it("uses the unified footer with a settings link and the contact line", () => {
-    const html = render();
+    const html = normalize(render());
 
     expect(html).toContain("Manage email preferences in");
-    expect(html).toContain("hello@refreeg.com");
+    expect(html).toContain("support@refreeg.com");
     expect(html).toContain("+234 901 744 6760");
     expect(html).toContain("&copy; 2026 RefreeG");
   });
 
   it("falls back to a neutral greeting when no name was given", () => {
-    const html = render({ giverName: "" });
+    const html = normalize(render({ giverName: "" }));
 
     expect(html).toContain("Hi, you started giving towards");
     expect(html).not.toContain("Hi ,");
