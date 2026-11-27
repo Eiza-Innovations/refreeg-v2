@@ -1,15 +1,12 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import Image from "next/image";
-import { Button } from "@/components/ui/button";
 import { ArrowRight, Building2, Check } from "lucide-react";
-
-interface Step5Props {
-  user: any;
-  onComplete: (destination?: string) => void | Promise<void>;
-  onboardingData: any;
-}
+import { Button } from "@/components/ui/button";
+import { CalloutBanner } from "@/components/ui/callout-banner";
+import { safeRedirect } from "@/lib/auth/safe-redirect";
+import type { Step5Props } from "@/types/onboarding-types";
 
 export default function Step5({
   user,
@@ -17,112 +14,80 @@ export default function Step5({
   onboardingData,
 }: Step5Props) {
   const isOrg = onboardingData.accountType === "organization";
+  // With a redirect from the page they came from, the button takes them back
+  // there, so "Go to dashboard" would be wrong.
+  const hasRedirect = !!safeRedirect(useSearchParams().get("redirect"));
+  const name = onboardingData.profile.firstName || user.name || "there";
 
-  if (isOrg) {
-    return (
-      <div className="flex min-h-[520px] items-center justify-center py-4 text-center">
-        <motion.div
-          initial={{ y: 24, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5 }}
-          className="w-full max-w-3xl"
-        >
-          <div className="relative mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
-            <Building2 className="h-7 w-7" />
-            <span className="absolute ml-12 mt-12 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-emerald-500 text-white">
-              <Check className="h-3.5 w-3.5 stroke-[3]" />
-            </span>
-          </div>
-
-          <h1 className="mt-7 text-3xl font-semibold text-slate-950 sm:text-4xl">
-            Your organisation is ready
-          </h1>
-          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-600 sm:text-base">
-            Welcome,{" "}
-            {onboardingData?.profile?.firstName || user?.name || "Owner"}. You
-            can now manage your workspace, invite colleagues, and create your
-            first cause.
-          </p>
-
-          <p className="mx-auto mt-7 max-w-xl border-l-2 border-blue-700 bg-slate-50 px-4 py-3 text-left text-sm leading-6 text-slate-600">
-            If you postponed owner verification, complete it before launching a
-            fundraiser or receiving payouts.
-          </p>
-
-          <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
-            <Button
-              onClick={() => onComplete("/dashboard/causes/create")}
-              className="h-12 bg-blue-700 px-6 text-white hover:bg-blue-800"
-            >
-              Create your first cause
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-            <Button
-              onClick={() => onComplete()}
-              variant="outline"
-              className="h-12 border-slate-300 px-6 text-slate-700 hover:bg-slate-50"
-            >
-              Open workspace dashboard
-            </Button>
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
+  const copy = isOrg
+    ? {
+        title: "Your organisation is ready",
+        text: `Welcome, ${name}. You can now manage your workspace, invite colleagues, and create your first cause.`,
+        primary: {
+          label: "Create your first cause",
+          to: "/dashboard/causes/create",
+        },
+        secondary: { label: "Open workspace dashboard", to: undefined },
+      }
+    : {
+        title: `Thank you, ${name}`,
+        text: "You can start supporting causes that matter to you today.",
+        primary: {
+          label: hasRedirect ? "Continue" : "Go to dashboard",
+          to: undefined,
+        },
+        secondary: { label: "Explore causes", to: "/causes" },
+      };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[80vh] text-center px-4">
-      {}
+    <div className="flex min-h-[520px] items-center justify-center py-4 text-center">
       <motion.div
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.6 }}
-        className="mb-10"
-      >
-        <Image
-          src="/onboardingSuccess.png"
-          alt="Success Illustration"
-          width={250}
-          height={250}
-          className="mx-auto"
-        />
-      </motion.div>
-
-      {}
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
+        initial={{ y: 24, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.2, duration: 0.5 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-2xl"
       >
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-          Thank You,{" "}
-          {onboardingData?.profile?.firstName || user?.name || "User"}!
+        <span className="relative mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-ink text-lime">
+          {isOrg ? (
+            <Building2 className="h-7 w-7" />
+          ) : (
+            <Check className="h-7 w-7" />
+          )}
+        </span>
+
+        <h1 className="mt-7 font-fraunces text-4xl font-medium text-ink sm:text-5xl">
+          {copy.title}
         </h1>
-        <p className="text-gray-600 text-base md:text-lg mb-10">
-          You can start supporting causes that matter to you today!
+        <p className="mx-auto mt-3 max-w-xl text-base leading-7 text-ink/70">
+          {copy.text}
         </p>
-      </motion.div>
 
-      {}
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.4 }}
-        className="flex flex-col sm:flex-row items-center justify-center gap-4"
-      >
-        <Button
-          onClick={() => onComplete("/causes")}
-          className="bg-gray-200 text-gray-800 hover:bg-gray-300 px-6 py-6 rounded-lg text-base font-semibold"
-        >
-          Explore Causes →
-        </Button>
+        {isOrg && (
+          <CalloutBanner
+            variant="gold"
+            title="Verify the owner before you launch"
+            description="If you postponed owner verification, complete it before launching a fundraiser or receiving payouts."
+            className="mx-auto mt-7 max-w-xl text-left"
+          />
+        )}
 
-        <Button
-          onClick={() => onComplete()}
-          className="bg-blue-600 text-white hover:bg-blue-700 px-6 py-6 rounded-lg text-base font-semibold"
-        >
-          Go to Dashboard
-        </Button>
+        <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
+          <Button
+            variant="ink"
+            onClick={() => onComplete(copy.primary.to)}
+            className="h-12 px-8"
+          >
+            {copy.primary.label}
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+          <Button
+            variant="surface"
+            onClick={() => onComplete(copy.secondary.to)}
+            className="h-12 px-8"
+          >
+            {copy.secondary.label}
+          </Button>
+        </div>
       </motion.div>
     </div>
   );

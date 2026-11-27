@@ -5,18 +5,16 @@ import { useRouter } from "nextjs-toploader/app";
 import { signOut as nextAuthSignOut } from "next-auth/react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Eyebrow } from "@/components/ui/eyebrow";
+import type { AlreadySignedInCardProps } from "@/types/auth-types";
 
 export function AlreadySignedInCard({
   name,
   email,
   redirectTo,
   variant,
-}: {
-  name?: string | null;
-  email?: string | null;
-  redirectTo: string;
-  variant: "signin" | "signup";
-}) {
+}: AlreadySignedInCardProps) {
   const router = useRouter();
   const [switching, setSwitching] = useState(false);
 
@@ -30,24 +28,28 @@ export function AlreadySignedInCard({
   };
 
   return (
-    <div className="w-full max-w-md rounded-xl border border-neutral-200 bg-white p-6 text-center shadow-sm">
-      <p className="text-sm text-neutral-600">Signed in as</p>
-      <p className="mt-1 truncate text-lg font-semibold text-neutral-900">
+    <Card variant="surface" className="p-6 text-center">
+      <Eyebrow>Signed in as</Eyebrow>
+      <p className="mt-2 truncate font-fraunces text-2xl text-ink">
         {name || email || "your account"}
       </p>
       {name && email ? (
-        <p className="truncate text-sm text-neutral-500">{email}</p>
+        <p className="truncate text-sm text-ink/60">{email}</p>
       ) : null}
 
       <div className="mt-6 flex flex-col gap-3">
-        <Button onClick={() => router.push(redirectTo)} className="w-full">
+        <Button
+          variant="ink"
+          onClick={() => router.push(redirectTo)}
+          className="h-12 w-full rounded-md"
+        >
           {variant === "signup" ? "Go to dashboard" : "Continue"}
         </Button>
-        <button
-          type="button"
+        <Button
+          variant="surface"
           onClick={handleSwitchAccount}
           disabled={switching}
-          className="text-sm font-medium text-neutral-600 hover:underline disabled:opacity-50"
+          className="h-12 w-full rounded-md"
         >
           {switching ? (
             <span className="inline-flex items-center gap-1.5">
@@ -59,8 +61,8 @@ export function AlreadySignedInCard({
           ) : (
             "Sign in as someone else"
           )}
-        </button>
+        </Button>
       </div>
-    </div>
+    </Card>
   );
 }

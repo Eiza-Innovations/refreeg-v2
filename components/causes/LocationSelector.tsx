@@ -18,16 +18,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import React from "react";
 import { ALL_COUNTRIES, getCountries } from "@/utils/countryUtils";
-
-interface LocationSelectorProps {
-  selected: string;
-  onChange: (value: string) => void;
-  mode: "country" | "state" | "city";
-  label?: string;
-  placeholder?: string;
-  countryName?: string;
-  stateName?: string;
-}
+import type { LocationSelectorProps } from "@/types/location-types";
 
 const fetchLocations = async (url: string): Promise<string[]> => {
   const response = await fetch(url);
@@ -40,10 +31,13 @@ export function LocationSelector({
   onChange,
   mode,
   label = "Location",
+  required,
   placeholder = "Select location...",
   countryName,
   stateName,
+  tone = "default",
 }: LocationSelectorProps) {
+  const isNew = tone === "new";
   const [isOpen, setIsOpen] = React.useState(false);
 
   // Use getCountries from countryUtils which handles API and fallback automatically
@@ -142,16 +136,21 @@ export function LocationSelector({
 
   return (
     <div className="space-y-0.5">
-      <Label className="text-base max-lg:text-sm">{label}</Label>
+      <Label className={isNew ? "text-sm" : "text-base max-lg:text-sm"}>
+        {label}
+        {required ? <span className="text-rust"> *</span> : null}
+      </Label>
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild disabled={isLoading || isError}>
           <Button
-            variant="outline"
+            variant={isNew ? "surface" : "outline"}
             role="combobox"
             aria-expanded={isOpen}
             className={cn(
-              "w-full justify-between text-base font-normal text-gray-700  bg-white hover:bg-palette-primary border-gray-300 focus-visible:ring-0 focus-visible:ring-offset-0",
-              !selected && "text-gray-500",
+              isNew
+                ? "h-10 w-full justify-between rounded-xl text-sm font-normal text-ink hover:bg-bone focus-visible:ring-0 focus-visible:ring-offset-0"
+                : "w-full justify-between text-base font-normal text-gray-700  bg-white hover:bg-palette-primary border-gray-300 focus-visible:ring-0 focus-visible:ring-offset-0",
+              !selected && (isNew ? "text-ink/40" : "text-gray-500"),
               (isLoading || isError) &&
                 "cursor-not-allowed opacity-50 z-[1019]",
             )}
@@ -168,7 +167,13 @@ export function LocationSelector({
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[--radix-popover-trigger-width] max-h-[--radix-popover-content-available-height] p-0 z-[9999] overflow-auto custom-scroll">
+        <PopoverContent
+          className={cn(
+            "w-[--radix-popover-trigger-width] max-h-[--radix-popover-content-available-height] p-0 z-[9999] overflow-auto custom-scroll",
+            isNew &&
+              "rounded-xl border-hairline bg-surface text-ink shadow-card",
+          )}
+        >
           {options.length > 0 ? (
             <Command>
               <CommandInput placeholder={`Search ${mode}...`} />

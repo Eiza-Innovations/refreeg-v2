@@ -411,7 +411,7 @@ select:focus {
 
 /* Flat, product-led styling for the cause creation workspace. */
 .cause-flow .premium-input {
-  @apply rounded-xl border-hairline bg-surface shadow-none transition-colors duration-150 focus:border-forest focus:ring-forest/15;
+  @apply rounded-xl border-transparent bg-bone shadow-none transition-colors duration-150 focus:border-forest focus:ring-forest/15 aria-[invalid=true]:border-rust;
 }
 
 .cause-flow label {

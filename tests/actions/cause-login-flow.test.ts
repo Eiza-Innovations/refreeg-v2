@@ -38,7 +38,7 @@ jest.mock("bcryptjs", () => ({
 
 jest.mock("@/services/mail", () => ({
   sendLoginNotificationEmail: jest.fn(),
-  sendPasswordResetEmail: jest.fn(),
+  sendPasswordResetEmail: jest.fn().mockResolvedValue({ success: true }),
   sendWelcomeEmailToUser: jest.fn(),
 }));
 
@@ -241,10 +241,13 @@ describe("Cause User Login Flow", () => {
 
       expect(result).toEqual({ success: true });
       expect(mockPrisma.user.create).not.toHaveBeenCalled();
-      expect(sendPasswordResetEmail).toHaveBeenCalledWith({
-        email: "creator@example.com",
-        resetUrl: expect.stringContaining("flow=cause-profile"),
-      });
+      expect(sendPasswordResetEmail).toHaveBeenCalledWith(
+        {
+          email: "creator@example.com",
+          resetUrl: expect.stringContaining("flow=cause-profile"),
+        },
+        { timeoutMs: 20_000 },
+      );
     });
 
     it("uses the plain reset link for a cause owner with a complete profile", async () => {
@@ -268,13 +271,14 @@ describe("Cause User Login Flow", () => {
       expect(resetUrl).not.toContain("flow=cause-profile");
     });
 
-    it("still errors when the email has no user and no cause", async () => {
+    it("answers success but sends nothing when the email has no user and no cause", async () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
       mockPrisma.cause.findFirst.mockResolvedValue(null);
 
       const result = await requestPasswordResetAction("nobody@example.com");
 
-      expect(result.success).toBe(false);
+      // Same answer as a real account, so the form cannot reveal who is registered.
+      expect(result.success).toBe(true);
       expect(sendPasswordResetEmail).not.toHaveBeenCalled();
     });
   });

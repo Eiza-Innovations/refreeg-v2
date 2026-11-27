@@ -1,6 +1,7 @@
 import { NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { sendOtpEmail } from "@/services/mail";
+import { sendOtpEmailWithRetry } from "@/lib/auth/send-otp-email";
+import { generateOtpCode, hashOtpCode } from "@/lib/auth/otp";
 
 export async function POST(req: Request) {
   try {
@@ -39,14 +40,14 @@ export async function POST(req: Request) {
     }
 
     // Generate a new 6-digit OTP
-    const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    const newOtp = generateOtpCode();
     const newExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     // Update pending registration (reset failed attempts since new code is issued)
     await prisma.pendingRegistration.update({
       where: { email: normalizedEmail },
       data: {
-        otpCode: newOtp,
+        otpCode: hashOtpCode(newOtp),
         expiresAt: newExpiresAt,
         failedAttempts: 0,
         lastOtpSentAt: new Date(),
@@ -56,7 +57,7 @@ export async function POST(req: Request) {
     // Respond before sending: the code is already persisted above, and
     // awaiting SMTP inline made the resend request wait on the mail server.
     after(async () => {
-      const emailResult = await sendOtpEmail({
+      const emailResult = await sendOtpEmailWithRetry({
         email: normalizedEmail,
         userName: pendingUser.fullName,
         otpCode: newOtp,
