@@ -14,13 +14,7 @@ import {
   resetPasswordAction,
   checkCauseUserLoginAction,
 } from "@/actions/users/auth-actions";
-
-function normalizeRedirectPath(target?: string | null): string | null {
-  if (!target) return null;
-  if (!target.startsWith("/")) return null;
-  if (target.startsWith("//")) return null;
-  return target;
-}
+import { safeRedirect } from "@/lib/auth/safe-redirect";
 
 export function useAuth() {
   const { user, isLoading, isAuthenticated } = useAuthContext();
@@ -78,14 +72,12 @@ export function useAuth() {
         description: "You have successfully signed in.",
       });
 
-      const safeRedirect = normalizeRedirectPath(redirectTo) || "/dashboard";
-      window.location.href = safeRedirect;
+      const target = safeRedirect(redirectTo) || "/dashboard";
+      window.location.href = target;
     } catch (error: any) {
-      toast({
-        title: "Error signing in",
-        description: error.message,
-        variant: "destructive",
-      });
+      // Thrown so the form can show the message inline; a toast alone
+      // disappears before slow connections finish the request.
+      throw new Error(error.message || "Could not sign you in.");
     }
   };
 
@@ -149,9 +141,9 @@ export function useAuth() {
 
   const signInWithGoogle = async (redirectTo?: string | null) => {
     try {
-      const safeRedirect = normalizeRedirectPath(redirectTo);
-      const callbackUrl = safeRedirect
-        ? `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(safeRedirect)}`
+      const target = safeRedirect(redirectTo);
+      const callbackUrl = target
+        ? `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(target)}`
         : `${window.location.origin}/auth/callback`;
 
       await fetch("/api/auth/pre-signin-cleanup", {
@@ -165,30 +157,6 @@ export function useAuth() {
     } catch (error: any) {
       toast({
         title: "Error signing in with Google",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const signInWithApple = async (redirectTo?: string | null) => {
-    try {
-      const safeRedirect = normalizeRedirectPath(redirectTo);
-      const callbackUrl = safeRedirect
-        ? `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(safeRedirect)}`
-        : `${window.location.origin}/auth/callback`;
-
-      await fetch("/api/auth/pre-signin-cleanup", {
-        method: "POST",
-        credentials: "same-origin",
-      });
-
-      await nextAuthSignIn("apple", {
-        callbackUrl,
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error signing in with Apple",
         description: error.message,
         variant: "destructive",
       });
@@ -212,24 +180,9 @@ export function useAuth() {
   };
 
   const resetPassword = async (email: string) => {
-    try {
-      const res = await requestPasswordResetAction(email);
-      if (!res.success) {
-        toast({
-          title: "Error",
-          description: res.error || "Failed to send reset link",
-          variant: "destructive",
-        });
-        return false;
-      }
-      return true;
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-      return false;
+    const res = await requestPasswordResetAction(email);
+    if (!res.success) {
+      throw new Error(res.error || "Failed to send reset link");
     }
   };
 
@@ -242,54 +195,39 @@ export function useAuth() {
       redirect?: string | null;
     },
   ) => {
-    try {
-      const res = await resetPasswordAction(token, password);
-      if (!res.success) {
-        toast({
-          title: "Error",
-          description: res.error || "Failed to reset password",
-          variant: "destructive",
-        });
-        return false;
-      }
-
-      const email = options?.email || res.email;
-
-      if (options?.flow === "cause-profile" && email) {
-        toast({
-          title: "Password set successfully!",
-          description: "Proceeding to complete your profile...",
-        });
-
-        const loginRes = await nextAuthSignIn("credentials", {
-          redirect: false,
-          email,
-          password,
-        });
-
-        if (!loginRes?.error) {
-          const safeRedirect = normalizeRedirectPath(options?.redirect);
-          window.location.href = safeRedirect
-            ? `/onboarding?redirect=${encodeURIComponent(safeRedirect)}`
-            : "/onboarding";
-          return true;
-        }
-      }
-
-      toast({
-        title: "Success",
-        description: "Your password has been reset successfully.",
-      });
-      router.push("/auth/signin");
-      return true;
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-      return false;
+    const res = await resetPasswordAction(token, password);
+    if (!res.success) {
+      throw new Error(res.error || "Failed to reset password");
     }
+
+    const email = options?.email || res.email;
+
+    if (options?.flow === "cause-profile" && email) {
+      toast({
+        title: "Password set successfully!",
+        description: "Proceeding to complete your profile...",
+      });
+
+      const loginRes = await nextAuthSignIn("credentials", {
+        redirect: false,
+        email,
+        password,
+      });
+
+      if (!loginRes?.error) {
+        const target = safeRedirect(options?.redirect);
+        window.location.href = target
+          ? `/onboarding?redirect=${encodeURIComponent(target)}`
+          : "/onboarding";
+        return;
+      }
+    }
+
+    toast({
+      title: "Password updated",
+      description: "Sign in with your new password.",
+    });
+    router.push("/auth/signin");
   };
 
   return {
@@ -299,7 +237,6 @@ export function useAuth() {
     signUp,
     signOut,
     signInWithGoogle,
-    signInWithApple,
     resetPassword,
     updatePassword,
   };

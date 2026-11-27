@@ -1,40 +1,40 @@
 "use client";
 
-import React, { useState, useEffect, useRef, Suspense } from "react";
+import { useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { Loader2, ShieldCheck } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
-import { useAuth } from "@/hooks/use-auth";
+import { useSigninForm } from "@/hooks/use-signin-form";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import { AlreadySignedInCard } from "@/components/auth/already-signed-in-card";
-import { AuthBrandPanel } from "@/components/auth/auth-brand-panel";
-import { AuthField } from "@/components/auth/auth-field";
-import { AuthLogo } from "@/components/auth/auth-logo";
-import { SocialSignInButtons } from "@/components/auth/social-sign-in-buttons";
-
-function normalizeRedirect(target: string | null): string | null {
-  if (!target || !target.startsWith("/") || target.startsWith("//"))
-    return null;
-  return target;
-}
+import { CalloutBanner } from "@/components/ui/callout-banner";
+import { Heading, Lead } from "@/components/marketing/Typography";
+import { AlreadySignedInCard } from "@/components/auth/AlreadySignedInCard";
+import { AuthDivider } from "@/components/auth/AuthDivider";
+import { AuthField } from "@/components/auth/AuthField";
+import { AuthLink } from "@/components/auth/AuthLink";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { AuthTrustNote } from "@/components/auth/AuthTrustNote";
+import { SocialSignInButtons } from "@/components/auth/SocialSignInButtons";
+import { safeRedirect } from "@/lib/auth/safe-redirect";
+import { signinBrand } from "@/lib/auth/signin-copy";
 
 function SignInContent() {
-  const [form, setForm] = useState({ email: "", password: "" });
-  const [loadingType, setLoadingType] = useState<
-    "manual" | "google" | "apple" | null
-  >(null);
-  const { user, isLoading, signIn, signInWithGoogle } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect");
   const hasShownAuthNotice = useRef(false);
-
-  const setFormFields = <K extends keyof typeof form>(
-    key: K,
-    value: (typeof form)[K],
-  ) => setForm((current) => ({ ...current, [key]: value }));
+  const {
+    user,
+    isLoading,
+    form,
+    setFormFields,
+    errors,
+    submitError,
+    loadingType,
+    handleSubmit,
+    handleGoogleSignIn,
+  } = useSigninForm(redirectTo);
 
   useEffect(() => {
     router.prefetch("/petitions");
@@ -55,272 +55,148 @@ function SignInContent() {
     }
   }, [redirectTo, user]);
 
-  const handleGoogleSignIn = async () => {
-    try {
-      setLoadingType("google");
-      await signInWithGoogle(redirectTo);
-    } catch (error) {
-      console.error("Google Sign In Error:", error);
-      setLoadingType(null);
-    }
-  };
-
-  const handleAppleSignIn = () => {
-    toast({
-      title: "Apple Sign In",
-      description:
-        "Apple sign in is coming soon. Please continue with Google or Email.",
-    });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!form.email.trim() || !form.password) {
-      toast({
-        title: "Missing fields",
-        description: "Please enter both your email address and password.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setLoadingType("manual");
-
-    toast({
-      title: "Signing you in...",
-      description: "Please wait while we authenticate your account.",
-    });
-
-    try {
-      await signIn(form.email.trim().toLowerCase(), form.password, redirectTo);
-    } catch (error: any) {
-      console.error("Sign in failed:", error);
-    } finally {
-      setLoadingType(null);
-    }
-  };
-
   if (isLoading) {
-    return <div className="min-h-screen w-screen bg-cream-soft" />;
+    return <div className="min-h-screen w-full bg-cream" />;
   }
 
   if (user) {
     return (
-      <div className="flex min-h-screen w-screen bg-white">
-        <div className="flex md:w-1/2 w-full flex-col items-center justify-center bg-white px-6 py-10 md:px-10">
-          <AlreadySignedInCard
-            name={user.name}
-            email={user.email}
-            redirectTo={normalizeRedirect(redirectTo) || "/dashboard"}
-            variant="signin"
-          />
-        </div>
-        <AuthBrandPanel
-          headline="Welcome back to transparent impact."
-          subtitle="Every donation tracked, every receipt verified. Continue supporting campaigns that matter."
-          checklist={[
-            {
-              title: "Real-time updates",
-              description: "Follow the causes and petitions you care about.",
-            },
-            {
-              title: "Verified receipts",
-              description:
-                "View milestone verifications and project disbursements.",
-            },
-            {
-              title: "100% transparent",
-              description: "Direct accountability for every backed initiative.",
-            },
-          ]}
-          testimonial={{
-            avatarInitials: "TA",
-            quote:
-              "I can always see the exact progress and milestone proof of every project I've backed.",
-            author: "Tunde A. · Lagos",
-          }}
+      <AuthShell brand={signinBrand}>
+        <AlreadySignedInCard
+          name={user.name}
+          email={user.email}
+          redirectTo={safeRedirect(redirectTo) || "/dashboard"}
+          variant="signin"
         />
-      </div>
+      </AuthShell>
     );
   }
 
   return (
-    <div className="flex min-h-screen w-full bg-cream-soft">
-      {}
-      <AuthBrandPanel
-        headline="Welcome back to transparent impact."
-        subtitle="Every donation tracked, every receipt verified. Continue supporting campaigns that matter."
-        checklist={[
-          {
-            title: "Real-time updates",
-            description: "Follow the causes and petitions you care about.",
-          },
-          {
-            title: "Verified receipts",
-            description:
-              "View milestone verifications and project disbursements.",
-          },
-          {
-            title: "100% transparent",
-            description: "Direct accountability for every backed initiative.",
-          },
-        ]}
-        testimonial={{
-          avatarInitials: "TA",
-          quote:
-            "I can always see the exact progress and milestone proof of every project I've backed.",
-          author: "Tunde A. · Lagos",
-        }}
+    <AuthShell brand={signinBrand}>
+      <div className="mb-7">
+        <Heading as="h1" size="subsection">
+          Welcome back
+        </Heading>
+        <Lead className="mt-2 text-sm text-ink/70 md:text-sm">
+          Don&apos;t have an account?{" "}
+          <AuthLink
+            href={
+              redirectTo
+                ? `/auth/signup?redirect=${encodeURIComponent(redirectTo)}`
+                : "/auth/signup"
+            }
+          >
+            Sign up
+          </AuthLink>
+        </Lead>
+        <Lead className="mt-1 text-sm text-ink/70 md:text-sm">
+          Registering as an organization?{" "}
+          <AuthLink href="/auth/signup/organization">
+            Create an organization account
+          </AuthLink>
+        </Lead>
+      </div>
+
+      {redirectTo && (
+        <CalloutBanner
+          variant="gold"
+          title="You need to log in first to continue."
+          className="mb-6"
+        />
+      )}
+
+      <SocialSignInButtons
+        disabled={loadingType !== null}
+        googleLoading={loadingType === "google"}
+        onGoogle={handleGoogleSignIn}
       />
 
-      {}
-      <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto px-6 py-10 sm:px-10 lg:px-16">
-        <div className="w-full max-w-lg">
-          {}
-          <div className="mb-6 lg:hidden">
-            <AuthLogo variant="dark" />
-          </div>
+      <AuthDivider label="Or use your email" />
 
-          {}
-          <div className="mb-7">
-            <h1 className="font-fraunces text-3xl sm:text-4xl font-normal text-neutral-900 tracking-tight">
-              Welcome back
-            </h1>
-            <p className="mt-2 text-sm text-neutral-600">
-              Don&apos;t have an account?{" "}
-              <Link
-                href={
-                  redirectTo
-                    ? `/auth/signup?redirect=${encodeURIComponent(redirectTo)}`
-                    : "/auth/signup"
-                }
-                className="font-semibold text-blue-600 hover:text-blue-700 hover:underline"
-              >
-                Sign up
-              </Link>
-            </p>
-            <p className="mt-1 text-sm text-neutral-600">
-              Registering as an organization?{" "}
-              <Link
-                href="/auth/signup/organization"
-                className="font-semibold text-blue-600 hover:text-blue-700 hover:underline"
-              >
-                Create an organization account
-              </Link>
-            </p>
-          </div>
+      <form onSubmit={handleSubmit} noValidate className="space-y-4">
+        <AuthField
+          id="email"
+          type="email"
+          label="Email address"
+          placeholder="name@example.com"
+          value={form.email}
+          onChange={(e) => setFormFields("email", e.target.value)}
+          error={errors.email}
+        />
+        <AuthField
+          id="password"
+          type="password"
+          label="Password"
+          placeholder="••••••••"
+          value={form.password}
+          onChange={(e) => setFormFields("password", e.target.value)}
+          error={errors.password}
+          labelAction={
+            <AuthLink
+              href="/auth/reset-password"
+              className="text-xs font-medium text-ink/60 hover:text-ink"
+            >
+              Forgot password?
+            </AuthLink>
+          }
+        />
 
-          {/* Notice banner if redirected */}
-          {redirectTo && (
-            <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              You need to log in first to continue.
-            </div>
-          )}
-
-          <SocialSignInButtons
-            disabled={loadingType !== null}
-            googleLoading={loadingType === "google"}
-            onGoogle={handleGoogleSignIn}
-            onApple={handleAppleSignIn}
+        {submitError ? (
+          <CalloutBanner
+            variant="rust"
+            role="alert"
+            title={
+              submitError === "Invalid credentials"
+                ? "Incorrect email or password."
+                : submitError
+            }
+            description={
+              submitError === "Invalid credentials"
+                ? "Check them and try again. After 5 wrong attempts sign-in pauses for 15 minutes; resetting your password gets you back in straight away."
+                : undefined
+            }
           />
+        ) : null}
 
-          {/* Divider */}
-          <div className="relative my-7 text-center">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-neutral-200" />
-            </div>
-            <span className="relative bg-cream-soft px-3 text-[11px] font-bold uppercase tracking-widest text-neutral-400">
-              Or use your email
-            </span>
-          </div>
+        <Button
+          type="submit"
+          variant="ink"
+          aria-label="Sign In"
+          disabled={loadingType !== null}
+          className="mt-2 h-12 w-full rounded-md shadow-subtle"
+        >
+          {loadingType === "manual" ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            "Sign in"
+          )}
+        </Button>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <AuthField
-              id="email"
-              type="email"
-              label="Email Address"
-              placeholder="name@example.com"
-              value={form.email}
-              onChange={(e) => setFormFields("email", e.target.value)}
-              required
-            />
-            <AuthField
-              id="password"
-              type="password"
-              label="Password"
-              placeholder="••••••••"
-              value={form.password}
-              onChange={(e) => setFormFields("password", e.target.value)}
-              required
-              labelAction={
-                <Link
-                  href="/auth/reset-password"
-                  className="text-xs font-medium text-neutral-500 hover:text-neutral-900 hover:underline transition-colors"
-                >
-                  Forgot Password?
-                </Link>
-              }
-            />
+        <AuthTrustNote>
+          Protected by end-to-end cryptographic verification. Your data is never
+          shared.
+        </AuthTrustNote>
 
-            {/* Submit Action Button */}
-            <div className="pt-2">
-              <Button
-                type="submit"
-                aria-label="Sign In"
-                disabled={loadingType !== null}
-                className="w-full h-13 rounded-2xl bg-forest-deep text-white hover:bg-neutral-900 font-medium text-sm sm:text-base shadow-md transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-              >
-                {loadingType === "manual" ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  "Sign In"
-                )}
-              </Button>
-            </div>
-
-            {/* Trust badge with shield icon */}
-            <div className="pt-2 flex items-start gap-2 text-xs text-neutral-500 leading-relaxed">
-              <ShieldCheck className="w-4 h-4 shrink-0 text-neutral-400 mt-0.5" />
-              <span>
-                Protected by end-to-end cryptographic verification. Your data is
-                never shared.
-              </span>
-            </div>
-
-            {/* Terms and Privacy policy note */}
-            <div className="pt-2 text-center text-xs text-neutral-500 leading-relaxed">
-              By signing in, you agree to our{" "}
-              <Link
-                href="/terms"
-                target="_blank"
-                className="font-medium text-neutral-700 hover:underline"
-              >
-                Terms of Service
-              </Link>{" "}
-              and{" "}
-              <Link
-                href="/privacy"
-                target="_blank"
-                className="font-medium text-neutral-700 hover:underline"
-              >
-                Privacy Policy
-              </Link>
-              .
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
+        <p className="pt-2 text-center text-xs leading-relaxed text-ink/60">
+          By signing in, you agree to our{" "}
+          <AuthLink href="/terms" target="_blank" className="text-ink">
+            Terms of Service
+          </AuthLink>{" "}
+          and{" "}
+          <AuthLink href="/privacy" target="_blank" className="text-ink">
+            Privacy Policy
+          </AuthLink>
+          .
+        </p>
+      </form>
+    </AuthShell>
   );
 }
 
 export default function SignInPage() {
   return (
-    <Suspense
-      fallback={<div className="min-h-screen w-screen bg-cream-soft" />}
-    >
+    <Suspense fallback={<div className="min-h-screen w-full bg-cream" />}>
       <SignInContent />
     </Suspense>
   );

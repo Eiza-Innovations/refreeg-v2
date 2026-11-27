@@ -1,12 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-
-interface AuthLogoProps {
-  className?: string;
-  variant?: "white" | "dark";
-  href?: string;
-}
+import type { AuthLogoProps } from "@/types/auth-types";
 
 export function AuthLogo({
   className,
@@ -17,7 +12,7 @@ export function AuthLogo({
     <div
       className={cn(
         "inline-flex items-center gap-2 font-bold tracking-tight",
-        variant === "white" ? "text-white" : "text-neutral-900",
+        variant === "white" ? "text-white" : "text-ink",
         className,
       )}
     >
