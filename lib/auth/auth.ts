@@ -377,11 +377,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             select: {
               sessions_invalidated_after: true,
               isBlocked: true,
+              fullName: true,
             },
           });
           if (!dbUser || dbUser.isBlocked) {
             return null;
           }
+          // The token's name is the sign-up one; onboarding and profile edits
+          // change it, so keep it current from the row we just read.
+          if (dbUser.fullName) token.name = dbUser.fullName;
           const revokedAfter = dbUser.sessions_invalidated_after;
           if (
             revokedAfter &&
