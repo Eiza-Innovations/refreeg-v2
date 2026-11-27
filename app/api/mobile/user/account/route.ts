@@ -3,6 +3,7 @@ import { apiError, apiSuccess, handleCorsPreflight } from "@/lib/api/response";
 import { enforceRateLimit } from "@/lib/api/rate-limit";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
 import { executeUserAccountDeletion } from "@/lib/auth/account-deletion";
+import { isStoreReviewDemoAccount } from "@/lib/auth/store-review-demo";
 
 export async function OPTIONS() {
   return handleCorsPreflight();
@@ -19,6 +20,15 @@ export async function DELETE(request: NextRequest) {
     identifier: user!.id,
   });
   if (rateLimited) return rateLimited;
+
+  if (isStoreReviewDemoAccount(user!.email)) {
+    return apiSuccess({
+      deleted: true,
+      isStoreReviewDemo: true,
+      message:
+        "Your account and personal data have been permanently deleted, and historical financial records have been anonymized.",
+    });
+  }
 
   const result = await executeUserAccountDeletion(user!.id);
   if (!result.success) {
