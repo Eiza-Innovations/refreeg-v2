@@ -39,11 +39,11 @@ export function WishlistLanding() {
               ? "This Christmas, ask for the gifts you'd actually love."
               : "Show them what would actually make you smile."}
           </h1>
-          <p className="mt-4 text-base leading-7 text-ink/60 sm:text-lg">
+          {/* <p className="mt-4 text-base leading-7 text-ink/60 sm:text-lg">
             {seasonal
               ? "This Christmas, skip the guesswork. Name the gifts you'd love, share one link, and let the people who care give together, anonymously if they choose."
               : "Name the gifts you'd love, share one link, and let the people who care give together, anonymously if they choose."}
-          </p>
+          </p> */}
           <div className="mt-7 flex flex-col items-center gap-3">
             <Button
               asChild

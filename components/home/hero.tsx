@@ -60,7 +60,7 @@ const Hero = () => {
 
       <div
         ref={heroRef}
-        className="relative z-10 mx-auto flex min-h-screen max-w-5xl flex-col items-center justify-center text-center md:pt-0 sm:pt-28"
+        className="relative z-10 mx-auto flex min-h-screen max-w-5xl flex-col items-center justify-start text-center sm:justify-center sm:pt-28 md:pt-0"
       >
         <div className="hero-badge flex items-center gap-2 rounded-full border border-border bg-lime px-4 py-2 text-xs sm:text-sm font-semibold text-lime-foreground shadow-md">
           <Image
