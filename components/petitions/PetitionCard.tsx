@@ -5,7 +5,7 @@ import { Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { Progress } from "@/components/ui/progress";
-import { Heading } from "@/components/marketing/Typography";
+import { Heading, Small } from "@/components/marketing/Typography";
 import { BookmarkButton } from "@/components/saved/BookmarkButton";
 
 type Props = {
@@ -56,7 +56,9 @@ export function PetitionCard({
       >
         {title}
       </Heading>
-      {organiser && <p className="mt-2 text-xs text-ink/60">{organiser}</p>}
+      {organiser && (
+        <Small className="mt-2 block text-ink/60">{organiser}</Small>
+      )}
 
       <div className="mt-auto pt-6">
         <Progress
@@ -65,10 +67,10 @@ export function PetitionCard({
           className="h-1.5 bg-ink/10"
           indicatorClassName="bg-ink"
         />
-        <p className="mt-2 text-xs text-ink/70">
+        <Small className="mt-2 block text-ink/70">
           {signatures.toLocaleString()} of {goal.toLocaleString()} signatures
           {daysLeft != null && ` · ${daysLeft} days left`}
-        </p>
+        </Small>
         <Button
           variant="ink"
           className="mt-4 h-10 w-full rounded-xl text-sm font-semibold"

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CalloutBanner } from "@/components/ui/callout-banner";
 import { Eyebrow } from "@/components/ui/eyebrow";
-import { Heading } from "@/components/marketing/Typography";
+import { Heading, P } from "@/components/marketing/Typography";
 import { Icons } from "@/components/layout/Icons";
 import { useSignature } from "@/hooks/use-signature";
 import { usePetitionSignForm } from "@/hooks/use-petition-sign-form";
@@ -72,11 +72,11 @@ export function SignatureForm({
       <Heading as="h2" size="panel" className="mt-2">
         {hasSigned ? "Thank you for signing" : "Sign this petition"}
       </Heading>
-      <p className="mt-1 text-sm text-ink/60">
+      <P className="mt-1 text-ink/60 md:text-sm">
         {hasSigned
           ? "Share it to help reach the goal."
           : "Signing is free and takes a few seconds."}
-      </p>
+      </P>
 
       <form onSubmit={handleSubmit} className="mt-5 space-y-4">
         {hasSigned && (
@@ -100,6 +100,7 @@ export function SignatureForm({
             title={petitionTitle}
             entityId={petitionId}
             entityType="petition"
+            triggerVariant="surface"
           />
         ) : (
           <Button

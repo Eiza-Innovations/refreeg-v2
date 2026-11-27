@@ -2,6 +2,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   completeOnboarding,
+  createOnboardingProfile,
   getOnboardingProgress,
   saveStep2Progress,
 } from "@/actions/users/profile-actions";
@@ -187,6 +188,39 @@ describe("useOnboarding", () => {
     await waitFor(() => expect(result.current.currentStepId).toBe("profile"));
     expect(saveStep2Progress).toHaveBeenCalledWith("u1", "female");
     expect(result.current.onboardingData.gender).toBe("female");
+  });
+
+  it("saves the profile with its S3 photo key, syncs state, and moves to kyc", async () => {
+    const s3Key = "uploads/profiles/u1/u1/images/avatar.jpg";
+    (createOnboardingProfile as jest.Mock).mockResolvedValueOnce({
+      profilePhoto: s3Key,
+    });
+    const { result } = renderHook(() => useOnboarding(), { wrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    act(() => {
+      result.current.handleProfileSubmit({
+        firstName: "Ada",
+        lastName: "Obi",
+        username: "ada_obi",
+        location: "Nigeria",
+        phone: "+2348034128890",
+        email: "ada@example.com",
+        profilePhoto: s3Key,
+      });
+    });
+
+    await waitFor(() => expect(result.current.currentStepId).toBe("kyc"));
+    expect(createOnboardingProfile).toHaveBeenCalledWith(
+      "u1",
+      expect.objectContaining({
+        username: "ada_obi",
+        profilePhoto: s3Key,
+      }),
+      null,
+    );
+    expect(result.current.onboardingData.profile.profilePhoto).toBe(s3Key);
+    expect(result.current.onboardingData.profile.username).toBe("ada_obi");
   });
 
   it("completes onboarding and goes to the requested redirect", async () => {
