@@ -17,6 +17,7 @@ export interface WishlistItem {
   price: number;
   contributed: number;
   note: string | null;
+  image_url?: string | null;
   sort_order: number;
   funded_at: string | null;
   created_at: string;
@@ -42,25 +43,18 @@ export interface WishlistWithItems extends Wishlist {
   items: WishlistItem[];
 }
 
-/** Why a wishlist would collect on the platform instead of splitting
- * straight to the owner: identity verification pending, or no bank account
- * on file yet. Drives the owner callout and the creation gate; the payout
- * details themselves never leave the server. */
 export type WishlistOwnerPayoutState = "ready" | "kyc_pending" | "bank_missing";
 
-/** One row of the owner-only givers panel (delivery coordination). */
 export interface WishlistContributor {
   id: string;
   itemName: string;
   amount: number;
   name: string | null;
-  email: string;
   message: string | null;
   isAnonymous: boolean;
   createdAt: string | null;
 }
 
-/** Shape the contribution dialog posts; the server re-derives the rest. */
 export interface WishlistContributionData {
   amount: number;
   name?: string;
@@ -69,14 +63,43 @@ export interface WishlistContributionData {
   isAnonymous: boolean;
 }
 
-/** Public-safe confirmation the /received page shows after checkout: no
- * emails, anonymous givers stay masked. */
 export interface WishlistGiftSummary {
   itemName: string;
   amount: number;
   giverName: string;
   wishlistTitle: string;
-  /** /<username>/<slug> when the owner has a public page, else null. */
   sharePath: string | null;
+  createdAt: string | null;
+}
+
+export interface PublicWishlistSummary {
+  id: string;
+  title: string;
+  slug: string;
+  created_at: string | null;
+  item_count: number;
+  funded_count: number;
+  contributed_total: number;
+  target_total: number;
+  preview_images: string[];
+}
+
+export interface WishlistGiftAttempt {
+  email: string;
+  giverName: string;
+  itemName: string;
+  wishlistTitle: string;
+  wishlistUrl: string;
+  attemptedAt: string;
+}
+
+export interface WishlistGiftEntry {
+  id: string;
+  itemName: string;
+  wishlistTitle: string;
+  wishlistPath: string | null;
+  amount: number;
+  giverName: string | null;
+  isAnonymous: boolean;
   createdAt: string | null;
 }

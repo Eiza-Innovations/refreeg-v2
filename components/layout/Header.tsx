@@ -454,8 +454,8 @@ export function Header() {
                   <em className="italic text-blue-accent">faster.</em>
                 </p>
                 <p className="mt-1 text-sm leading-6 text-gray-600">
-                  Jump into campaigns, petitions, platform guides, and your
-                  workspace from one cleaner menu.
+                  Jump into campaigns, wishlists, petitions, platform guides,
+                  and your workspace from one cleaner menu.
                 </p>
 
                 <div className="mt-4 grid gap-2 sm:grid-cols-2">

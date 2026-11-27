@@ -5,6 +5,15 @@ jest.mock("@/actions/wishlists/wishlist-actions", () => ({
 
 jest.mock("@/hooks/use-toast", () => ({ toast: jest.fn() }));
 
+jest.mock("@/lib/s3/upload-client", () => ({
+  uploadFileWithPresign: jest.fn(),
+}));
+
+jest.mock("@/lib/s3/media", () => ({
+  getMediaUrl: (key: string) => `https://cdn.test/${key}`,
+  isProxyMediaUrl: () => false,
+}));
+
 const push = jest.fn();
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ push }),
@@ -15,7 +24,13 @@ import {
   createWishlist,
   addWishlistItem,
 } from "@/actions/wishlists/wishlist-actions";
+import { uploadFileWithPresign } from "@/lib/s3/upload-client";
+import { toast } from "@/hooks/use-toast";
 import { CreateWishlistForm } from "@/components/wishlist/create-wishlist-form";
+
+// jsdom has no scrollIntoView; the wizard scrolls to the flow top on step
+// changes.
+Element.prototype.scrollIntoView = jest.fn();
 
 const createdWishlist = {
   success: true,
@@ -39,10 +54,12 @@ describe("CreateWishlistForm item rows", () => {
   });
 
   const goToStep2 = () => {
-    fireEvent.change(screen.getByLabelText("Wishlist name"), {
+    fireEvent.change(screen.getByLabelText(/Wishlist name/), {
       target: { value: "Nomso's Wishlist" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /continue to add gifts/i }),
+    );
   };
 
   it("starts with one row and grows up to the 8-item cap", () => {
@@ -137,5 +154,74 @@ describe("CreateWishlistForm item rows", () => {
     fireEvent.click(screen.getByRole("button", { name: "Remove item 2" }));
     expect(screen.getByText("1 of 8")).toBeInTheDocument();
     expect(screen.queryByLabelText("Item name 2")).not.toBeInTheDocument();
+  });
+
+  it("uploads a photo for a row and sends its key with the item", async () => {
+    (uploadFileWithPresign as jest.Mock).mockResolvedValue({
+      key: "uploads/wishlist-items/u1/images/desk.jpg",
+    });
+    render(<CreateWishlistForm seasonal={false} username="nomso" />);
+    goToStep2();
+
+    fillRow(1, "A new study desk", "80000");
+    fireEvent.change(screen.getByLabelText("Item photo 1"), {
+      target: {
+        files: [new File(["x"], "desk.jpg", { type: "image/jpeg" })],
+      },
+    });
+
+    await waitFor(() =>
+      expect(screen.getByAltText("Item 1 photo preview")).toBeInTheDocument(),
+    );
+    expect(uploadFileWithPresign).toHaveBeenCalledWith(expect.any(File), {
+      entityType: "wishlist-items",
+      mediaType: "images",
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Create wishlist" }));
+
+    await waitFor(() => expect(addWishlistItem).toHaveBeenCalledTimes(1));
+    expect(addWishlistItem).toHaveBeenCalledWith("w-1", {
+      name: "A new study desk",
+      price: 80000,
+      note: undefined,
+      imageUrl: "uploads/wishlist-items/u1/images/desk.jpg",
+    });
+  });
+
+  it("rejects non-image files without uploading", async () => {
+    render(<CreateWishlistForm seasonal={false} username="nomso" />);
+    goToStep2();
+
+    fireEvent.change(screen.getByLabelText("Item photo 1"), {
+      target: {
+        files: [new File(["x"], "doc.pdf", { type: "application/pdf" })],
+      },
+    });
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith({
+        title: "Use a JPG, PNG, WebP or GIF image",
+      }),
+    );
+    expect(uploadFileWithPresign).not.toHaveBeenCalled();
+  });
+
+  it("lets the owner remove an uploaded photo", async () => {
+    (uploadFileWithPresign as jest.Mock).mockResolvedValue({ key: "k.jpg" });
+    render(<CreateWishlistForm seasonal={false} username="nomso" />);
+    goToStep2();
+
+    fireEvent.change(screen.getByLabelText("Item photo 1"), {
+      target: { files: [new File(["x"], "k.jpg", { type: "image/jpeg" })] },
+    });
+    await waitFor(() =>
+      expect(screen.getByAltText("Item 1 photo preview")).toBeInTheDocument(),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+    expect(
+      screen.queryByAltText("Item 1 photo preview"),
+    ).not.toBeInTheDocument();
   });
 });

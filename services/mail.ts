@@ -7,6 +7,7 @@ import Handlebars from "handlebars";
 import type { TemplateDelegate } from "handlebars";
 import { headers } from "next/headers";
 import { getClientIp } from "@/lib/api/client-ip";
+import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/actions/users/auth-actions";
 import { getProfile } from "@/actions/users/profile-actions";
 import { isTemplateEnabled } from "@/lib/email/triggers";
@@ -36,7 +37,7 @@ const TEMPLATE_DIR = path.join(process.cwd(), "services", "templates");
 // Sender identity policy: one table decides who sends what.
 // - noreply@: one-way system alerts (codes, reset links, security alerts).
 //   A reply thread would go nowhere, so the From sets that expectation; the
-//   footer still points to support@ for anyone who needs help.
+//   footer points to hello@ for anyone who needs help.
 // - support@: product and account mail a customer might answer (money,
 //   verification outcomes, campaign reviews, reminders).
 // - hello@: general communication (welcome, organization invitations).
@@ -51,16 +52,19 @@ const SENDERS = {
 type SenderKey = keyof typeof SENDERS;
 
 // Template name -> sender; anything not listed sends as support@.
-// Wishlist gift alerts are one-way notifications, so they go from noreply@;
-// the footer still points at support@ for anyone who needs help.
+// Receipts and one-way alerts a customer cannot act on by replying go from
+// noreply@; the footer points at hello@ for anyone who needs help.
 const SENDER_BY_TEMPLATE: Partial<Record<string, SenderKey>> = {
   "otp-verification": "noreply",
   "password-reset": "noreply",
   "email-change-confirm": "noreply",
   "login-notification": "noreply",
   "bank-account-added": "noreply",
+  "donation-received": "noreply",
+  "cause-donation-receipt": "noreply",
   "wishlist-contribution-received": "noreply",
   "wishlist-item-funded": "noreply",
+  "wishlist-gift-receipt": "noreply",
   "welcome-email": "hello",
   announcement: "hello",
   "organization-invitation": "hello",
@@ -1076,7 +1080,7 @@ export async function sendDonationReceivedEmail({
 
   return sendMail({
     to,
-    subject: `💚 You just received a donation for "${causeTitle}"!`,
+    subject: `💙 You just received a donation for "${causeTitle}"!`,
     templateName: "donation-received",
     context: {
       ownerName,
@@ -1115,7 +1119,7 @@ export async function sendWishlistContributionEmail({
   const note = giftNote?.trim();
   return sendMail({
     to,
-    subject: `💚 A gift was just given on "${wishlistTitle}"!`,
+    subject: `💙 A gift was just given on "${wishlistTitle}"!`,
     templateName: "wishlist-contribution-received",
     context: {
       ownerName,
@@ -1163,8 +1167,8 @@ export async function sendWishlistItemFundedEmail({
   });
 }
 
-// Receipts are money mail a giver might answer (wrong amount, refund
-// request), so per the policy table above this one stays on support@.
+// Receipts go from noreply@: the giver already has the context, and a reply
+// thread belongs on support@, which every receipt footer points to.
 export async function sendWishlistGiftReceiptEmail({
   to,
   giverName,
@@ -1189,7 +1193,7 @@ export async function sendWishlistGiftReceiptEmail({
   const note = giftNote?.trim();
   return sendMail({
     to,
-    subject: `💚 Your gift to "${wishlistTitle}" went through`,
+    subject: `💙 Your gift to "${wishlistTitle}" went through`,
     templateName: "wishlist-gift-receipt",
     context: {
       giverName: giverName?.trim() || "there",
@@ -1202,6 +1206,85 @@ export async function sendWishlistGiftReceiptEmail({
       giftNote: note,
       isAnonymous: Boolean(isAnonymous),
       seasonal: isWishlistSeasonActive(),
+      currentYear: new Date().getFullYear(),
+    },
+  });
+}
+
+export async function sendWishlistGiftReminderEmail(context: {
+  email: string;
+  giverName: string;
+  itemName: string;
+  wishlistTitle: string;
+  wishlistUrl: string;
+  attemptedAt: string;
+}) {
+  const attemptedAt = new Date(context.attemptedAt);
+  if (Number.isNaN(attemptedAt.getTime())) {
+    return { success: false, error: "Invalid reminder attempt time" };
+  }
+
+  const completedSince = await prisma.wishlist_contributions.count({
+    where: {
+      email: context.email,
+      status: "completed",
+      created_at: { gt: attemptedAt },
+    },
+  });
+  if (completedSince > 0) {
+    return { success: true, skipped: true };
+  }
+
+  return sendMail({
+    to: context.email,
+    subject: `You didn't finish your gift to "${context.wishlistTitle}" 🎁`,
+    templateName: "wishlist-gift-reminder",
+    context: {
+      giverName: context.giverName?.trim() || "there",
+      itemName: context.itemName,
+      wishlistTitle: context.wishlistTitle,
+      wishlistUrl: context.wishlistUrl,
+      currentYear: new Date().getFullYear(),
+    },
+  });
+}
+
+// The giver's own receipt for a cause donation, mirroring the wishlist
+// gift receipt. Sends from noreply@ per the sender table; the template
+// footer routes any problem to support@.
+export async function sendCauseDonationReceiptEmail({
+  to,
+  donorName,
+  causeTitle,
+  amount,
+  causeUrl,
+  reference,
+  donorMessage,
+  isAnonymous,
+}: {
+  to: string;
+  donorName: string | null;
+  causeTitle: string;
+  amount: number;
+  causeUrl: string;
+  reference?: string | null;
+  donorMessage?: string | null;
+  isAnonymous?: boolean;
+}) {
+  const message = donorMessage?.trim();
+  return sendMail({
+    to,
+    subject: `💙 Your donation to "${causeTitle}" went through`,
+    templateName: "cause-donation-receipt",
+    context: {
+      donorName: donorName?.trim() || "there",
+      causeTitle,
+      amount: amount.toLocaleString(),
+      causeUrl,
+      reference: reference?.trim() || null,
+      showMessage: Boolean(message),
+      donorMessage: message,
+      isAnonymous: Boolean(isAnonymous),
       currentYear: new Date().getFullYear(),
     },
   });

@@ -15,7 +15,6 @@ const PROVIDER_NAMES: Record<string, string> = {
   flutterwave: "Flutterwave",
 };
 
-/** The ledger row can land a moment after the provider redirects back. */
 async function loadGift(reference: string, attempts = 5) {
   for (let i = 0; i < attempts; i++) {
     const result = await getWishlistGiftByReference(reference).catch(

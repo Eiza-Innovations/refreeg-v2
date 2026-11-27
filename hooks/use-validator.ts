@@ -28,6 +28,7 @@ export function useValidator<
 
   const getErrors = (only?: readonly string[]): E => {
     const result = schema.safeParse(store);
+
     if (result.success) return {} as E;
     if (mapErrors) return mapErrors(result.error.issues, only);
 
@@ -35,8 +36,10 @@ export function useValidator<
 
     for (const issue of result.error.issues) {
       const key = String(issue.path[0] ?? "");
+
       if (!key || next[key]) continue;
       if (only && !only.includes(key)) continue;
+
       next[key] = issue.message;
     }
 
@@ -46,20 +49,32 @@ export function useValidator<
   const validate = (only?: readonly string[]) => {
     const next = getErrors(only);
     setErrors(next);
+
     return Object.keys(next).length === 0;
   };
 
   const clearError = (key: keyof E) =>
     setErrors((current) => {
       if (!current[key]) return current;
+
       const next = { ...current };
       delete next[key];
+
       return next;
     });
 
-  /** Inline, schema-less messages (bounds that depend on runtime data). */
+  /**
+   * Inline, schema-less messages for constraints that depend on runtime data.
+   */
   const setError = (key: keyof FieldErrors<T>, message: string) =>
     setErrors((current) => ({ ...current, [key]: message }));
 
-  return { errors, setErrors, getErrors, validate, clearError, setError };
+  return {
+    errors,
+    setErrors,
+    getErrors,
+    validate,
+    clearError,
+    setError,
+  };
 }

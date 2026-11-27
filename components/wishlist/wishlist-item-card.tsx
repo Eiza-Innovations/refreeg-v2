@@ -1,16 +1,17 @@
-import { ArrowDown, ArrowUp, PencilLine, Trash2 } from "lucide-react";
+import Image from "next/image";
+import { ArrowDown, ArrowUp, Gift, PencilLine, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { formatNaira } from "@/components/giving/format";
+import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import type { WishlistItem } from "@/types";
 import { cn } from "@/lib/utils";
 
 export interface WishlistItemCardProps {
   item: WishlistItem;
   isOwner: boolean;
-  /** An archived wishlist renders read-only: bars stay, giving retires. */
   archived?: boolean;
   index: number;
   itemCount: number;
@@ -20,7 +21,6 @@ export interface WishlistItemCardProps {
   onMove?: (item: WishlistItem, direction: -1 | 1) => void;
 }
 
-/** Collected over price, capped at 100 — races may overshoot the ledger. */
 export const wishlistItemProgressPercent = (item: {
   contributed: number;
   price: number;
@@ -45,42 +45,64 @@ export function WishlistItemCard({
 }: WishlistItemCardProps) {
   const funded = Boolean(item.funded_at);
   const percent = wishlistItemProgressPercent(item);
+  const image = item.image_url ? getMediaUrl(item.image_url) : null;
 
   return (
     <div className="rounded-2xl border border-hairline bg-surface p-5 shadow-flat">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="font-semibold leading-snug text-ink">{item.name}</p>
-          {item.note && (
-            <p className="mt-1 text-[13px] leading-5 text-ink/55">
-              {item.note}
-            </p>
-          )}
-        </div>
-        <p className="shrink-0 text-sm font-semibold text-ink">
-          {formatNaira(item.price)}
-        </p>
-      </div>
+      <div className="flex items-start gap-4">
+        {image ? (
+          <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-hairline bg-bone sm:h-20 sm:w-20">
+            <Image
+              src={image}
+              alt={item.name}
+              fill
+              sizes="80px"
+              className="object-cover"
+              unoptimized={isProxyMediaUrl(image)}
+            />
+          </div>
+        ) : (
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-hairline bg-bone sm:h-20 sm:w-20">
+            <Gift className="h-6 w-6 text-ink/30" aria-hidden />
+          </div>
+        )}
 
-      <div className="mt-4 flex items-center gap-3">
-        <Progress
-          value={percent}
-          indicatorVariant={funded ? "lime" : "forest"}
-          className="h-2.5"
-          aria-label={`${item.name}, ${percent} percent funded`}
-        />
-        {funded && (
-          <Badge variant="cleared" className="shrink-0">
-            FULLY FUNDED
-          </Badge>
-        )}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="font-semibold leading-snug text-ink">{item.name}</p>
+              {item.note && (
+                <p className="mt-1 text-[13px] leading-5 text-ink/55">
+                  {item.note}
+                </p>
+              )}
+            </div>
+            <p className="shrink-0 text-sm font-semibold text-ink">
+              {formatNaira(item.price)}
+            </p>
+          </div>
+
+          <div className="mt-3 flex items-center gap-3">
+            <Progress
+              value={percent}
+              indicatorVariant={funded ? "lime" : "forest"}
+              className="h-2.5"
+              aria-label={`${item.name}, ${percent} percent funded`}
+            />
+            {funded && (
+              <Badge variant="cleared" className="shrink-0">
+                FULLY FUNDED
+              </Badge>
+            )}
+          </div>
+          <p className="mt-2 text-[13px] text-ink/55">
+            {formatNaira(item.contributed)} contributed
+            {!funded && item.contributed < item.price && (
+              <> · {formatNaira(item.price - item.contributed)} to go</>
+            )}
+          </p>
+        </div>
       </div>
-      <p className="mt-2 text-[13px] text-ink/55">
-        {formatNaira(item.contributed)} contributed
-        {!funded && item.contributed < item.price && (
-          <> · {formatNaira(item.price - item.contributed)} to go</>
-        )}
-      </p>
 
       <div className="mt-4 flex items-center justify-between gap-3">
         <div className="flex-1">

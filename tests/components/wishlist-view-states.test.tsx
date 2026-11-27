@@ -110,13 +110,19 @@ describe("WishlistView states", () => {
 
   it("switches the eyebrow with the season", () => {
     const { unmount } = renderView();
-    expect(screen.getByText("A Refreeg wishlist")).toBeInTheDocument();
+    // The accent word renders in its own span (the "lands." styling), so
+    // match the eyebrow element by its full text.
+    const eyebrow = (text: string) =>
+      screen.getByText(
+        (_, el) =>
+          el?.classList.contains("label-eyebrow") === true &&
+          el.textContent === text,
+      );
+    expect(eyebrow("A Refreeg wishlist")).toBeInTheDocument();
     unmount();
 
     renderView({ seasonal: true });
-    expect(
-      screen.getByText("The Refreeg holiday wishlist"),
-    ).toBeInTheDocument();
+    expect(eyebrow("The Refreeg holiday wishlist")).toBeInTheDocument();
   });
 
   it("hides the payout callout once payout setup is complete", () => {

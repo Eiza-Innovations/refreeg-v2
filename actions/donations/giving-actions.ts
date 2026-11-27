@@ -7,11 +7,11 @@ import { causePublicPath } from "@/lib/causes/slug";
 
 export type GivingPeriod = "year" | "last-year" | "all";
 export type GivingFilter = "all" | "delivered" | "in-progress" | "pledges";
-export type GiftStatus = "delivered" | "in-progress" | "pledge";
+export type GiftStatus = "delivered" | "in-progress" | "pledge" | "given";
 
 export type GiftRow = {
   id: string;
-  kind: "donation" | "pledge";
+  kind: "donation" | "pledge" | "wishlist-gift";
   title: string;
   owner: string;
   image: string | null;
@@ -40,6 +40,7 @@ export type GivingOverview = {
     giftCount: number;
     totalGiftCount: number;
     campaignCount: number;
+    wishlistCount: number;
     deliveredCount: number;
     since: string | null;
   };
@@ -144,9 +145,28 @@ export async function getGivingOverview({
       prisma.bookmark.count({ where: { user_id: user.id } }),
       prisma.user.findUnique({
         where: { id: user.id },
-        select: { total_points: true },
+        select: { total_points: true, username: true },
       }),
     ]);
+
+  // Wishlist gifts count as giving: they join the headline, the period
+  // totals and the gift list alongside cause donations.
+  const wishlistGifts = await prisma.wishlist_contributions.findMany({
+    where: { user_id: user.id },
+    select: {
+      id: true,
+      amount: true,
+      created_at: true,
+      item: {
+        select: {
+          name: true,
+          wishlist: { select: { title: true, slug: true } },
+        },
+      },
+    },
+    orderBy: { created_at: "desc" },
+  });
+  const username = profile?.username ?? null;
   const otherCauseIds = [
     ...new Set(
       [...pledges, ...subscriptions]
@@ -210,19 +230,40 @@ export async function getGivingOverview({
       }),
     ];
   });
+  const wishlistRows = wishlistGifts.map((g) => ({
+    id: g.id,
+    kind: "wishlist-gift" as const,
+    title: g.item.name,
+    owner: g.item.wishlist.title,
+    image: null,
+    href: username
+      ? `/${username}/${g.item.wishlist.slug}`
+      : "/dashboard/wishlists",
+    amount: Number(g.amount),
+    date: (g.created_at ?? now).toISOString(),
+    status: "given" as const,
+    reference: null,
+  }));
   const sum = (rows: GiftRow[]) => rows.reduce((t, r) => t + r.amount, 0);
   const periodDonations = donationRows.filter((r) =>
     inPeriod(new Date(r.date), period, now),
   );
-  const thisYear = sum(
-    donationRows.filter((r) => inPeriod(new Date(r.date), "year", now)),
+  const periodWishlist = wishlistRows.filter((r) =>
+    inPeriod(new Date(r.date), period, now),
   );
-  const lastYear = sum(
-    donationRows.filter((r) => inPeriod(new Date(r.date), "last-year", now)),
-  );
+  const thisYear =
+    sum(donationRows.filter((r) => inPeriod(new Date(r.date), "year", now))) +
+    sum(wishlistRows.filter((r) => inPeriod(new Date(r.date), "year", now)));
+  const lastYear =
+    sum(
+      donationRows.filter((r) => inPeriod(new Date(r.date), "last-year", now)),
+    ) +
+    sum(
+      wishlistRows.filter((r) => inPeriod(new Date(r.date), "last-year", now)),
+    );
 
   const byFilter: Record<GivingFilter, GiftRow[]> = {
-    all: [...pledgeRows, ...periodDonations],
+    all: [...pledgeRows, ...periodDonations, ...periodWishlist],
     delivered: periodDonations.filter((r) => r.status === "delivered"),
     "in-progress": periodDonations.filter((r) => r.status === "in-progress"),
     pledges: pledgeRows,
@@ -241,6 +282,7 @@ export async function getGivingOverview({
     const id = getCampaignCategoryStyle(d.cause.category).id;
     categoryTotals.set(id, (categoryTotals.get(id) ?? 0) + Number(d.amount));
   }
+  const wishlistTotal = sum(periodWishlist);
 
   const recurring = subscriptions.flatMap((s) => {
     const cause = s.cause_id ? causeById.get(s.cause_id) : undefined;
@@ -260,20 +302,29 @@ export async function getGivingOverview({
   const monthlyPlans = recurring.filter((r) => r.interval === "monthly");
   const nextMonthly = monthlyPlans.map((r) => r.nextCharge).sort()[0];
 
-  const firstGift = donations.at(-1)?.createdAt;
+  const firstGiftDates = [
+    ...donations.map((d) => d.createdAt),
+    ...wishlistGifts.map((g) => g.created_at),
+  ]
+    .filter(Boolean)
+    .sort((a, b) => (a as Date).getTime() - (b as Date).getTime());
+  const firstGift = firstGiftDates[0];
   const headlineRows = byFilter[filter];
 
   return {
     isEmpty:
       donations.length === 0 &&
       pledges.length === 0 &&
-      subscriptions.length === 0,
+      subscriptions.length === 0 &&
+      wishlistGifts.length === 0,
     savedCount,
     headline: {
       amount: sum(headlineRows),
       giftCount: headlineRows.length,
-      totalGiftCount: periodDonations.length + pledgeRows.length,
+      totalGiftCount:
+        periodDonations.length + pledgeRows.length + periodWishlist.length,
       campaignCount: new Set(periodDonations.map((r) => r.href)).size,
+      wishlistCount: periodWishlist.length,
       deliveredCount: periodDonations.filter((r) => r.status === "delivered")
         .length,
       since: firstGift ? firstGift.toISOString() : null,
@@ -281,7 +332,7 @@ export async function getGivingOverview({
     periodTotals: {
       year: thisYear,
       "last-year": lastYear,
-      all: sum(donationRows),
+      all: sum(donationRows) + sum(wishlistRows),
     },
     lastYear,
     stats: {
@@ -299,13 +350,16 @@ export async function getGivingOverview({
     },
     gifts: matching.slice(0, limit),
     hasMoreGifts: matching.length > limit,
-    givenByCause: [...categoryTotals.entries()]
-      .map(([category, amount]) => ({
+    givenByCause: [
+      ...[...categoryTotals.entries()].map(([category, amount]) => ({
         category,
         label: getCampaignCategoryStyle(category).name,
         amount,
-      }))
-      .sort((a, b) => b.amount - a.amount),
+      })),
+      ...(wishlistTotal > 0
+        ? [{ category: "wishlists", label: "Wishlists", amount: wishlistTotal }]
+        : []),
+    ].sort((a, b) => b.amount - a.amount),
     recurring,
   };
 }

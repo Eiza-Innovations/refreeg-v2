@@ -2,70 +2,45 @@
 
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth/auth";
-import { revalidatePath } from "next/cache";
-import type {
-  Wishlist,
-  WishlistContributor,
-  WishlistContribution,
-  WishlistContributionData,
-  WishlistGiftSummary,
-  WishlistItem,
-  WishlistOwnerPayoutState,
-  WishlistWithItems,
-  PaymentProviderType,
-} from "@/types";
 import {
-  WISHLIST_ITEM_CAP,
   wishlistCreateSchema,
-  wishlistItemSchema,
   wishlistUpdateSchema,
+  wishlistItemSchema,
+  WISHLIST_ITEM_CAP,
 } from "@/lib/schemas/wishlist.schema";
 import { slugifyWishlistTitle } from "@/lib/wishlist/slug";
+import {
+  revalidateSharePath,
+  resolveOwnerPayoutState,
+  wishlistSharePath,
+} from "@/lib/wishlist/payout";
+import {
+  mapPrismaToWishlist,
+  mapPrismaToWishlistContribution,
+  mapPrismaToWishlistItem,
+  toIso,
+} from "@/lib/wishlist/mappers";
 import {
   sendWishlistContributionEmail,
   sendWishlistGiftReceiptEmail,
   sendWishlistItemFundedEmail,
 } from "@/services/mail";
-
-const toIso = (value: Date | string | null | undefined) =>
-  value instanceof Date ? value.toISOString() : (value ?? null);
-
-const mapPrismaToWishlist = (w: any): Wishlist => ({
-  ...w,
-  created_at: toIso(w.created_at),
-  updated_at: toIso(w.updated_at),
-});
-
-const mapPrismaToWishlistItem = (i: any): WishlistItem => ({
-  ...i,
-  price: Number(i.price),
-  contributed: Number(i.contributed),
-  funded_at: toIso(i.funded_at),
-  created_at: toIso(i.created_at),
-  updated_at: toIso(i.updated_at),
-});
-
-const mapPrismaToWishlistContribution = (c: any): WishlistContribution => ({
-  ...c,
-  amount: Number(c.amount),
-  created_at: toIso(c.created_at),
-});
+import type {
+  Wishlist,
+  WishlistItem,
+  WishlistContributor,
+  WishlistContribution,
+  WishlistContributionData,
+  WishlistGiftSummary,
+  WishlistOwnerPayoutState,
+  WishlistWithItems,
+  PaymentProviderType,
+} from "@/types";
 
 function isSlugTakenForUser(userId: string, slug: string) {
   return prisma.wishlists
     .findFirst({ where: { user_id: userId, slug }, select: { id: true } })
     .then((row) => row !== null);
-}
-
-// Identity verification first, then a bank account: both live in Settings,
-// and gifts only split straight to the owner once both are done.
-function resolveOwnerPayoutState(user: {
-  isVerified: boolean | null;
-  subAccountCode: string | null;
-}): WishlistOwnerPayoutState {
-  if (!user.isVerified) return "kyc_pending";
-  if (!user.subAccountCode) return "bank_missing";
-  return "ready";
 }
 
 async function requireOwnedWishlist(wishlistId: string, userId: string) {
@@ -84,20 +59,6 @@ async function requireOwnedWishlist(wishlistId: string, userId: string) {
   return wishlist;
 }
 
-// The public share URL is /<username>/<slug>; revalidation and email links
-// must use it. Owners without a claimed username have no public page yet.
-function wishlistSharePath(username: string | null | undefined, slug: string) {
-  return username ? `/${username}/${slug}` : null;
-}
-
-function revalidateSharePath(
-  username: string | null | undefined,
-  slug: string,
-) {
-  const path = wishlistSharePath(username, slug);
-  if (path) revalidatePath(path);
-}
-
 export async function createWishlist(input: {
   title: string;
   message?: string;
@@ -111,7 +72,6 @@ export async function createWishlist(input: {
   }
 
   try {
-    // The share URL carries the owner's username, so it must exist first.
     const owner = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { username: true, isVerified: true, subAccountCode: true },
@@ -123,8 +83,6 @@ export async function createWishlist(input: {
       };
     }
 
-    // A wishlist collects real money for its owner, so payout setup comes
-    // before the first list exists, not after the first gift lands.
     const payoutState = resolveOwnerPayoutState(owner);
     if (payoutState !== "ready") {
       return {
@@ -137,7 +95,6 @@ export async function createWishlist(input: {
     }
 
     const slug = slugifyWishlistTitle(parsed.data.title);
-    // Same name, same slug: say so instead of quietly spawning "-2" links.
     if (await isSlugTakenForUser(session.user.id, slug)) {
       return {
         success: false,
@@ -176,7 +133,6 @@ export async function updateWishlist(
     const wishlist = await requireOwnedWishlist(wishlistId, session.user.id);
     if (!wishlist) return { success: false, error: "Wishlist not found" };
 
-    // The slug stays fixed on rename so existing share links keep working.
     const updated = await prisma.wishlists.update({
       where: { id: wishlistId },
       data: {
@@ -196,7 +152,6 @@ export async function updateWishlist(
   }
 }
 
-/** Archived wishlists keep their page but stop accepting contributions. */
 export async function setWishlistStatus(
   wishlistId: string,
   status: "active" | "archived",
@@ -220,10 +175,72 @@ export async function setWishlistStatus(
   }
 }
 
+export async function deleteWishlist(
+  wishlistId: string,
+): Promise<{ success: boolean; error?: string }> {
+  const session = await auth();
+  if (!session?.user?.id) return { success: false, error: "Not authenticated" };
+
+  try {
+    const wishlist = await requireOwnedWishlist(wishlistId, session.user.id);
+    if (!wishlist) return { success: false, error: "Wishlist not found" };
+
+    const gifts = await prisma.wishlist_contributions.count({
+      where: { item: { wishlist_id: wishlistId } },
+    });
+    if (gifts > 0) {
+      return {
+        success: false,
+        error:
+          "This wishlist already has gifts on it, so its record stays. Archive it instead.",
+      };
+    }
+
+    await prisma.$transaction([
+      prisma.wishlist_items.deleteMany({ where: { wishlist_id: wishlistId } }),
+      prisma.wishlists.delete({ where: { id: wishlistId } }),
+    ]);
+    revalidateSharePath(wishlist.user.username, wishlist.slug);
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting wishlist:", error);
+    return { success: false, error: "Could not delete the wishlist" };
+  }
+}
+
+type ItemActionResult = {
+  success: boolean;
+  error?: string;
+  data?: WishlistItem;
+};
+
+async function requireOwnedItem(itemId: string, userId: string) {
+  const item = await prisma.wishlist_items.findUnique({
+    where: { id: itemId },
+    include: {
+      wishlist: {
+        select: {
+          user_id: true,
+          slug: true,
+          user: { select: { username: true } },
+        },
+      },
+      _count: { select: { contributions: true } },
+    },
+  });
+  if (!item || item.wishlist.user_id !== userId) return null;
+  return item;
+}
+
 export async function addWishlistItem(
   wishlistId: string,
-  input: { name: string; price: number; note?: string },
-): Promise<{ success: boolean; error?: string; data?: WishlistItem }> {
+  input: {
+    name: string;
+    price: number;
+    note?: string;
+    imageUrl?: string | null;
+  },
+): Promise<ItemActionResult> {
   const session = await auth();
   if (!session?.user?.id) return { success: false, error: "Not authenticated" };
 
@@ -233,8 +250,18 @@ export async function addWishlistItem(
   }
 
   try {
-    const wishlist = await requireOwnedWishlist(wishlistId, session.user.id);
-    if (!wishlist) return { success: false, error: "Wishlist not found" };
+    const wishlist = await prisma.wishlists.findUnique({
+      where: { id: wishlistId },
+      select: {
+        id: true,
+        slug: true,
+        user_id: true,
+        user: { select: { username: true } },
+      },
+    });
+    if (!wishlist || wishlist.user_id !== session.user.id) {
+      return { success: false, error: "Wishlist not found" };
+    }
 
     const existing = await prisma.wishlist_items.findMany({
       where: { wishlist_id: wishlistId },
@@ -255,6 +282,7 @@ export async function addWishlistItem(
         name: parsed.data.name,
         price: parsed.data.price,
         note: parsed.data.note || null,
+        image_url: parsed.data.imageUrl || null,
         sort_order: nextOrder,
       },
     });
@@ -268,8 +296,14 @@ export async function addWishlistItem(
 
 export async function updateWishlistItem(
   itemId: string,
-  input: { name?: string; price?: number; note?: string; sort_order?: number },
-): Promise<{ success: boolean; error?: string; data?: WishlistItem }> {
+  input: {
+    name?: string;
+    price?: number;
+    note?: string;
+    imageUrl?: string | null;
+    sort_order?: number;
+  },
+): Promise<ItemActionResult> {
   const session = await auth();
   if (!session?.user?.id) return { success: false, error: "Not authenticated" };
 
@@ -279,27 +313,12 @@ export async function updateWishlistItem(
   }
 
   try {
-    const item = await prisma.wishlist_items.findUnique({
-      where: { id: itemId },
-      include: {
-        wishlist: {
-          select: {
-            user_id: true,
-            slug: true,
-            user: { select: { username: true } },
-          },
-        },
-      },
-    });
-    if (!item || item.wishlist.user_id !== session.user.id) {
-      return { success: false, error: "Item not found" };
-    }
+    const item = await requireOwnedItem(itemId, session.user.id);
+    if (!item) return { success: false, error: "Item not found" };
 
-    // The price is locked once money has landed so the ledger always
-    // resolves to a price the owner actually promised.
     if (
       parsed.data.price !== undefined &&
-      Number(item.contributed) > 0 &&
+      item._count.contributions > 0 &&
       Number(item.price) !== parsed.data.price
     ) {
       return {
@@ -317,6 +336,9 @@ export async function updateWishlistItem(
           : {}),
         ...(parsed.data.note !== undefined
           ? { note: parsed.data.note || null }
+          : {}),
+        ...(parsed.data.imageUrl !== undefined
+          ? { image_url: parsed.data.imageUrl || null }
           : {}),
         ...(parsed.data.sort_order !== undefined
           ? { sort_order: parsed.data.sort_order }
@@ -338,24 +360,9 @@ export async function deleteWishlistItem(
   if (!session?.user?.id) return { success: false, error: "Not authenticated" };
 
   try {
-    const item = await prisma.wishlist_items.findUnique({
-      where: { id: itemId },
-      include: {
-        wishlist: {
-          select: {
-            user_id: true,
-            slug: true,
-            user: { select: { username: true } },
-          },
-        },
-        _count: { select: { contributions: true } },
-      },
-    });
-    if (!item || item.wishlist.user_id !== session.user.id) {
-      return { success: false, error: "Item not found" };
-    }
+    const item = await requireOwnedItem(itemId, session.user.id);
+    if (!item) return { success: false, error: "Item not found" };
 
-    // Deleting a row someone already paid towards would strand money.
     if (item._count.contributions > 0) {
       return {
         success: false,
@@ -380,8 +387,18 @@ export async function reorderWishlistItems(
   if (!session?.user?.id) return { success: false, error: "Not authenticated" };
 
   try {
-    const wishlist = await requireOwnedWishlist(wishlistId, session.user.id);
-    if (!wishlist) return { success: false, error: "Wishlist not found" };
+    const wishlist = await prisma.wishlists.findUnique({
+      where: { id: wishlistId },
+      select: {
+        id: true,
+        slug: true,
+        user_id: true,
+        user: { select: { username: true } },
+      },
+    });
+    if (!wishlist || wishlist.user_id !== session.user.id) {
+      return { success: false, error: "Wishlist not found" };
+    }
 
     const items = await prisma.wishlist_items.findMany({
       where: { wishlist_id: wishlistId },
@@ -457,13 +474,8 @@ export async function getWishlistByUsernameAndSlug(
           ...mapPrismaToWishlist(wishlist),
           items: wishlist.items.map(mapPrismaToWishlistItem),
         },
-        // The row was matched on this exact username, so the param is the
-        // owner's username (the column is nullable, the lookup is not).
         ownerUsername: username,
         viewerIsOwner: session?.user?.id === wishlist.user_id,
-        // Ready means identity verified AND bank details on file, so gifts
-        // split straight to the owner instead of collecting on the
-        // platform. A state flag only, never the payout details themselves.
         ownerPayoutReady: ownerPayoutState === "ready",
         ownerPayoutState,
       },
@@ -474,12 +486,10 @@ export async function getWishlistByUsernameAndSlug(
   }
 }
 
-/** Gates the creation flow: no wishlist until payout setup is complete. */
 export async function getWishlistCreationReadiness(): Promise<{
   signedIn: boolean;
   username: string | null;
   payoutState: WishlistOwnerPayoutState;
-  /** Boolean flags only, never the payout details themselves. */
   kycVerified: boolean;
   bankAdded: boolean;
 }> {
@@ -553,11 +563,103 @@ export async function listUserWishlists(): Promise<{
   }
 }
 
-/**
- * Owner-only contributor list for delivery coordination: the one place
- * giver contact details are visible (decision 9). Public surfaces never
- * call this; ownership is re-checked here so a forged call fails closed.
- */
+export async function listPublicWishlistsByUsername(username: string): Promise<{
+  success: boolean;
+  error?: string;
+  data?: import("@/types").PublicWishlistSummary[];
+}> {
+  try {
+    const owner = await prisma.user.findUnique({
+      where: { username },
+      select: { id: true },
+    });
+    if (!owner) return { success: true, data: [] };
+
+    const wishlists = await prisma.wishlists.findMany({
+      where: { user_id: owner.id, status: "active" },
+      include: { items: { orderBy: { sort_order: "asc" } } },
+      orderBy: { created_at: "desc" },
+    });
+
+    return {
+      success: true,
+      data: wishlists.map((w) => ({
+        id: w.id,
+        title: w.title,
+        slug: w.slug,
+        created_at: toIso(w.created_at),
+        item_count: w.items.length,
+        funded_count: w.items.filter((i) => i.funded_at).length,
+        contributed_total: w.items.reduce(
+          (sum, i) => sum + Number(i.contributed),
+          0,
+        ),
+        target_total: w.items.reduce((sum, i) => sum + Number(i.price), 0),
+        preview_images: w.items
+          .filter((i) => i.image_url)
+          .slice(0, 3)
+          .map((i) => i.image_url as string),
+      })),
+    };
+  } catch (error) {
+    console.error("Error listing public wishlists:", error);
+    return { success: false, error: "Could not load wishlists" };
+  }
+}
+
+export async function listWishlistGiftsByUsername(
+  username: string,
+): Promise<import("@/types").WishlistGiftEntry[]> {
+  try {
+    const owner = await prisma.user.findUnique({
+      where: { username },
+      select: { id: true },
+    });
+    if (!owner) return [];
+
+    const rows = await prisma.wishlist_contributions.findMany({
+      where: { user_id: owner.id, status: "completed" },
+      orderBy: { created_at: "desc" },
+      select: {
+        id: true,
+        amount: true,
+        name: true,
+        is_anonymous: true,
+        created_at: true,
+        item: {
+          select: {
+            name: true,
+            wishlist: {
+              select: {
+                title: true,
+                slug: true,
+                user: { select: { username: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return rows.map((row) => ({
+      id: row.id,
+      itemName: row.item.name,
+      wishlistTitle: row.item.wishlist.title,
+      wishlistPath: wishlistSharePath(
+        row.item.wishlist.user.username,
+        row.item.wishlist.slug,
+      ),
+      amount: Number(row.amount),
+      giverName: row.name,
+      isAnonymous: row.is_anonymous,
+      createdAt: toIso(row.created_at),
+    }));
+  } catch (error) {
+    console.error("Error listing wishlist gifts:", error);
+    return [];
+  }
+}
+
 export async function getWishlistContributors(wishlistId: string): Promise<{
   success: boolean;
   error?: string;
@@ -577,7 +679,6 @@ export async function getWishlistContributors(wishlistId: string): Promise<{
         id: true,
         amount: true,
         name: true,
-        email: true,
         message: true,
         is_anonymous: true,
         created_at: true,
@@ -592,7 +693,6 @@ export async function getWishlistContributors(wishlistId: string): Promise<{
         itemName: row.item.name,
         amount: Number(row.amount),
         name: row.name,
-        email: row.email,
         message: row.message,
         isAnonymous: row.is_anonymous,
         createdAt: toIso(row.created_at),
@@ -604,11 +704,6 @@ export async function getWishlistContributors(wishlistId: string): Promise<{
   }
 }
 
-/**
- * Ledger write for a verified charge (mirrors createDonation). Rows and the
- * item's contributed counter move in one transaction; a replayed reference
- * returns the original row instead of double-crediting.
- */
 export async function recordWishlistContribution(
   itemId: string,
   userId: string | null,
@@ -692,15 +787,10 @@ export async function recordWishlistContribution(
 
     const owner = itemWithWishlist?.wishlist.user;
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com";
-    // The public page lives at /<username>/<slug>; an owner still onboarding
-    // has no public URL, so emails point at the dashboard section.
     const wishlistUrl = owner?.username
       ? `${appUrl}/${owner.username}/${itemWithWishlist?.wishlist.slug}`
       : `${appUrl}/dashboard/wishlists`;
 
-    // The giver's own receipt, independent of whether the owner has an
-    // email on file. A replayed reference returned above, so this fires
-    // exactly once per gift.
     if (itemWithWishlist && data.email) {
       sendWishlistGiftReceiptEmail({
         to: data.email,
@@ -757,12 +847,6 @@ export async function recordWishlistContribution(
   return mapPrismaToWishlistContribution(result.contribution);
 }
 
-/**
- * Public-safe confirmation for the /received landing after checkout: the
- * reference is the unguessable key, so the payload may show the amount and
- * item, but giver emails never leave the ledger and anonymous names stay
- * masked here just like on the public page.
- */
 export async function getWishlistGiftByReference(reference: string): Promise<{
   success: boolean;
   error?: string;

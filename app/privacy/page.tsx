@@ -41,8 +41,8 @@ const sections: PolicySection[] = [
         text: "If you apply to verify your identity as a campaign creator, we and our identity verification partner (Didit) collect your government-issued ID details, residential address, date of birth, and a live selfie/biometric liveness check solely for identity verification and fraud prevention.",
       },
       {
-        subtitle: "Cause, Petition & Community Content",
-        text: "When you create a cause, petition, or comment, we collect the title, story, funding goals, uploaded images/videos, and supporting verification documents.",
+        subtitle: "Cause, Wishlist & Community Content",
+        text: "When you create a cause, wishlist, petition, or comment, we collect the title, story, funding goals, uploaded images/videos, and supporting verification documents.",
       },
       {
         subtitle: "Transaction & Device Data",
@@ -118,7 +118,7 @@ const sections: PolicySection[] = [
       },
       {
         subtitle: "What Is Deleted Immediately",
-        text: "When you delete your account, we immediately and permanently delete your personal profile information (name, email, phone number, bio, social links, saved bank details), KYC verification records and uploaded ID/selfie images, Didit verification sessions, push notification device tokens, saved cards, comments, petitions, and any unfunded campaigns.",
+        text: "When you delete your account, we immediately and permanently delete your personal profile information (name, email, phone number, bio, social links, saved bank details), KYC verification records and uploaded ID/selfie images, Didit verification sessions, push notification device tokens, saved cards, comments, petitions, wishlists, and any unfunded campaigns.",
       },
       {
         subtitle: "Financial Record Anonymization & Retention Period",

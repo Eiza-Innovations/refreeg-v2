@@ -10,7 +10,10 @@ import type {
 } from "@/types";
 import { recordEventCore as recordEvent } from "@/lib/rewards/reward-core";
 import { internalApiHeaders } from "@/lib/api/internal-api";
-import { sendDonationReceivedEmail } from "@/services/mail";
+import {
+  sendCauseDonationReceiptEmail,
+  sendDonationReceivedEmail,
+} from "@/services/mail";
 import { syncMilestoneRequirements } from "@/lib/causes/proof-milestones";
 
 const mapPrismaToDonation = (d: any): Donation => ({
@@ -259,6 +262,42 @@ export async function createDonation(
       "Error fetching cause owner for donation email:",
       ownerEmailError,
     );
+  }
+
+  // The giver's own receipt: every completed donation gets one, straight
+  // from noreply@ (the template footer routes problems to support@).
+  // Anonymous givers who left no email simply get nothing to send to.
+  if (donationData.email) {
+    try {
+      const [causeTitle, appUrl] = await Promise.all([
+        prisma.cause
+          .findUnique({
+            where: { id: causeId },
+            select: { title: true },
+          })
+          .then((row: { title: string } | null) => row?.title ?? null),
+        Promise.resolve(
+          process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com",
+        ),
+      ]);
+      sendCauseDonationReceiptEmail({
+        to: donationData.email,
+        donorName:
+          String(donationData.isAnonymous).toLowerCase() === "true"
+            ? null
+            : donationData.name,
+        causeTitle: causeTitle ?? "a RefreeG cause",
+        amount: donationAmount,
+        causeUrl: `${appUrl}/causes/${causeId}`,
+        reference: paystackReference,
+        donorMessage: donationData.message,
+        isAnonymous: donationData.isAnonymous,
+      }).catch((err) =>
+        console.error("Error sending donation receipt email:", err),
+      );
+    } catch (receiptError) {
+      console.error("Error preparing donation receipt email:", receiptError);
+    }
   }
 
   revalidatePath(`/causes/${causeId}`);
