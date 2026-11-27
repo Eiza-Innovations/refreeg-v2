@@ -115,8 +115,9 @@ export default async function ReceiptPage({
 
           <p className="mt-6 text-xs leading-5 text-ink/55">
             This receipt confirms a gift made through RefreeG to the campaign
-            above. {gift.cause.orgName} posts proof of how donations are spent
-            on the campaign page, and donors are emailed when it does.
+            above. {gift.cause.orgName} shares proof of how donations are spent
+            on the campaign page, and donors receive an email notification when
+            it is posted.
           </p>
         </article>
       </div>
