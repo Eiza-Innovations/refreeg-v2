@@ -15,7 +15,10 @@ import { CalloutBanner } from "@/components/ui/callout-banner";
 import { useValidator } from "@/hooks/use-validator";
 import { toast } from "@/hooks/use-toast";
 import { wishlistItemSchema } from "@/lib/schemas/wishlist.schema";
-import { uploadFileWithPresign } from "@/lib/s3/upload-client";
+import {
+  uploadWishlistItemImage,
+  WISHLIST_IMAGE_ACCEPT,
+} from "@/lib/wishlist/item-image-upload";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { formatNaira } from "@/components/giving/format";
 import type { WishlistItem } from "@/types";
@@ -23,9 +26,6 @@ import { cn } from "@/lib/utils";
 
 const label =
   "text-[11px] font-semibold uppercase tracking-[0.12em] text-ink/55";
-
-const IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 
 export interface ItemEditorSheetProps {
   wishlistId: string;
@@ -71,33 +71,18 @@ export function ItemEditorSheet({
 
   const handleFile = async (file: File | undefined) => {
     if (!file) return;
-    if (!IMAGE_MIME_TYPES.includes(file.type)) {
-      toast({ title: "Use a JPG, PNG, WebP or GIF image" });
-      return;
-    }
-    if (file.size > MAX_IMAGE_BYTES) {
-      toast({ title: "Images stay under 10MB" });
-      return;
-    }
     setUploading(true);
-    try {
-      const { key } = await uploadFileWithPresign(file, {
-        entityType: "wishlist-items",
-        mediaType: "images",
-        entityId: editing && item ? item.id : undefined,
-      });
-      setImageUrl(key);
-    } catch (error) {
-      toast({
-        title:
-          error instanceof Error
-            ? error.message
-            : "Upload failed. Please try again.",
-      });
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+    const result = await uploadWishlistItemImage(
+      file,
+      editing && item ? item.id : undefined,
+    );
+    setUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (!result.success) {
+      toast({ title: result.error });
+      return;
     }
+    setImageUrl(result.key);
   };
 
   const save = async () => {
@@ -164,7 +149,7 @@ export function ItemEditorSheet({
           <input
             ref={fileInputRef}
             type="file"
-            accept={IMAGE_MIME_TYPES.join(",")}
+            accept={WISHLIST_IMAGE_ACCEPT}
             className="hidden"
             onChange={(e) => handleFile(e.target.files?.[0])}
           />
