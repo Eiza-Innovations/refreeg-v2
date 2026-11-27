@@ -33,7 +33,7 @@ export type OnboardingProfile = {
 export type ProfileSubmission = Pick<
   OnboardingProfileData,
   "firstName" | "lastName" | "username" | "location" | "phone" | "email"
-> & { profilePhoto: File | string | null };
+> & { profilePhoto: string | null };
 
 export type OnboardingData = {
   accountType: string;
@@ -166,6 +166,7 @@ export type OnboardingFieldProps = {
 export type ProfilePhotoPickerProps = {
   photoUrl: string | null;
   error?: string;
+  isUploading?: boolean;
   onPick: (file: File) => void;
 };
 
