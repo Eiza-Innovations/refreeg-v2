@@ -35,7 +35,8 @@ export function KycLegacyDetailsCard({ kycData }: KycLegacyDetailsCardProps) {
     },
     {
       label: "Postal / Country",
-      value: [kycData.postal, kycData.country].filter(Boolean).join(", ") || "-",
+      value:
+        [kycData.postal, kycData.country].filter(Boolean).join(", ") || "-",
     },
   ];
 
@@ -50,7 +51,9 @@ export function KycLegacyDetailsCard({ kycData }: KycLegacyDetailsCardProps) {
           <FileText className="h-4 w-4 text-ink/55" />
           Legacy submission details
         </CardTitle>
-        <CardDescription>Information provided via manual upload</CardDescription>
+        <CardDescription>
+          Information provided via manual upload
+        </CardDescription>
       </CardHeader>
 
       <CardContent className="pt-6">
@@ -148,7 +151,8 @@ export function KycLegacyDetailsCard({ kycData }: KycLegacyDetailsCardProps) {
             />
           )}
 
-          {(kycData.status === "rejected" || kycData.status === "resubmitted") &&
+          {(kycData.status === "rejected" ||
+            kycData.status === "resubmitted") &&
             kycData.verification_notes && (
               <CalloutBanner
                 variant={kycData.status === "rejected" ? "rust" : "gold"}

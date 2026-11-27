@@ -97,12 +97,7 @@ export interface AdminKycDetail {
 }
 
 export type KycBadgeVariant =
-  | "verified"
-  | "pending"
-  | "blue"
-  | "gold"
-  | "critical"
-  | "held";
+  "verified" | "pending" | "blue" | "gold" | "critical" | "held";
 
 export type KycCalloutVariant = "forest" | "gold" | "sand" | "rust";
 
