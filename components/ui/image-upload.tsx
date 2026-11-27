@@ -5,6 +5,7 @@ import { useCallback } from "react";
 import Image from "next/image";
 import { useDropzone } from "react-dropzone";
 import { Button } from "./button";
+import { FieldError } from "./field-error";
 import { Icons } from "@/components/layout/Icons";
 import {
   Dialog,
@@ -91,18 +92,21 @@ const loadImage = (src: string) =>
 const normalizeImageToAspect = async (
   file: File,
   aspect: number,
+  targetWidth = 1600,
+  targetHeight?: number,
+  src?: string,
 ): Promise<File> => {
-  const src = await readFileAsDataUrl(file);
-  const image = await loadImage(src);
-  const safeAspect = Number.isFinite(aspect) && aspect > 0 ? aspect : 16 / 9;
-  const outputWidth = 1600;
-  const outputHeight = Math.round(outputWidth / safeAspect);
+  const image = await loadImage(src ?? (await readFileAsDataUrl(file)));
+  const safeAspect =
+    Number.isFinite(aspect) && aspect > 0 ? aspect : DEFAULT_CROP_ASPECT;
+  const outputWidth = targetWidth;
+  const outputHeight = targetHeight ?? Math.round(outputWidth / safeAspect);
   const canvas = document.createElement("canvas");
   canvas.width = outputWidth;
   canvas.height = outputHeight;
 
   const context = canvas.getContext("2d");
-  if (!context) return file;
+  if (!context) throw new Error("Canvas is unavailable");
 
   const coverScale = Math.max(
     outputWidth / image.naturalWidth,
@@ -141,9 +145,9 @@ const normalizeImageToAspect = async (
   const blob = await new Promise<Blob | null>((resolve) => {
     canvas.toBlob(resolve, "image/jpeg", 0.9);
   });
-  if (!blob) return file;
+  if (!blob) throw new Error("Could not create the fitted image");
 
-  return new File([blob], `${file.name.replace(/\.[^/.]+$/, "")}-16x9.jpg`, {
+  return new File([blob], `${file.name.replace(/\.[^/.]+$/, "")}-fitted.jpg`, {
     type: "image/jpeg",
     lastModified: Date.now(),
   });
@@ -500,22 +504,44 @@ export function ImageUpload({
     ],
   );
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    maxFiles,
-    disabled: isNormalizing,
-    accept: toDropzoneAccept(accept),
-  });
+  const { getRootProps, getInputProps, isDragActive, fileRejections } =
+    useDropzone({
+      onDrop,
+      maxFiles,
+      disabled: isNormalizing,
+      accept: toDropzoneAccept(accept),
+    });
 
-  const handleCropConfirm = React.useCallback(async () => {
+  const rejection = fileRejections[0]?.errors[0];
+  const uploadError =
+    preparationError ??
+    (rejection?.code === "file-invalid-type"
+      ? "This file type is unsupported. Choose one of the formats listed above."
+      : rejection?.message);
+
+  const handleCropConfirm = async (framing: "crop" | "fit") => {
     const frame = previewFrameRef.current;
 
-    if (!pendingFile || !cropSource || !frame) {
+    if (!pendingFile || !cropSource || !frame || isCropping) {
       return;
     }
 
     setIsCropping(true);
+    setCropError(null);
     try {
+      if (framing === "fit") {
+        await completeCropFile(
+          await normalizeImageToAspect(
+            pendingFile,
+            cropAspect,
+            cropOutputWidth,
+            cropOutputHeight,
+            cropSource,
+          ),
+        );
+        return;
+      }
+
       const frameWidth = frame.clientWidth;
       const frameHeight = frame.clientHeight;
       const croppedFile = await createCroppedImage({
@@ -536,7 +562,11 @@ export function ImageUpload({
       await completeCropFile(croppedFile);
     } catch (error) {
       console.error("Failed to crop image:", error);
-      if (cropRequired) {
+      if (framing === "fit") {
+        setCropError(
+          "Could not fit this photo. Try cropping it or choosing another photo.",
+        );
+      } else if (cropRequired) {
         setCropError(
           "Could not crop this image. Try another JPG, PNG, or WebP file.",
         );
@@ -546,16 +576,7 @@ export function ImageUpload({
     } finally {
       setIsCropping(false);
     }
-  }, [
-    cropRect,
-    cropSource,
-    cropOutputHeight,
-    cropOutputWidth,
-    cropRequired,
-    completeCropFile,
-    pendingFile,
-    zoom,
-  ]);
+  };
 
   const handlePointerDown = React.useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
@@ -672,7 +693,7 @@ export function ImageUpload({
           ) : enableCrop && acceptAllowsImages(accept) ? (
             <p className="text-[11px] text-muted-foreground/80">
               {cropRequired
-                ? "A crop step opens after you select an image."
+                ? "Crop the photo or keep it in full."
                 : maxFiles === 1
                   ? "You can crop the image before it is added."
                   : "A crop step opens for each selected image."}
@@ -680,10 +701,10 @@ export function ImageUpload({
           ) : null}
         </div>
       </div>
-      {preparationError && (
-        <p className="mt-2 text-sm font-medium text-red-600" role="alert">
-          {preparationError}
-        </p>
+      {uploadError && (
+        <div role="alert">
+          <FieldError message={uploadError} />
+        </div>
       )}
       <Dialog
         open={Boolean(pendingFile && cropSource)}
@@ -707,6 +728,8 @@ export function ImageUpload({
               {cropOutputWidth && cropOutputHeight
                 ? ` with a recommended ${cropOutputWidth} × ${cropOutputHeight} px output.`
                 : "."}
+              {cropRequired &&
+                " Keep the full photo to fill the edges with a blurred background."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6">
@@ -789,7 +812,17 @@ export function ImageUpload({
             >
               Cancel
             </Button>
-            {!cropRequired && (
+            {cropRequired ? (
+              <Button
+                type="button"
+                variant="surface"
+                onClick={() => void handleCropConfirm("fit")}
+                disabled={isCropping}
+                className="w-full sm:w-auto"
+              >
+                Keep full photo
+              </Button>
+            ) : (
               <Button
                 type="button"
                 variant={isNew ? "surface" : "secondary"}
@@ -811,7 +844,7 @@ export function ImageUpload({
             <Button
               type="button"
               variant={isNew ? "ink" : "default"}
-              onClick={handleCropConfirm}
+              onClick={() => void handleCropConfirm("crop")}
               disabled={isCropping}
               className={
                 isNew
@@ -819,7 +852,7 @@ export function ImageUpload({
                   : "w-full bg-slate-900 text-white hover:bg-slate-800 sm:w-auto"
               }
             >
-              {isCropping ? "Cropping..." : "Apply"}
+              {isCropping ? "Preparing..." : "Apply"}
             </Button>
           </DialogFooter>
         </DialogContent>

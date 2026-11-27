@@ -21,35 +21,9 @@ export async function pickCalendarDay(
 }
 
 async function selectCategory(page: Page, category: string) {
-  await page
-    .getByRole("combobox")
-    .filter({ hasText: /What's this about\?/i })
-    .click();
-  await page.getByRole("option", { name: category }).click();
-  await expect(
-    page.getByRole("combobox").filter({ hasText: category }).first(),
-  ).toBeVisible({ timeout: 5_000 });
-}
-
-async function advanceFromStep1(page: Page) {
-  const continueBtn = page.getByRole("button", { name: /^Continue$/i }).last();
-  await continueBtn.scrollIntoViewIfNeeded();
-  await expect(continueBtn).toBeInViewport({ timeout: 10_000 });
-  await continueBtn.click();
-
-  const storyHeading = page.locator("#section-heading-0");
-  try {
-    await expect(storyHeading).toBeVisible({ timeout: 10_000 });
-  } catch {
-    const errors = await page
-      .locator("p.text-red-500, .text-red-500")
-      .allTextContents();
-    console.log("Step 1 validation errors:", errors);
-    await page.waitForTimeout(500);
-    await continueBtn.scrollIntoViewIfNeeded();
-    await continueBtn.click();
-    await expect(storyHeading).toBeVisible({ timeout: 15_000 });
-  }
+  const option = page.getByRole("radio", { name: category, exact: true });
+  await option.click();
+  await expect(option).toBeChecked();
 }
 
 /** Assert primary wizard CTAs are reachable on the current viewport (desktop + mobile). */
@@ -86,14 +60,7 @@ export async function gotoCreateCauseVisualImpact(
   await page.evaluate(() => localStorage.removeItem("causeDraft"));
   await page.reload({ waitUntil: "domcontentloaded" });
 
-  await expect(page.locator("#title")).toBeVisible({ timeout: 30_000 });
-
-  await page.locator("#title").click();
-  await page.locator("#title").fill("");
-  await page.locator("#title").pressSequentially(title, { delay: 15 });
-  await expect(page.locator("#title")).toHaveValue(title);
-
-  await page.locator("#summary").fill(summary);
+  await expect(page.locator("#location")).toBeVisible({ timeout: 30_000 });
   const useCurrentLocation = page.getByRole("button", {
     name: /Use my location/i,
   });
@@ -117,23 +84,25 @@ export async function gotoCreateCauseVisualImpact(
     await page.locator("#location").fill(location);
   }
   await selectCategory(page, category);
-  await page.locator("#goal").fill(goal);
-  await expect(page.locator("#goal")).toHaveValue(formatFundingGoalInput(goal));
-
   await page.keyboard.press("Escape").catch(() => undefined);
-  await advanceFromStep1(page);
-  console.log("Step 1 (Basic Info) complete.");
+  await (
+    await expectWizardActionReachable(page, /^Continue to story$/i)
+  ).click();
 
+  await page.locator("#title").fill(title);
+  await page.locator("#summary").fill(summary);
   await page.locator("#section-heading-0").fill("The Challenge");
   await page
     .locator("#section-description-0")
     .fill(
       "This is an automated E2E story section describing why this cause matters to the community and how funds will help.",
     );
-  await (await expectWizardActionReachable(page, /^Continue$/i)).click();
-  await expect(page.locator("#start-date")).toBeVisible({ timeout: 20_000 });
-  console.log("Step 2 (Story) complete.");
+  await (
+    await expectWizardActionReachable(page, /^Continue to target$/i)
+  ).click();
 
+  await page.locator("#goal").fill(goal);
+  await expect(page.locator("#goal")).toHaveValue(formatFundingGoalInput(goal));
   await expect(page.locator("#start-date")).toBeVisible({ timeout: 20_000 });
   const startLabel = (await page.locator("#start-date").innerText()).trim();
   const endLabel = (await page.locator("#end-date").innerText()).trim();
@@ -151,11 +120,12 @@ export async function gotoCreateCauseVisualImpact(
   await expect(page.locator("#start-date")).not.toContainText(/Pick a date/i);
   await expect(page.locator("#end-date")).not.toContainText(/Pick a date/i);
 
-  await (await expectWizardActionReachable(page, /^Continue$/i)).click();
+  await (
+    await expectWizardActionReachable(page, /^Continue to photos$/i)
+  ).click();
   await expect(page.locator('input[type="file"]').first()).toBeAttached({
     timeout: 20_000,
   });
-  console.log("Step 3 (Timeline) complete — on Visual Impact.");
 }
 
 export async function uploadCoverImage(page: Page) {
@@ -163,25 +133,9 @@ export async function uploadCoverImage(page: Page) {
   await fileInput.waitFor({ state: "attached", timeout: 15_000 });
   await fileInput.setInputFiles(minimalJpeg("e2e-cover.jpg"));
 
-  // Cover upload opens Crop Image dialog. Prefer "Use Original" — Apply Crop
-  // often fails on the tiny 1×1 E2E JPEG, and on mobile the footer can be flaky.
-  const useOriginal = page.getByRole("button", { name: /^Use Original$/i });
-  const applyCrop = page.getByRole("button", { name: /^Apply Crop$/i });
-
-  try {
-    await useOriginal.waitFor({ state: "visible", timeout: 12_000 });
-    await useOriginal.scrollIntoViewIfNeeded();
-    await useOriginal.click();
-  } catch {
-    if (await applyCrop.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await applyCrop.scrollIntoViewIfNeeded();
-      await applyCrop.click();
-    }
-  }
-
-  await expect(page.getByRole("heading", { name: /Crop Image/i }))
-    .toBeHidden({ timeout: 20_000 })
-    .catch(() => undefined);
+  const cropDialog = page.getByRole("dialog", { name: /Crop Image/i });
+  await cropDialog.getByRole("button", { name: "Apply", exact: true }).click();
+  await expect(cropDialog).toBeHidden({ timeout: 20_000 });
 
   await expect(
     page.locator('img[alt="Cover Preview"], img[src^="blob:"]').first(),
@@ -189,16 +143,12 @@ export async function uploadCoverImage(page: Page) {
 }
 
 /**
- * Uploads a short WebM into the multimedia gallery (2nd file input on Visual Impact).
- * Scrolls the gallery into view first (mobile nav / sticky footers can cover it).
+ * Uploads a short WebM into the gallery on the Photos step.
  */
 export async function uploadGalleryVideo(page: Page) {
-  await page
-    .getByText(/Multimedia Gallery/i)
-    .first()
-    .scrollIntoViewIfNeeded();
-
-  const galleryInput = page.locator('input[type="file"]').nth(1);
+  const gallery = page.getByRole("region", { name: "Gallery", exact: true });
+  await gallery.scrollIntoViewIfNeeded();
+  const galleryInput = gallery.locator('input[type="file"]');
   await galleryInput.waitFor({ state: "attached", timeout: 15_000 });
   await galleryInput.setInputFiles(shortWebm("e2e-clip.webm"));
 
@@ -268,15 +218,20 @@ export async function fillCreateCauseWizard(
     await uploadGalleryVideo(page);
   }
 
-  await (await expectWizardActionReachable(page, /^Continue$/i)).click();
-  await expectWizardActionReachable(page, /Launch Cause/i);
-  console.log("Step 4 (Media) complete.");
+  await (
+    await expectWizardActionReachable(page, /^Continue to review$/i)
+  ).click();
 
   await expect(page.getByText(rest.title).first()).toBeVisible({
     timeout: 15_000,
   });
-  await (await expectWizardActionReachable(page, /Launch Cause/i)).click();
-  console.log("Submitted Launch Cause.");
+  const preview = page.getByAltText(`${rest.title} - Image 1`, { exact: true });
+  await expect
+    .poll(() =>
+      preview.evaluate((image: HTMLImageElement) => image.naturalWidth),
+    )
+    .toBeGreaterThan(0);
+  await (await expectWizardActionReachable(page, /^Send for review$/i)).click();
 }
 
 export async function openCauseActionsMenu(page: Page, causeTitle: string) {

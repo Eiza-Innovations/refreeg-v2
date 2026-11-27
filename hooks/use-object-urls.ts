@@ -7,19 +7,27 @@ import { useEffect, useMemo, useState } from "react";
  * Created inside the effect so React Strict Mode's mount, cleanup, mount cycle
  * never leaves a revoked URL in use.
  */
-export function useObjectUrls(files: File[]) {
-  const [urls, setUrls] = useState<string[]>([]);
+export function useObjectUrls(files: File[]): readonly string[] {
+  const [preview, setPreview] = useState<{
+    files: File[];
+    urls: string[];
+  } | null>(null);
 
   useEffect(() => {
-    const next = files.map((file) => URL.createObjectURL(file));
-    setUrls(next);
-    return () => next.forEach((url) => URL.revokeObjectURL(url));
+    if (files.length === 0) {
+      setPreview(null);
+      return;
+    }
+
+    const urls = files.map((file) => URL.createObjectURL(file));
+    setPreview({ files, urls });
+    return () => urls.forEach((url) => URL.revokeObjectURL(url));
   }, [files]);
 
-  return urls;
+  return preview?.files === files ? preview.urls : [];
 }
 
-export function useObjectUrl(file: File | null) {
+export function useObjectUrl(file: File | null): string | undefined {
   const files = useMemo(() => (file ? [file] : []), [file]);
-  return useObjectUrls(files)[0] as string | undefined;
+  return useObjectUrls(files)[0];
 }
