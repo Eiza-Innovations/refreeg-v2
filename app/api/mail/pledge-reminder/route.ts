@@ -30,7 +30,7 @@ export async function POST(request: Request) {
       causeTitle,
       amount: pledge.amount,
       reminderDate: pledge.reminder_date,
-      donateUrl: `${baseUrl}/causes/${causeId}`,
+      donateUrl: `${baseUrl}/campaigns/${causeId}`,
     });
 
     return NextResponse.json({ success: true });

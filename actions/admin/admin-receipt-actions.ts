@@ -209,12 +209,12 @@ export async function verifyReceipt(
     return { pauseLifted: true };
   });
 
-  revalidatePath(`/causes/${receipt.cause_id}`);
+  revalidatePath(`/campaigns/${receipt.cause_id}`);
   revalidatePath("/causes");
   revalidatePath(QUEUE_PATH);
 
   const creator = receipt.cause.user;
-  const causeUrl = `${APP_URL}/causes/${receipt.cause_id}`;
+  const causeUrl = `${APP_URL}/campaigns/${receipt.cause_id}`;
   try {
     const { sendProofUpdateApprovedEmail, sendProofUpdatePublishedEmail } =
       await import("@/services/mail");

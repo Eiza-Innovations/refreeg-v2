@@ -120,7 +120,7 @@ describe("notification feed", () => {
     expect(feed?.items[0]).toMatchObject({
       emphasis: "Restock 600 market stalls",
       text: " is 9 days from closing.",
-      href: "/causes/market-stalls",
+      href: "/campaigns/market-stalls",
     });
   });
 

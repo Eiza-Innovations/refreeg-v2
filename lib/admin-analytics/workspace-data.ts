@@ -221,7 +221,7 @@ async function topCampaigns(w: ReportingWindow) {
         initials: initials(row.title),
         status: row.status ?? "unknown",
         avatar: (["gold", "neutral", "green"] as Tone[])[i],
-        href: `/causes/${row.id}`,
+        href: `/campaigns/${row.id}`,
       },
       given: formatNaira(row.total),
       donors: row.donors,

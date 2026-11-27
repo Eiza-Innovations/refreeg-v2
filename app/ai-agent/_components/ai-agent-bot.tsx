@@ -173,7 +173,8 @@ export default function AIAgentBot() {
   const hideBot = hiddenPrefixes.some((prefix) => pathname.startsWith(prefix));
   const animateOnHome = pathname === "/";
   const isCauseDetailPage =
-    pathname.startsWith("/causes/") && !pathname.includes("/donate");
+    (pathname.startsWith("/campaigns/") || pathname.startsWith("/causes/")) &&
+    !pathname.includes("/donate");
   const launcherConfig = useMemo(() => getLauncherConfig(pathname), [pathname]);
 
   useEffect(() => {

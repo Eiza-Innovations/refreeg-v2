@@ -1,37 +1,10 @@
-import { notFound, redirect } from "next/navigation";
-import { getCause } from "@/actions/causes/cause-actions";
-import { getSessionUser } from "@/lib/auth/session-user";
-import { getProfile } from "@/actions/users/profile-actions";
-import PledgeScreen from "@/app/campaign/_components/pledge-screen";
-import { causePublicPath } from "@/lib/causes/slug";
+import { permanentRedirect } from "next/navigation";
 
-const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-export default async function CausePledgePage({
+export default async function LegacyCausePledgeRedirect({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const cause = await getCause(id);
-  if (!cause) {
-    notFound();
-  }
-
-  if (UUID_REGEX.test(id) && cause.slug) {
-    redirect(`${causePublicPath(cause)}/pledge`);
-  }
-
-  const user = await getSessionUser();
-  const myprofile = user ? await getProfile(user.id) : undefined;
-
-  const profile = {
-    email: myprofile?.email || "",
-    name: myprofile?.full_name || "",
-    id: myprofile?.id || "",
-    subaccount: myprofile?.sub_account_code || "",
-  };
-
-  return <PledgeScreen cause={cause} profile={profile} />;
+  permanentRedirect(`/campaigns/${id}/pledge`);
 }

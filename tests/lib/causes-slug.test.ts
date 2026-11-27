@@ -49,9 +49,9 @@ describe("lib/causes/slug", () => {
     it("prefers slug over id", () => {
       expect(
         causePublicPath({ id: "uuid-1", slug: "help-flood-victims" }),
-      ).toBe("/causes/help-flood-victims");
+      ).toBe("/campaigns/help-flood-victims");
       expect(causePublicPath({ id: "uuid-1", slug: null })).toBe(
-        "/causes/uuid-1",
+        "/campaigns/uuid-1",
       );
     });
   });

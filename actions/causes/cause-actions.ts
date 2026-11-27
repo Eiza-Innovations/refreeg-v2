@@ -1158,7 +1158,7 @@ export async function updateCauseTrustMetrics(
 
     revalidatePath("/dashboard/admin/causes");
     revalidateTag(DISCOVER_CACHE_TAG);
-    revalidatePath(`/causes/${causeId}`);
+    revalidatePath(`/campaigns/${causeId}`);
   } catch (error) {
     console.error("Error updating trust metrics:", error);
     throw error;

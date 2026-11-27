@@ -50,7 +50,7 @@ export function causePublicPath(cause: {
   id: string;
   slug?: string | null;
 }): string {
-  return `/causes/${cause.slug || cause.id}`;
+  return `/campaigns/${cause.slug || cause.id}`;
 }
 
 /**

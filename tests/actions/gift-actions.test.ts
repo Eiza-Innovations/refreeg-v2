@@ -64,7 +64,7 @@ describe("getGiftByReference", () => {
       provider: "paystack",
       giftCount: 403,
       cause: {
-        href: "/causes/c1-slug",
+        href: "/campaigns/c1-slug",
         orgName: "Africa Renews",
         orgVerified: true,
         raised: 9_500_000,

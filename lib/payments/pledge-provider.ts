@@ -112,7 +112,7 @@ export async function processPledgeAuthorizationSuccess(
     causeTitle: cause?.title || "this campaign",
     amount: futureAmount,
     reminderDate: String(meta.reminder_date || ""),
-    donateUrl: `${baseUrl}/causes/${causeId}`,
+    donateUrl: `${baseUrl}/campaigns/${causeId}`,
   });
 
   return { ok: true as const, reason: "stored" };

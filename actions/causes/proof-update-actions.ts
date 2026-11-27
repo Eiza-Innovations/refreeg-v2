@@ -194,7 +194,7 @@ export async function submitProofUpdate(formData: FormData) {
 
   revalidatePath("/dashboard/admin/receipts");
   revalidatePath("/dashboard/causes");
-  revalidatePath(`/causes/${causeId}`);
+  revalidatePath(`/campaigns/${causeId}`);
   return { success: true };
 }
 

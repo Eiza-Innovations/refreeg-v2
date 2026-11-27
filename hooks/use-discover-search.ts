@@ -84,7 +84,7 @@ export function useDiscoverSearch({
 
   const selectCause = (id: string) => {
     onNavigate?.();
-    router.push(`/causes/${id}`);
+    router.push(`/campaigns/${id}`);
   };
 
   const selectPetition = (id: string) => {
