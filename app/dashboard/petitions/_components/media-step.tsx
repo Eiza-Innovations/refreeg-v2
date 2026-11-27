@@ -4,7 +4,7 @@ import { X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { fieldClass } from "@/components/petitions/field-styles";
+import { fieldClass } from "@/components/ui/field-styles";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,8 +14,7 @@ import { isProxyMediaUrl } from "@/lib/s3/media";
 import { MAX_PETITION_FILES } from "@/lib/schemas/petition.schema";
 import { FieldError } from "@/components/ui/field-error";
 import { StepHeading } from "./StepHeading";
-import type { PetitionCopy } from "./petition-copy";
-import type { PetitionFormApi } from "@/hooks/use-petition-form";
+import type { PetitionMediaStepProps } from "@/types/petition-types";
 
 const ImageUpload = dynamic(
   () => import("@/components/ui/image-upload").then((mod) => mod.ImageUpload),
@@ -30,19 +29,6 @@ const SelectedMediaCarousel = dynamic(
   { loading: () => <Skeleton className="h-[200px] w-full" />, ssr: false },
 );
 
-type Props = Pick<
-  PetitionFormApi,
-  | "form"
-  | "errors"
-  | "uploadCover"
-  | "removeCover"
-  | "uploadGallery"
-  | "removeGalleryFile"
-  | "setVideoLink"
-  | "addVideoLink"
-  | "removeVideoLink"
-> & { copy: PetitionCopy };
-
 export function PetitionMediaStep({
   form,
   errors,
@@ -54,7 +40,7 @@ export function PetitionMediaStep({
   addVideoLink,
   removeVideoLink,
   copy,
-}: Props) {
+}: PetitionMediaStepProps) {
   const pickedCover = useObjectUrl(form.coverImage);
   const coverSrc = pickedCover || form.image;
 

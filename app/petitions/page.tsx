@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 export default async function PetitionsPage({
   searchParams,
 }: {
-  searchParams: { category?: string; page?: string };
+  searchParams: Promise<{ category?: string; page?: string }>;
 }) {
   const params = await searchParams;
   const category = params.category || "all";

@@ -11,28 +11,23 @@ import { CalendarIcon } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { calendarClassNames } from "@/components/petitions/field-styles";
+import { calendarClassNames } from "@/components/ui/field-styles";
 import { MAX_PETITION_DURATION_DAYS } from "@/lib/schemas/petition.schema";
 import { FieldError } from "@/components/ui/field-error";
 import { StepHeading } from "./StepHeading";
-import type { PetitionCopy } from "./petition-copy";
-import type { PetitionFormApi } from "@/hooks/use-petition-form";
+import type { PetitionFieldsStepProps } from "@/types/petition-types";
 
 const Calendar = dynamic(
   () => import("@/components/ui/calendar").then((mod) => mod.Calendar),
   { loading: () => <Skeleton className="h-[300px] w-full" />, ssr: false },
 );
 
-type Props = Pick<PetitionFormApi, "form" | "errors" | "setFormFields"> & {
-  copy: PetitionCopy;
-};
-
 export function PetitionTimelineStep({
   form,
   errors,
   setFormFields,
   copy,
-}: Props) {
+}: PetitionFieldsStepProps) {
   const { startDate, endDate } = form;
   const today = startOfDay(new Date());
 

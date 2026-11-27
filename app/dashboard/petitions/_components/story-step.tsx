@@ -1,19 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { fieldClass } from "@/components/petitions/field-styles";
+import { fieldClass } from "@/components/ui/field-styles";
 import { Card } from "@/components/ui/card";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { StepHeading } from "./StepHeading";
-import type { PetitionCopy } from "./petition-copy";
-import type { PetitionFormApi } from "@/hooks/use-petition-form";
-
-type Props = Pick<
-  PetitionFormApi,
-  "form" | "addSection" | "removeSection" | "updateSection"
-> & { copy: PetitionCopy };
+import type { PetitionStoryStepProps } from "@/types/petition-types";
 
 export function PetitionStoryStep({
   form,
@@ -21,7 +15,7 @@ export function PetitionStoryStep({
   removeSection,
   updateSection,
   copy,
-}: Props) {
+}: PetitionStoryStepProps) {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex justify-between items-end">

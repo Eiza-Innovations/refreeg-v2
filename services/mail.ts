@@ -16,6 +16,10 @@ const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.gmail.com",
   port: Number(process.env.SMTP_PORT) || 587,
   secure: process.env.SMTP_SECURE === "true",
+  // Reuse the authenticated connection: this provider's connect + login can
+  // take over ten seconds, which should be paid once rather than per email.
+  pool: true,
+  maxConnections: 3,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASSWORD,
@@ -86,7 +90,11 @@ interface SendMailOptions {
   from?: string;
   cc?: string[];
   bcc?: string[];
+  /** How long to wait for the mail server. Callers that already answered the browser can allow more. */
+  timeoutMs?: number;
 }
+
+const DEFAULT_SEND_TIMEOUT_MS = 10_000;
 
 export async function sendMail({
   to,
@@ -96,6 +104,7 @@ export async function sendMail({
   from,
   cc,
   bcc,
+  timeoutMs = DEFAULT_SEND_TIMEOUT_MS,
 }: SendMailOptions) {
   try {
     // Admins can switch some events off on the Triggers tab.
@@ -107,7 +116,7 @@ export async function sendMail({
     const html = template(context);
     const resolvedFrom = from ?? senderFor(templateName);
 
-    // Enforce a strict 10-second timeout to prevent hanging the main thread
+    // Bounded wait so a stalled mail server cannot hang the request
     let timeout: NodeJS.Timeout | undefined;
     const info = (await Promise.race([
       transporter.sendMail({
@@ -119,7 +128,10 @@ export async function sendMail({
         html,
       }),
       new Promise((_, reject) => {
-        timeout = setTimeout(() => reject(new Error("SMTP Timeout")), 10000);
+        timeout = setTimeout(
+          () => reject(new Error("SMTP Timeout")),
+          timeoutMs,
+        );
       }),
     ]).finally(() => clearTimeout(timeout))) as any;
 
@@ -131,11 +143,14 @@ export async function sendMail({
   }
 }
 
-export async function sendOtpEmail(context: {
-  email: string;
-  userName: string;
-  otpCode: string;
-}) {
+export async function sendOtpEmail(
+  context: {
+    email: string;
+    userName: string;
+    otpCode: string;
+  },
+  options: { timeoutMs?: number } = {},
+) {
   const currentYear = new Date().getFullYear();
 
   return sendMail({
@@ -147,6 +162,7 @@ export async function sendOtpEmail(context: {
       otpCode: context.otpCode,
       currentYear,
     },
+    timeoutMs: options.timeoutMs,
   });
 }
 
@@ -165,10 +181,13 @@ export async function sendOrganizationInvitationEmail(context: {
   });
 }
 
-export async function sendPasswordResetEmail(context: {
-  email: string;
-  resetUrl: string;
-}) {
+export async function sendPasswordResetEmail(
+  context: {
+    email: string;
+    resetUrl: string;
+  },
+  options: { timeoutMs?: number } = {},
+) {
   const currentYear = new Date().getFullYear();
 
   return sendMail({
@@ -179,6 +198,7 @@ export async function sendPasswordResetEmail(context: {
       resetUrl: context.resetUrl,
       currentYear,
     },
+    timeoutMs: options.timeoutMs,
   });
 }
 

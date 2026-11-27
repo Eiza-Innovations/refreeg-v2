@@ -1,8 +1,7 @@
 export const CAUSE_COVER_WIDTH = 1600;
 export const CAUSE_COVER_HEIGHT = 900;
 export const CAUSE_COVER_ASPECT_RATIO = CAUSE_COVER_WIDTH / CAUSE_COVER_HEIGHT;
-export const CAUSE_COVER_DESCRIPTION =
-  "JPG, PNG, or WebP · any orientation · cropped to 1600 × 900 px";
+export const CAUSE_COVER_DESCRIPTION = `JPG, PNG, or WebP · any orientation · formatted to ${CAUSE_COVER_WIDTH} × ${CAUSE_COVER_HEIGHT} px`;
 
 const CAUSE_COVER_ASPECT_TOLERANCE = 0.02;
 

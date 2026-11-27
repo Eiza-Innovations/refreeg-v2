@@ -14,7 +14,10 @@ import { useProfile } from "@/hooks/use-profile";
 import { compressImage } from "@/utils/image-compression";
 import { getMediaUrl } from "@/lib/s3/media";
 import { cn } from "@/lib/utils";
-import { interestOptions } from "@/lib/causes/interest-categories";
+import {
+  interestLabel,
+  interestOptions,
+} from "@/lib/causes/interest-categories";
 import { ChangeEmailModal } from "./change-email-modal";
 import {
   SettingsCancelButton,
@@ -70,10 +73,6 @@ function formatGivingSince(createdAt?: string | null) {
   const date = new Date(createdAt);
   if (Number.isNaN(date.getTime())) return null;
   return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-}
-
-function interestLabel(id: string) {
-  return interestOptions.find((o) => o.id === id)?.label ?? id;
 }
 
 export function ProfileForm({ profile, user }: ProfileFormProps) {

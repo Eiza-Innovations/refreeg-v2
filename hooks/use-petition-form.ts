@@ -13,10 +13,9 @@ import {
   type PetitionFormMode,
   type PetitionSection,
 } from "@/lib/schemas/petition.schema";
+import type { MediaErrors } from "@/types/petition-types";
 
 export const LAST_PETITION_STEP = 5;
-
-type MediaErrors = { coverImage?: string; multimedia?: string };
 
 /**
  * State for the create and edit petition wizards: one form object, zod
@@ -187,5 +186,3 @@ export function usePetitionForm({
     prevStep,
   };
 }
-
-export type PetitionFormApi = ReturnType<typeof usePetitionForm>;

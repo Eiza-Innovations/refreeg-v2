@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 
 const SAVE_DELAY_MS = 1000;
 const REMINDER_DELAY_MS = 24 * 60 * 60 * 1000;
@@ -55,25 +61,28 @@ export function useFormDraft<T extends DraftForm>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, key, setForm]);
 
-  useEffect(() => {
+  const saveDraft = useCallback(() => {
     if (!enabled || !restored) return;
-    const timer = setTimeout(() => {
-      const { coverImage, multimedia, image, ...fields } = form as T &
-        Record<string, unknown>;
-      localStorage.setItem(
-        key,
-        JSON.stringify({
-          ...fields,
-          ...extraFields,
-          startDate: form.startDate ? form.startDate.toISOString() : null,
-          endDate: form.endDate ? form.endDate.toISOString() : null,
-        }),
-      );
-    }, SAVE_DELAY_MS);
-    return () => clearTimeout(timer);
+    const { coverImage, multimedia, image, ...fields } = form as T &
+      Record<string, unknown>;
+    localStorage.setItem(
+      key,
+      JSON.stringify({
+        ...fields,
+        ...extraFields,
+        startDate: form.startDate ? form.startDate.toISOString() : null,
+        endDate: form.endDate ? form.endDate.toISOString() : null,
+      }),
+    );
     // extraFields is a per-form constant.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, restored, form, key]);
+
+  useEffect(() => {
+    if (!enabled || !restored) return;
+    const timer = setTimeout(saveDraft, SAVE_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [enabled, restored, saveDraft]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -112,5 +121,5 @@ export function useFormDraft<T extends DraftForm>({
 
   const clearDraft = () => localStorage.removeItem(key);
 
-  return { clearDraft };
+  return { clearDraft, saveDraft };
 }

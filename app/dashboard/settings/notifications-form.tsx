@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
-import { interestOptions } from "@/lib/causes/interest-categories";
+import { interestLabel } from "@/lib/causes/interest-categories";
 import { cn } from "@/lib/utils";
 import { SettingsSwitch } from "./components/settings-switch";
 
@@ -42,10 +42,6 @@ const DEFAULT_PREFS: NotificationPrefs = {
 };
 
 const STORAGE_KEY_PREFIX = "refreeg.notification-prefs.";
-
-function interestLabel(id: string) {
-  return interestOptions.find((o) => o.id === id)?.label ?? id;
-}
 
 function loadPrefs(userId: string | undefined): NotificationPrefs {
   if (typeof window === "undefined" || !userId) return DEFAULT_PREFS;

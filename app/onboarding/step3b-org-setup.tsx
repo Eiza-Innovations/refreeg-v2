@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -29,59 +29,23 @@ import {
   getOrganizationOnboardingData,
   getProfile,
 } from "@/actions/users/profile-actions";
-
-interface OrganizationDetailsStepProps {
-  user: any;
-  onNext: () => void;
-  onBack: () => void;
-  onboardingData: any;
-  isSubmitting: boolean;
-}
-
-interface OrgDetailsForm {
-  name: string;
-  organisationType: string;
-  registrationNumber: string;
-  country: string;
-  contactName: string;
-  contactRole: string;
-  adminEmail: string;
-  phone: string;
-  websiteUrl: string;
-  username: string;
-}
-
-function Field({
-  label,
-  htmlFor,
-  required,
-  error,
-  className,
-  children,
-}: {
-  label: string;
-  htmlFor: string;
-  required?: boolean;
-  error?: string;
-  className?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className={className}>
-      <Label htmlFor={htmlFor}>
-        {label}
-        {required ? <span className="text-rust"> *</span> : null}
-      </Label>
-      <div className="mt-1.5">{children}</div>
-      <FieldError message={error} />
-    </div>
-  );
-}
+import { OnboardingField } from "@/components/onboarding/OnboardingField";
+import { useUsernameAvailability } from "@/hooks/use-username-availability";
+import type {
+  OrganizationDetailsStepProps,
+  OrgDetailsForm,
+} from "@/types/onboarding-types";
+import {
+  fieldClass,
+  selectTriggerClass,
+  selectContentClass,
+  selectItemClass,
+} from "@/components/ui/field-styles";
+import { onboardingSplitClass } from "@/components/onboarding/split-layout";
 
 export default function OrganizationDetailsStep({
   user,
   onNext,
-  onBack,
   onboardingData,
   isSubmitting,
 }: OrganizationDetailsStepProps) {
@@ -97,65 +61,41 @@ export default function OrganizationDetailsStep({
     websiteUrl: "",
     username: "",
   });
-  const [isLoading, setIsLoading] = useState(true);
   const { errors, validate, clearError } = useValidator({
     store: form,
     schema: organizationDetailsSchema,
   });
 
-  const [usernameStatus, setUsernameStatus] = useState<
-    "idle" | "checking" | "available" | "taken"
-  >("idle");
+  const queryClient = useQueryClient();
+  const usernameStatus = useUsernameAvailability(form.username, user?.id);
 
+  const { data: existing, isLoading } = useQuery({
+    queryKey: ["onboarding-organization", user.id],
+    queryFn: async () => {
+      const [org, profile] = await Promise.all([
+        getOrganizationOnboardingData(user.id),
+        getProfile(user.id),
+      ]);
+      return { org, username: profile?.username ?? "" };
+    },
+  });
+
+  // Fill the form once with whatever was saved on an earlier visit.
   useEffect(() => {
-    const handle = form.username.trim();
-    if (handle.length < 3) {
-      setUsernameStatus("idle");
-      return;
-    }
-    setUsernameStatus("checking");
-    const timer = setTimeout(async () => {
-      try {
-        const available = await checkUsernameAvailability(handle, user?.id);
-        setUsernameStatus(available ? "available" : "taken");
-      } catch {
-        setUsernameStatus("idle");
-      }
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [form.username, user?.id]);
-
-  useEffect(() => {
-    const loadOrgData = async () => {
-      if (!user?.id) return;
-      try {
-        const orgData = await getOrganizationOnboardingData(user.id);
-        if (orgData) {
-          setForm((prev) => ({
-            ...prev,
-            name: orgData.name || prev.name,
-            organisationType: orgData.organisationType || "",
-            registrationNumber: orgData.registrationNumber || "",
-            country: orgData.country || "",
-            contactRole: orgData.contactRole || "",
-            phone: orgData.phone || prev.phone,
-            websiteUrl: orgData.websiteUrl || "",
-          }));
-        }
-        const profile = await getProfile(user.id);
-        const existingUsername = profile?.username ?? "";
-        if (existingUsername) {
-          setForm((prev) => ({ ...prev, username: existingUsername }));
-        }
-      } catch (error) {
-        console.error("Error loading organisation data:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadOrgData();
-  }, [user?.id]);
+    if (!existing) return;
+    const { org, username } = existing;
+    setForm((prev) => ({
+      ...prev,
+      name: org?.name || prev.name,
+      organisationType: org?.organisationType || prev.organisationType,
+      registrationNumber: org?.registrationNumber || prev.registrationNumber,
+      country: org?.country || prev.country,
+      contactRole: org?.contactRole || prev.contactRole,
+      phone: org?.phone || prev.phone,
+      websiteUrl: org?.websiteUrl || prev.websiteUrl,
+      username: username || prev.username,
+    }));
+  }, [existing]);
 
   const setFormFields = <K extends keyof OrgDetailsForm>(
     key: K,
@@ -183,7 +123,14 @@ export default function OrganizationDetailsStep({
       if (!result.success) throw new Error(result.error);
       return result;
     },
-    onSuccess: () => onNext(),
+    onSuccess: () => {
+      // Without this, Back would show the form as it was before this save.
+      queryClient.invalidateQueries({ queryKey: ["onboarding-organization"] });
+      queryClient.invalidateQueries({
+        queryKey: ["organization-onboarding-summary"],
+      });
+      onNext();
+    },
     onError: (error) =>
       toast({
         title: "Could not save organisation details",
@@ -213,7 +160,7 @@ export default function OrganizationDetailsStep({
     onboardingData.organizationPurpose === "both";
 
   return (
-    <div className="grid w-full gap-10 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-16">
+    <div className={onboardingSplitClass}>
       <div className="flex flex-col">
         <h1 className="font-fraunces text-4xl font-medium text-ink sm:text-5xl">
           Tell us about your organisation
@@ -232,14 +179,6 @@ export default function OrganizationDetailsStep({
           />
         ) : null}
         <div className="mt-8 flex gap-3 lg:mt-auto lg:pt-8">
-          <Button
-            type="button"
-            variant="surface"
-            onClick={onBack}
-            className="h-12 px-8"
-          >
-            Back
-          </Button>
           <Button
             type="button"
             variant="ink"
@@ -261,7 +200,7 @@ export default function OrganizationDetailsStep({
 
       <Card variant="surface" className="p-6 sm:p-8">
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <Field
+          <OnboardingField
             label="Organisation name"
             htmlFor="orgName"
             required
@@ -272,10 +211,11 @@ export default function OrganizationDetailsStep({
               placeholder="Kora Payments Ltd"
               value={form.name}
               onChange={(event) => setFormFields("name", event.target.value)}
+              className={fieldClass}
             />
-          </Field>
+          </OnboardingField>
 
-          <Field
+          <OnboardingField
             label="Organisation type"
             htmlFor="orgType"
             required
@@ -287,20 +227,24 @@ export default function OrganizationDetailsStep({
                 setFormFields("organisationType", value)
               }
             >
-              <SelectTrigger id="orgType">
+              <SelectTrigger id="orgType" className={selectTriggerClass}>
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className={selectContentClass}>
                 {organisationTypeOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
+                  <SelectItem
+                    key={option.value}
+                    value={option.value}
+                    className={selectItemClass}
+                  >
                     {option.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          </Field>
+          </OnboardingField>
 
-          <Field
+          <OnboardingField
             label="CAC registration number"
             htmlFor="orgRegistration"
             required
@@ -313,10 +257,11 @@ export default function OrganizationDetailsStep({
               onChange={(event) =>
                 setFormFields("registrationNumber", event.target.value)
               }
+              className={fieldClass}
             />
-          </Field>
+          </OnboardingField>
 
-          <Field
+          <OnboardingField
             label="Country of registration"
             htmlFor="orgCountry"
             required
@@ -326,20 +271,24 @@ export default function OrganizationDetailsStep({
               value={form.country}
               onValueChange={(value) => setFormFields("country", value)}
             >
-              <SelectTrigger id="orgCountry">
+              <SelectTrigger id="orgCountry" className={selectTriggerClass}>
                 <SelectValue placeholder="Select country" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className={selectContentClass}>
                 {countryOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
+                  <SelectItem
+                    key={option.value}
+                    value={option.value}
+                    className={selectItemClass}
+                  >
                     {option.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          </Field>
+          </OnboardingField>
 
-          <Field
+          <OnboardingField
             label="Your name"
             htmlFor="orgContactName"
             required
@@ -352,10 +301,11 @@ export default function OrganizationDetailsStep({
               onChange={(event) =>
                 setFormFields("contactName", event.target.value)
               }
+              className={fieldClass}
             />
-          </Field>
+          </OnboardingField>
 
-          <Field
+          <OnboardingField
             label="Your role"
             htmlFor="orgContactRole"
             required
@@ -368,10 +318,11 @@ export default function OrganizationDetailsStep({
               onChange={(event) =>
                 setFormFields("contactRole", event.target.value)
               }
+              className={fieldClass}
             />
-          </Field>
+          </OnboardingField>
 
-          <Field
+          <OnboardingField
             label="Work email"
             htmlFor="orgEmail"
             required
@@ -385,20 +336,27 @@ export default function OrganizationDetailsStep({
               onChange={(event) =>
                 setFormFields("adminEmail", event.target.value)
               }
+              className={fieldClass}
             />
-          </Field>
+          </OnboardingField>
 
-          <Field label="Phone" htmlFor="orgPhone" required error={errors.phone}>
+          <OnboardingField
+            label="Phone"
+            htmlFor="orgPhone"
+            required
+            error={errors.phone}
+          >
             <Input
               id="orgPhone"
               type="tel"
               placeholder="+234 901 744 6760"
               value={form.phone}
               onChange={(event) => setFormFields("phone", event.target.value)}
+              className={fieldClass}
             />
-          </Field>
+          </OnboardingField>
 
-          <Field
+          <OnboardingField
             label="Website (optional)"
             htmlFor="orgWebsite"
             error={errors.websiteUrl}
@@ -412,10 +370,11 @@ export default function OrganizationDetailsStep({
               onChange={(event) =>
                 setFormFields("websiteUrl", event.target.value)
               }
+              className={fieldClass}
             />
-          </Field>
+          </OnboardingField>
 
-          <Field
+          <OnboardingField
             label="Public handle (optional)"
             htmlFor="orgUsername"
             error={errors.username}
@@ -428,6 +387,7 @@ export default function OrganizationDetailsStep({
               onChange={(event) =>
                 setFormFields("username", event.target.value.toLowerCase())
               }
+              className={fieldClass}
             />
             <p
               className={`mt-1.5 text-sm ${
@@ -449,7 +409,7 @@ export default function OrganizationDetailsStep({
                     ? "That handle is already taken, try another."
                     : "Leave blank and one is generated from the organisation name."}
             </p>
-          </Field>
+          </OnboardingField>
         </div>
       </Card>
     </div>
