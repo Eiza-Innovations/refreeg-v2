@@ -31,7 +31,7 @@ export function UsersTable({
 
   return (
     <div>
-      <div className="overflow-x-auto rounded-lg border border-hairline">
+      <div className="rounded-lg border border-hairline">
         <DataTable columns={columns} data={users} />
       </div>
       <div className="mt-4 flex flex-col items-center justify-between gap-3 sm:flex-row">

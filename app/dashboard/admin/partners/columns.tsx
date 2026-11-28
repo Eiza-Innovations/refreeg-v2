@@ -80,7 +80,7 @@ export const partnerColumns = (
       cell: ({ row }) => {
         const pct = row.original.utilizationPct;
         return (
-          <div className="flex min-w-[120px] items-center gap-2.5">
+          <div className="flex min-w-0 sm:min-w-[120px] items-center gap-2.5">
             <Progress
               value={pct}
               indicatorVariant="forest"

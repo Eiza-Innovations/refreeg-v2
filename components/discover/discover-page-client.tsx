@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { useRouter } from "nextjs-toploader/app";
 import { LayoutGrid, List, SlidersHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -130,7 +129,6 @@ export function DiscoverPageClient({
   topCities: string[];
   amountCeiling: number;
 }) {
-  const router = useRouter();
   const pathname = usePathname();
   const [tab, setTab] = useState<DiscoverTab>(initialTab);
   const [filters, setFilters] = useState<DiscoverFilters>(initialFilters);
@@ -211,9 +209,11 @@ export function DiscoverPageClient({
   useEffect(() => {
     const params = buildDiscoverSearchParams(tab, activeFilters);
     const query = params.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, {
-      scroll: false,
-    });
+    window.history.replaceState(
+      window.history.state,
+      "",
+      query ? `${pathname}?${query}` : pathname,
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, JSON.stringify(activeFilters)]);
 

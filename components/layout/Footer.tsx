@@ -45,6 +45,8 @@ const footerColumns = [
     links: [
       { label: "Block explorer", href: "/about-us" },
       { label: "Fee policy", href: "/crowdfund/fees" },
+      { label: "Terms of service", href: "/terms" },
+      { label: "Privacy policy", href: "/privacy" },
       // { label: "Smart contracts", href: "/how-it-works" },
       // { label: "Audits", href: "/#faq" },
     ],

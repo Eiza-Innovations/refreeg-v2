@@ -34,7 +34,7 @@ export function AmbassadorsView({ data }: { data: WorkspaceData }) {
   return (
     <div className="space-y-[18px]">
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative w-[260px]">
+        <div className="relative w-full sm:w-[260px]">
           <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink/60" />
           <Input
             aria-label="Search ambassadors"

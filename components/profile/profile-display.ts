@@ -125,10 +125,13 @@ export function buildGivingEntries(
     kind: "cause",
     title: donation.cause?.title || "A cause",
     context: "Cause",
-    href: causePublicPath({
-      id: donation.cause_id,
-      slug: donation.cause?.slug,
-    }),
+    href:
+      (donation.cause as { status?: string } | undefined)?.status === "approved"
+        ? causePublicPath({
+            id: donation.cause_id,
+            slug: donation.cause?.slug,
+          })
+        : null,
     amount: Number(donation.amount) || 0,
     giverLabel: donation.is_anonymous
       ? "Anonymous gift"

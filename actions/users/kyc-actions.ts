@@ -355,7 +355,7 @@ export async function updateVerificationStatus(
   verificationId: string,
   status: "approved" | "rejected" | "pending",
   notes?: string,
-): Promise<{ error: string | null }> {
+): Promise<{ error: string | null; alreadyProcessed?: boolean }> {
   try {
     const { user, error } = await requireAdminUser();
     if (!user) return { error };
@@ -375,6 +375,7 @@ export async function updateVerificationStatus(
       where: { id: verificationId },
       select: {
         user_id: true,
+        status: true,
         full_name: true,
         document_type: true,
         document_url: true,
@@ -382,6 +383,13 @@ export async function updateVerificationStatus(
     });
     if (!verification) {
       return { error: "No verification record found for this id." };
+    }
+
+    // Idempotency: repeating a decision that is already in place must not
+    // re-sync Didit, re-log, or re-send the email — one impatient double-click
+    // used to send seven "KYC approved" emails.
+    if (verification.status === status) {
+      return { error: null, alreadyProcessed: true };
     }
 
     const diditNote = await syncDecisionToDidit(verification, status, notes);
@@ -392,14 +400,17 @@ export async function updateVerificationStatus(
         : notes ||
           (status === "approved" ? "Approved by admin" : "Rejected by admin");
 
-    await prisma.kyc_verifications.update({
-      where: { id: verificationId },
+    const claimed = await prisma.kyc_verifications.updateMany({
+      where: { id: verificationId, status: { not: status } },
       data: {
         status: status,
         verification_notes: `${baseNotes}${diditNote}`,
         updated_at: new Date(),
       },
     });
+    if (claimed.count === 0) {
+      return { error: null, alreadyProcessed: true };
+    }
 
     await logAdminActivity(
       status === "approved"
@@ -410,7 +421,7 @@ export async function updateVerificationStatus(
       user.id,
     );
 
-    await sendDecisionEmail(
+    void sendDecisionEmail(
       verification.user_id,
       verification.full_name,
       status,

@@ -52,7 +52,7 @@ export default async function DashboardPage() {
 
   const [profile, donorStats, weeklyStats, hasBank] = await Promise.all([
     getProfile(user.id as string),
-    getUserDonorGivingStats(user.id as string),
+    getUserDonorGivingStats(user.id as string, user.email),
     getPlatformWeeklyDeliveredStats(),
     hasBankDetails(user.id as string),
   ]);

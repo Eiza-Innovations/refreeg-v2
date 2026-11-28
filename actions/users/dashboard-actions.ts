@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
+import { wishlistGiftDonorFilter } from "@/lib/wishlist/giving";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -86,8 +87,12 @@ export async function getDashboardStats(userId: string) {
   }
 }
 
-export async function getUserDonorGivingStats(userId: string) {
+export async function getUserDonorGivingStats(
+  userId: string,
+  email?: string | null,
+) {
   try {
+    const giftFilter = wishlistGiftDonorFilter(userId, email);
     const [
       donationAgg,
       donations,
@@ -109,13 +114,11 @@ export async function getUserDonorGivingStats(userId: string) {
             where: { user_id: userId, status: "pending" },
           })
         : Promise.resolve(0),
-      // Wishlist gifts count as giving too: they join the headline total
-      // and are broken out on the Your giving card.
       prisma.wishlist_contributions.aggregate({
         _sum: { amount: true },
-        where: { user_id: userId },
+        where: giftFilter,
       }),
-      prisma.wishlist_contributions.count({ where: { user_id: userId } }),
+      prisma.wishlist_contributions.count({ where: giftFilter }),
     ]);
 
     const causesGiven = Number(donationAgg._sum.amount || 0);
