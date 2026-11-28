@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
+import { wishlistGiftDonorFilter } from "@/lib/wishlist/giving";
 import { prisma } from "@/lib/prisma";
 
 export async function OPTIONS() {
@@ -91,6 +92,18 @@ export async function GET(
           })
         : 0;
 
+    // Giving metrics for this profile owner: completed cause donations plus
+    // wishlist gifts (guest gifts made with their email count too). Additive
+    // fields — existing clients keep working.
+    const [donationsMade, wishlistGifts] = await Promise.all([
+      prisma.donation.count({
+        where: { userId: profile.id, status: "completed" },
+      }),
+      prisma.wishlist_contributions.count({
+        where: wishlistGiftDonorFilter(profile.id, profile.email),
+      }),
+    ]);
+
     let isFollowing = false;
     if (authUser?.id && causeIds.length > 0) {
       const follow = await prisma.campaign_follows.findFirst({
@@ -117,6 +130,8 @@ export async function GET(
         campaignsCount,
         deliveredAmount,
         donorsCount,
+        donationsMade,
+        wishlistGifts,
       },
       causes: causes.map((c) => ({
         id: c.id,

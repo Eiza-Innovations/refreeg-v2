@@ -9,6 +9,7 @@ import {
   WISHLIST_ITEM_CAP,
 } from "@/lib/schemas/wishlist.schema";
 import { slugifyWishlistTitle } from "@/lib/wishlist/slug";
+import { wishlistGiftDonorFilter } from "@/lib/wishlist/giving";
 import {
   revalidateSharePath,
   resolveOwnerPayoutState,
@@ -613,12 +614,12 @@ export async function listWishlistGiftsByUsername(
   try {
     const owner = await prisma.user.findUnique({
       where: { username },
-      select: { id: true },
+      select: { id: true, email: true },
     });
     if (!owner) return [];
 
     const rows = await prisma.wishlist_contributions.findMany({
-      where: { user_id: owner.id, status: "completed" },
+      where: wishlistGiftDonorFilter(owner.id, owner.email),
       orderBy: { created_at: "desc" },
       select: {
         id: true,

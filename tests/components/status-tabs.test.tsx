@@ -1,4 +1,11 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
+
+const replace = jest.fn();
+
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({ replace }),
+}));
+
 import { StatusTabs } from "@/components/dashboard/StatusTabs";
 
 const options = [
@@ -9,10 +16,11 @@ const options = [
 
 describe("StatusTabs", () => {
   beforeEach(() => {
+    replace.mockClear();
     Element.prototype.scrollTo = jest.fn();
   });
 
-  it("links each status through the URL", () => {
+  it("routes each status through the URL without a full navigation", () => {
     render(
       <StatusTabs
         options={options}
@@ -21,14 +29,28 @@ describe("StatusTabs", () => {
       />,
     );
 
-    expect(screen.getByRole("tab", { name: "All" })).toHaveAttribute(
-      "href",
-      "/dashboard/causes",
+    fireEvent.click(screen.getByRole("tab", { name: "All" }));
+    expect(replace).toHaveBeenCalledWith("/dashboard/causes", {
+      scroll: false,
+    });
+
+    fireEvent.click(screen.getByRole("tab", { name: "Needs revision" }));
+    expect(replace).toHaveBeenCalledWith("/dashboard/causes?status=rejected", {
+      scroll: false,
+    });
+  });
+
+  it("ignores clicks on the tab that is already active", () => {
+    render(
+      <StatusTabs
+        options={options}
+        status="approved"
+        basePath="/dashboard/causes"
+      />,
     );
-    expect(screen.getByRole("tab", { name: "Needs revision" })).toHaveAttribute(
-      "href",
-      "/dashboard/causes?status=rejected",
-    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "Active" }));
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it("marks the current status and scrolls it into view", () => {

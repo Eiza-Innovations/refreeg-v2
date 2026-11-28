@@ -146,7 +146,7 @@ export default function AdminAnalytics() {
         </div>
         <div className="space-y-4">
           <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-[400px] w-full" />
+          <Skeleton className="h-[280px] w-full sm:h-[400px]" />
         </div>
       </div>
     );
@@ -330,7 +330,7 @@ export default function AdminAnalytics() {
             <CardContent>
               <ChartContainer
                 config={donationConfig}
-                className="h-[400px] w-full"
+                className="h-[280px] w-full sm:h-[400px]"
               >
                 <BarChart data={donationTrends}>
                   <CartesianGrid vertical={false} />
@@ -377,7 +377,10 @@ export default function AdminAnalytics() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ChartContainer config={userConfig} className="h-[400px] w-full">
+              <ChartContainer
+                config={userConfig}
+                className="h-[280px] w-full sm:h-[400px]"
+              >
                 <LineChart data={userGrowth}>
                   <CartesianGrid vertical={false} />
                   <XAxis
@@ -422,7 +425,7 @@ export default function AdminAnalytics() {
               <CardContent>
                 <ChartContainer
                   config={causeCategoryConfig}
-                  className="h-[400px] w-full"
+                  className="h-[280px] w-full sm:h-[400px]"
                 >
                   <BarChart
                     data={causeCategories}
@@ -458,7 +461,7 @@ export default function AdminAnalytics() {
               <CardContent>
                 <ChartContainer
                   config={causeStatusConfig}
-                  className="h-[400px] w-full"
+                  className="h-[280px] w-full sm:h-[400px]"
                 >
                   <BarChart data={causeCategories}>
                     <CartesianGrid vertical={false} />

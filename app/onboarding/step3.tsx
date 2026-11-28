@@ -52,29 +52,6 @@ export default function Step3({
         <P className="mt-4 text-base leading-7 text-ink/70">
           It takes less than a minute. This is how people will see you.
         </P>
-        <div className="mt-8 flex gap-3 lg:mt-auto lg:pt-8">
-          <Button
-            type="button"
-            variant="ink"
-            onClick={submit}
-            disabled={isBusy}
-            className="h-12 px-10"
-          >
-            {isUploadingPhoto ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Uploading photo...
-              </>
-            ) : isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving profile...
-              </>
-            ) : (
-              "Continue"
-            )}
-          </Button>
-        </div>
       </div>
 
       <motion.div
@@ -212,6 +189,32 @@ export default function Step3({
           </div>
         </Card>
       </motion.div>
+
+      {/* CTA row sits after the form card so Continue is the last thing on
+          screen on phones; on desktop it spans beneath both columns. */}
+      <div className="border-t border-hairline pt-6 lg:col-span-2">
+        <Button
+          type="button"
+          variant="ink"
+          onClick={submit}
+          disabled={isBusy}
+          className="h-12 px-10"
+        >
+          {isUploadingPhoto ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Uploading photo...
+            </>
+          ) : isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving profile...
+            </>
+          ) : (
+            "Continue"
+          )}
+        </Button>
+      </div>
     </div>
   );
 }

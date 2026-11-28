@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth/session-user";
 import { getCampaignCategoryStyle } from "@/lib/causes/campaign-categories";
 import { causePublicPath } from "@/lib/causes/slug";
+import { wishlistGiftDonorFilter } from "@/lib/wishlist/giving";
 
 export type GivingPeriod = "year" | "last-year" | "all";
 export type GivingFilter = "all" | "delivered" | "in-progress" | "pledges";
@@ -150,9 +151,10 @@ export async function getGivingOverview({
     ]);
 
   // Wishlist gifts count as giving: they join the headline, the period
-  // totals and the gift list alongside cause donations.
+  // totals and the gift list alongside cause donations. Guest gifts made with
+  // the giver's email count too, mirroring the pledge attribution rule.
   const wishlistGifts = await prisma.wishlist_contributions.findMany({
-    where: { user_id: user.id },
+    where: wishlistGiftDonorFilter(user.id, user.email),
     select: {
       id: true,
       amount: true,

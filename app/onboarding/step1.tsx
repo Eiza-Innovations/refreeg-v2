@@ -66,16 +66,6 @@ export default function Step1({ onNext, onboardingData }: Step1Props) {
             </p>
           </div>
         ) : null}
-        <div className="mt-8 flex gap-3 lg:mt-auto lg:pt-8">
-          <Button
-            type="button"
-            onClick={handleNext}
-            disabled={selected === "organization" && !purpose}
-            className="h-12 bg-ink px-10 text-ink-foreground hover:bg-ink/90"
-          >
-            Continue
-          </Button>
-        </div>
       </div>
 
       <div className="space-y-6">
@@ -127,6 +117,17 @@ export default function Step1({ onNext, onboardingData }: Step1Props) {
             </div>
           </motion.div>
         ) : null}
+      </div>
+
+      <div className="flex gap-3 lg:col-span-2">
+        <Button
+          type="button"
+          onClick={handleNext}
+          disabled={selected === "organization" && !purpose}
+          className="h-12 bg-ink px-10 text-ink-foreground hover:bg-ink/90"
+        >
+          Continue
+        </Button>
       </div>
     </div>
   );

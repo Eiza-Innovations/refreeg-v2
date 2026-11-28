@@ -92,16 +92,6 @@ export default function ChecklistStep({
           Your organisation account is ready to browse. Verifying your
           organisation is the next step.
         </p>
-        <div className="mt-8 lg:mt-auto lg:pt-8">
-          <Button
-            type="button"
-            variant="ink"
-            onClick={() => onComplete()}
-            className="h-12 px-10"
-          >
-            Go to dashboard
-          </Button>
-        </div>
       </div>
 
       <Card variant="surface" className="divide-y divide-hairline">
@@ -167,6 +157,17 @@ export default function ChecklistStep({
           )}
         </div>
       </Card>
+
+      <div className="lg:col-span-2">
+        <Button
+          type="button"
+          variant="ink"
+          onClick={() => onComplete()}
+          className="h-12 px-10"
+        >
+          Go to dashboard
+        </Button>
+      </div>
     </div>
   );
 }

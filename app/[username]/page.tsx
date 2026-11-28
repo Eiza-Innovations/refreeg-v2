@@ -117,9 +117,7 @@ export default async function PublicProfilePage({
     }
   }
 
-  const donations = await listUserDonations(userId).then((items) =>
-    items.filter((donation) => (donation.cause as any)?.status === "approved"),
-  );
+  const donations = await listUserDonations(userId);
 
   return (
     <div className="relative">
