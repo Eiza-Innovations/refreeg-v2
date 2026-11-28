@@ -1,17 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { PaymentProviderType } from "@/types";
-import Flutterwave from "@/services/flutterwave";
 import Paystack from "@/services/paystack";
 import { processSuccessfulCharge } from "@/lib/payments/paystack-charge-processing";
+import {
+  processFlutterwaveCharge,
+  verifyFlutterwaveTransaction,
+} from "@/lib/payments/flutterwave-charge-processing";
 import { recordPaymentOutcome } from "@/lib/campaign-analytics/funnel-server";
 
 export async function POST(request: NextRequest) {
   try {
-    const { reference, provider, transaction_id } = (await request.json()) as {
-      reference?: string;
+    let body: {
+      reference?: unknown;
       provider?: PaymentProviderType;
-      transaction_id?: string;
+      transaction_id?: unknown;
     };
+    try {
+      body = (await request.json()) as typeof body;
+    } catch {
+      return NextResponse.json(
+        { error: "Invalid JSON payload", success: false },
+        { status: 400 },
+      );
+    }
+
+    const reference =
+      typeof body?.reference === "string" ? body.reference.trim() : "";
+    const provider = body?.provider;
+    const rawTransactionId = body?.transaction_id;
 
     if (!reference) {
       return NextResponse.json(
@@ -20,61 +36,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const transactionId =
+      typeof rawTransactionId === "string" ||
+      typeof rawTransactionId === "number"
+        ? String(rawTransactionId).trim()
+        : undefined;
+
+    if (transactionId && !/^\d+$/.test(transactionId)) {
+      return NextResponse.json(
+        { error: "Invalid transaction_id", success: false },
+        { status: 400 },
+      );
+    }
+
     if (provider === "flutterwave") {
-      let full: any;
-      if (transaction_id) {
-        full = await Flutterwave.verifyTransactionFull(transaction_id);
-      } else {
-        full = await Flutterwave.verifyByReferenceFull(reference);
-      }
+      const full = await verifyFlutterwaveTransaction(reference, transactionId);
 
       if (!full || full.status !== "successful") {
         return NextResponse.json({ success: true, verified: false });
       }
 
       try {
-        const meta = full.meta || {};
-        if (meta.cause_id) {
-          const { createDonation } = await import("@/actions");
-          await createDonation(
-            String(meta.cause_id),
-            meta.user_id ? String(meta.user_id) : null,
-            {
-              amount: Number(meta.amount),
-              name: String(meta.customer_name || ""),
-              email: String(meta.email || full.customer?.email || ""),
-              message: String(meta.message || ""),
-              isAnonymous:
-                meta.is_anonymous === "true" || meta.is_anonymous === true,
-              tip_amount: Number(meta.tip_amount || 0),
-            },
-            undefined,
-            reference,
-            "flutterwave",
-            meta.ref_v1 ? String(meta.ref_v1) : undefined,
-          );
-        } else if (meta.wishlist_item_id) {
-          const { recordWishlistContribution } =
-            await import("@/actions/wishlists/wishlist-actions");
-          await recordWishlistContribution(
-            String(meta.wishlist_item_id),
-            meta.user_id ? String(meta.user_id) : null,
-            {
-              amount: Number(meta.amount),
-              name: String(meta.customer_name || ""),
-              email: String(meta.email || full.customer?.email || ""),
-              message: String(meta.message || ""),
-              isAnonymous:
-                meta.is_anonymous === "true" || meta.is_anonymous === true,
-            },
-            reference,
-            "flutterwave",
-          );
+        const result = await processFlutterwaveCharge({
+          txRef: reference,
+          transactionId,
+          verifiedTransaction: full,
+        });
+
+        if (!result.ok) {
+          return NextResponse.json({ success: true, verified: false });
         }
       } catch (donationErr) {
         console.warn(
           "Flutterwave verify fallback donation creation skipped:",
-          (donationErr as Error).message,
+          donationErr instanceof Error
+            ? donationErr.message
+            : String(donationErr),
         );
       }
 
@@ -102,11 +99,21 @@ export async function POST(request: NextRequest) {
       success: true,
       verified: isSuccessful,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Payment verification error:", error);
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : typeof error === "object" &&
+            error !== null &&
+            "message" in error &&
+            typeof (error as { message?: unknown }).message === "string"
+          ? String((error as { message: string }).message)
+          : "Failed to verify payment";
+
     return NextResponse.json(
       {
-        error: error.message || "Failed to verify payment",
+        error: errorMessage,
         success: false,
       },
       { status: 500 },
