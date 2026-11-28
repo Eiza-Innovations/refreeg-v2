@@ -3,12 +3,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import dynamic from "next/dynamic";
-import { Skeleton } from "@/components/ui/skeleton";
-import { getBaseURL } from "@/lib/utils";
-import { causePublicPath } from "@/lib/causes/slug";
 import Image from "next/image";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Eyebrow } from "@/components/ui/eyebrow";
+import { Skeleton } from "@/components/ui/skeleton";
+import { P, Small, Span } from "@/components/marketing/Typography";
+import { getBaseURL } from "@/lib/utils";
+import { causePublicPath } from "@/lib/causes/slug";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
+import { goalPercent } from "@/lib/progress";
 import type {
   CampaignQualityLabProps,
   TabKey,
@@ -22,7 +26,6 @@ import { ProgressCard } from "./ui/progress-card";
 import { TabsCard } from "./ui/tabs-card";
 import { CampaignHealthCard } from "./ui/campaign-health-card";
 import { StorySections, CollapsibleStoryText } from "./ui/story-sections";
-import { goalPercent } from "@/lib/progress";
 
 const MultimediaCarousel = dynamic(
   () => import("@/components/marketing/MultimediaCarousel"),
@@ -86,7 +89,9 @@ export default function CampaignQualityLab({
   );
 
   const baseUrl = getBaseURL();
-  const [shareUrl, setShareUrl] = useState(`${baseUrl}/causes/${cause.id}`);
+  const [shareUrl, setShareUrl] = useState(
+    `${baseUrl}${causePublicPath(cause)}`,
+  );
 
   useEffect(() => {
     if (typeof window !== "undefined") setShareUrl(window.location.href);
@@ -103,8 +108,8 @@ export default function CampaignQualityLab({
   );
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-navy-ink overflow-x-hidden">
-      <main className="mx-auto w-full flex flex-col lg:grid max-w-[1280px] gap-4 px-4 pb-24 pt-4 sm:gap-6 sm:px-6 sm:pb-28 sm:pt-6 lg:grid-cols-[minmax(0,2fr)_minmax(340px,1fr)] lg:gap-8 lg:px-8 lg:items-start">
+    <div className="min-h-screen overflow-x-hidden bg-cream text-ink">
+      <main className="mx-auto flex w-full max-w-[1280px] flex-col gap-4 px-4 pb-24 pt-4 sm:gap-6 sm:px-6 sm:pb-28 sm:pt-6 lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(340px,1fr)] lg:items-start lg:gap-8 lg:px-8">
         <motion.div
           className="order-1 lg:col-start-1 lg:row-start-1"
           variants={stagger}
@@ -158,7 +163,7 @@ export default function CampaignQualityLab({
                   title={cause.title}
                 />
               ) : (
-                <div className="flex h-64 items-center justify-center bg-slate-100 text-slate-400">
+                <div className="flex h-64 items-center justify-center rounded-2xl border border-hairline bg-bone text-ink/50">
                   No media available
                 </div>
               )}
@@ -174,21 +179,19 @@ export default function CampaignQualityLab({
         <div className="order-3 lg:col-start-1 lg:row-start-3">
           <section className="space-y-4 sm:space-y-6">
             <motion.div
-              className="rounded-2xl border border-mist bg-white p-4 text-sm text-steel sm:rounded-[20px] sm:p-7"
+              className="rounded-2xl border border-hairline bg-surface p-4 text-sm text-ink/80 sm:rounded-[20px] sm:p-7"
               variants={{
                 hidden: { opacity: 0, y: 16 },
                 show: { opacity: 1, y: 0 },
               }}
             >
-              <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-blue-steel">
-                The story
-              </p>
+              <Eyebrow>The story</Eyebrow>
 
               <div className="mt-5 space-y-5">
-                <div className="flex flex-wrap items-center gap-2 text-xs text-[#65758B]">
+                <div className="flex flex-wrap items-center gap-2 text-xs text-ink/60">
                   <Link
                     href={`/${cause.user.username}`}
-                    className="flex items-center gap-2 font-semibold text-navy-ink hover:text-blue-steel"
+                    className="flex items-center gap-2 font-semibold text-ink hover:text-forest"
                   >
                     {cause.user.profile_photo ? (
                       <Image
@@ -205,16 +208,18 @@ export default function CampaignQualityLab({
                         )}
                       />
                     ) : (
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-navy-ink text-[9px] text-white">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-ink text-[9px] text-ink-foreground">
                         {cause.user.name.slice(0, 1)}
                       </span>
                     )}
                     {cause.user.name}
                   </Link>
-                  <span className="text-[#C2CBD5]">•</span>
-                  <span className="capitalize">{cause.category}</span>
-                  <span className="text-[#C2CBD5]">•</span>
-                  <span>{formattedDate}</span>
+                  <Span className="text-hairline">•</Span>
+                  <Span className="capitalize text-ink/60">
+                    {cause.category}
+                  </Span>
+                  <Span className="text-hairline">•</Span>
+                  <Span className="text-ink/60">{formattedDate}</Span>
                 </div>
 
                 {cause.sections && cause.sections.length > 0 ? (
@@ -222,10 +227,10 @@ export default function CampaignQualityLab({
                 ) : cause.description ? (
                   <CollapsibleStoryText text={cause.description} />
                 ) : (
-                  <p className="text-sm text-[#65758B]">
+                  <P className="text-ink/60 md:text-sm">
                     No story yet. The campaign creator can add the full context
                     and plan here.
-                  </p>
+                  </P>
                 )}
               </div>
             </motion.div>
@@ -252,28 +257,29 @@ export default function CampaignQualityLab({
       </main>
 
       {!isDonateVisible && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-mist-light bg-white/95 px-4 py-3 shadow-[0_-16px_40px_rgba(16,35,63,0.14)] backdrop-blur-xl sm:hidden">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-hairline bg-surface/95 px-4 py-3 shadow-elevated backdrop-blur-xl sm:hidden">
           <div className="mx-auto flex max-w-md items-center gap-4">
             <div className="min-w-0">
-              <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#65758B]">
+              <Small className="block text-[10px] font-semibold uppercase tracking-[0.16em] text-ink/60">
                 Raised
-              </p>
-              <p className="truncate text-sm font-bold text-navy-ink">
+              </Small>
+              <P className="truncate font-fraunces font-medium text-ink md:text-base">
                 ₦{cause.raised.toLocaleString()}
-              </p>
+              </P>
             </div>
-            <button
+            <Button
               type="button"
+              variant="ink"
               onClick={() =>
                 donateRef.current?.scrollIntoView({
                   behavior: "smooth",
                   block: "start",
                 })
               }
-              className="flex-1 rounded-xl bg-blue-steel px-4 py-3 text-sm font-bold text-white shadow-[0_10px_24px_-12px_rgba(35,93,167,0.9)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-steel"
+              className="h-11 flex-1 rounded-xl"
             >
               Donate now
-            </button>
+            </Button>
           </div>
         </div>
       )}

@@ -1,7 +1,10 @@
 import { motion } from "framer-motion";
 import { HandHeart, ShieldAlert, ChevronDown } from "lucide-react";
 import dynamic from "next/dynamic";
+import { Badge } from "@/components/ui/badge";
+import { Eyebrow } from "@/components/ui/eyebrow";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Heading, P, Small, Span } from "@/components/marketing/Typography";
 import { BreetCryptoDonationModal } from "@/components/crypto-details/BreetCryptoDonationModal";
 import { causePublicPath } from "@/lib/causes/slug";
 import type { CauseDetail, ProfileSummary } from "@/types/campaign-view-types";
@@ -42,27 +45,29 @@ export function DonateCard({
 }) {
   return (
     <motion.div
-      className="overflow-hidden rounded-[20px] border border-[#DDE3EA] bg-white"
+      className="overflow-hidden rounded-[20px] border border-hairline bg-surface"
       variants={fadeUp}
     >
-      <div className="bg-[#10233F] px-4 py-4 text-white sm:px-6 sm:py-5">
+      <div className="bg-ink px-4 py-4 text-ink-foreground sm:px-6 sm:py-5">
         <div className="flex items-center justify-between">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#D9FF5B]">
-            Support this campaign
-          </p>
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 sm:h-9 sm:w-9">
-            <HandHeart className="h-4 w-4 text-[#D9FF5B]" />
+          <Eyebrow className="text-lime">Support this campaign</Eyebrow>
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-ink-foreground/10 sm:h-9 sm:w-9">
+            <HandHeart className="h-4 w-4 text-lime" />
           </span>
         </div>
-        <h3 className="mt-1.5 text-xl font-bold tracking-tight sm:mt-2 sm:text-2xl">
+        <Heading
+          as="h3"
+          size="panel"
+          className="mt-1.5 font-medium text-ink-foreground sm:mt-2"
+        >
           Make a donation
-        </h3>
-        <p className="mt-1.5 hidden text-xs leading-5 text-white/55 sm:block">
+        </Heading>
+        <Small className="mt-1.5 hidden text-ink-foreground/60 sm:block">
           Secure checkout · Publicly audited milestones
-        </p>
+        </Small>
       </div>
 
-      <div className="space-y-3 p-4 sm:p-6 [&_label]:text-sm [&_label]:text-[#33445A] [&_input]:h-10 sm:[&_input]:h-11 [&_input]:rounded-xl [&_input]:border-[#D8E0E8] [&_textarea]:rounded-xl [&_textarea]:border-[#D8E0E8]">
+      <div className="space-y-3 p-4 sm:p-6 [&_input]:h-10 [&_input]:rounded-xl [&_input]:border-hairline sm:[&_input]:h-11 [&_label]:text-sm [&_label]:text-ink [&_textarea]:rounded-xl [&_textarea]:border-hairline">
         <DonationForm
           causeId={cause.id}
           profile={profile}
@@ -83,7 +88,7 @@ export function DonateCard({
           flush
           compactOptionalFields
           submitLabel="Donate"
-          submitClassName="h-11 rounded-xl bg-[#235DA7] text-sm font-bold text-white shadow-[0_14px_30px_-14px_rgba(35,93,167,0.8)] hover:bg-[#1D4E8E] disabled:bg-[#AAB7C5] sm:h-12"
+          submitClassName="h-11 rounded-xl bg-lime text-sm font-semibold text-lime-foreground hover:bg-lime/90 disabled:opacity-50 sm:h-12"
           beforeFields={
             <>
               <div className="grid grid-cols-2 gap-2">
@@ -92,10 +97,10 @@ export function DonateCard({
                     key={amount}
                     type="button"
                     onClick={() => setDonation(amount)}
-                    className={`rounded-xl border px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#235DA7] sm:py-2.5 ${
+                    className={`rounded-xl border px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest sm:py-2.5 ${
                       donation === amount
-                        ? "border-[#2563EB] bg-[#ECF5FF] text-[#2563EB]"
-                        : "border-[#D8E0E8] bg-white text-[#53647A] hover:border-[#8FA5BC]"
+                        ? "border-forest bg-forest/10 text-forest"
+                        : "border-hairline bg-surface text-ink/70 hover:border-ink/40"
                     }`}
                   >
                     ₦{amount.toLocaleString()}
@@ -104,11 +109,9 @@ export function DonateCard({
               </div>
 
               <label className="grid gap-2 text-sm">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#65758B]">
-                  Donation amount
-                </span>
-                <div className="flex items-stretch overflow-hidden rounded-xl border border-[#CBD7E4] bg-white">
-                  <span className="flex items-center justify-center bg-[#10233F] px-4 text-sm font-bold text-white">
+                <Eyebrow className="text-ink/60">Donation amount</Eyebrow>
+                <div className="flex items-stretch overflow-hidden rounded-xl border border-hairline bg-surface">
+                  <span className="flex items-center justify-center bg-ink px-4 text-sm font-bold text-ink-foreground">
                     ₦
                   </span>
                   <input
@@ -121,38 +124,40 @@ export function DonateCard({
                       const capped = next.slice(0, 12);
                       setDonation(capped ? Number(capped) : 0);
                     }}
-                    className="min-w-0 flex-1 appearance-none bg-transparent px-3 py-2 text-right text-lg font-bold tabular-nums text-[#10233F] outline-none"
+                    className="min-w-0 flex-1 appearance-none bg-transparent px-3 py-2 text-right text-lg font-bold tabular-nums text-ink outline-none"
                     placeholder="Enter amount"
                     aria-label="Donation amount"
                   />
                 </div>
-                <p className="hidden text-xs text-slate-500 sm:block">
+                <Small className="hidden text-ink/60 sm:block">
                   This is the amount that goes toward the campaign.
-                </p>
+                </Small>
               </label>
             </>
           }
           afterFields={
-            <div className="rounded-2xl bg-[#ECF5FF] p-3 sm:p-4">
-              <div className="flex items-center justify-between text-sm font-semibold text-[#10233F]">
-                <span>Campaign receives</span>
-                <span>₦{donation.toLocaleString()}</span>
+            <div className="rounded-2xl bg-bone p-3 sm:p-4">
+              <div className="flex items-center justify-between text-sm font-semibold text-ink">
+                <Span className="text-sm text-ink">Campaign receives</Span>
+                <Span className="text-sm tabular-nums text-ink">
+                  ₦{donation.toLocaleString()}
+                </Span>
               </div>
-              <div className="mt-3 flex items-center justify-between border-t border-[#C8D8E8] pt-3">
-                <span className="text-sm font-bold text-[#10233F]">
+              <div className="mt-3 flex items-center justify-between border-t border-hairline pt-3">
+                <Span className="text-sm font-bold text-ink">
                   Checkout total
-                </span>
-                <span className="text-lg font-bold text-[#235DA7]">
+                </Span>
+                <Span className="font-fraunces text-xl font-medium tabular-nums text-ink">
                   ₦{totalWithTip.toLocaleString()}
-                </span>
+                </Span>
               </div>
               {(serviceFee > 0 || tip > 0) && (
-                <details className="group mt-3 border-t border-[#C8D8E8] pt-3">
-                  <summary className="flex cursor-pointer list-none items-center justify-between text-xs font-semibold text-[#53647A]">
+                <details className="group mt-3 border-t border-hairline pt-3">
+                  <summary className="flex cursor-pointer list-none items-center justify-between text-xs font-semibold text-ink/70">
                     View breakdown
                     <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
                   </summary>
-                  <div className="mt-2 grid gap-1.5 text-xs text-[#65758B]">
+                  <div className="mt-2 grid gap-1.5 text-xs text-ink/60">
                     <div className="flex justify-between">
                       <span>Service fee</span>
                       <span>₦{serviceFee.toLocaleString()}</span>
@@ -177,30 +182,30 @@ export function DonateCard({
         />
 
         <div className="flex items-center gap-3 py-1">
-          <span className="h-px flex-1 bg-[#E1E7ED]" />
-          <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7B899A]">
-            Or use crypto
-          </span>
-          <span className="h-px flex-1 bg-[#E1E7ED]" />
+          <span className="h-px flex-1 bg-hairline" />
+          <Eyebrow className="text-ink/50">Or use crypto</Eyebrow>
+          <span className="h-px flex-1 bg-hairline" />
         </div>
         <BreetCryptoDonationModal
           causeId={cause.id}
           donorId={profile.id || null}
           triggerLabel="Donate with USDT"
-          triggerClassName="h-11 w-full gap-x-2 rounded-xl border-[#CBD7E4] bg-white text-sm font-bold text-[#33445A] shadow-none hover:border-[#235DA7] hover:bg-[#ECF5FF] hover:text-[#235DA7] sm:h-12"
+          triggerClassName="h-11 w-full gap-x-2 rounded-xl border-hairline bg-surface text-sm font-semibold text-ink shadow-none hover:border-ink/40 hover:bg-bone sm:h-12"
         />
       </div>
 
-      <div className="mx-4 mb-4 flex items-start gap-2 border-t border-[#E8EDF2] pt-3 text-[11px] leading-4 text-[#65758B] sm:mx-6 sm:mb-5 sm:pt-4 sm:text-xs sm:leading-5">
-        <ShieldAlert className="mt-0.5 h-4 w-4 text-[#F59E0B]" />
-        Donations below ₦5 do not earn EIZA. Refunds or chargebacks remove
-        rewards.
+      <div className="mx-4 mb-4 flex items-start gap-2 border-t border-hairline pt-3 text-xs leading-5 text-ink/60 sm:mx-6 sm:mb-5 sm:pt-4">
+        <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber" />
+        <P className="text-ink/60 md:text-xs">
+          Donations below ₦5 do not earn EIZA. Refunds or chargebacks remove
+          rewards.
+        </P>
       </div>
 
       {!profile.id && (
-        <div className="mt-4 flex items-center justify-between rounded-xl border border-[#E5E7EB] bg-white px-4 py-3 text-xs text-[#64748B]">
-          <span>Guest checkout</span>
-          <span className="text-[#22C55E]">Enabled</span>
+        <div className="mx-4 mb-4 flex items-center justify-between rounded-xl border border-hairline bg-bone px-4 py-3 text-xs text-ink/70 sm:mx-6 sm:mb-5">
+          <Span className="text-xs text-ink/70">Guest checkout</Span>
+          <Badge variant="verified">Enabled</Badge>
         </div>
       )}
     </motion.div>

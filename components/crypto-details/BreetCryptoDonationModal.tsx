@@ -139,10 +139,10 @@ export function BreetCryptoDonationModal({
     >
       <DialogTrigger asChild>
         <Button
-          variant={triggerClassName ? "outline" : "default"}
+          variant={triggerClassName ? "surface" : "ink"}
           className={
             triggerClassName ||
-            "w-full gap-x-2 rounded-xl bg-blue-600 py-6 text-base font-semibold text-white shadow-[0_12px_24px_rgba(37,99,235,0.2)] transition hover:bg-[#1D4ED8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD]"
+            "w-full gap-x-2 rounded-xl py-6 text-base font-semibold"
           }
         >
           <svg

@@ -77,6 +77,7 @@ export function ReplyForm({
       <div className="flex gap-2">
         <Button
           type="submit"
+          variant="ink"
           size="sm"
           disabled={isSubmitting || !content.trim()}
         >
@@ -84,7 +85,7 @@ export function ReplyForm({
         </Button>
         <Button
           type="button"
-          variant="outline"
+          variant="surface"
           size="sm"
           onClick={() => setIsReplying(false)}
           disabled={isSubmitting}

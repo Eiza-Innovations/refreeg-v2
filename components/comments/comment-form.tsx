@@ -60,7 +60,11 @@ export function CommentForm({
         className="resize-none"
       />
       <div className="flex justify-end">
-        <Button type="submit" disabled={isSubmitting || !content.trim()}>
+        <Button
+          type="submit"
+          variant="ink"
+          disabled={isSubmitting || !content.trim()}
+        >
           {isSubmitting ? "Posting..." : "Post Comment"}
         </Button>
       </div>
