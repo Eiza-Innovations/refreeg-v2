@@ -2,6 +2,7 @@ import { useMemo, useState, useTransition } from "react";
 import { motion } from "framer-motion";
 import { Share2, CheckCheck, Bell, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Eyebrow } from "@/components/ui/eyebrow";
 import {
   Dialog,
   DialogContent,
@@ -9,6 +10,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { P, Span } from "@/components/marketing/Typography";
 import { SupportErrorCta } from "@/components/engagement/SupportErrorCta";
 import { followCampaign } from "@/actions/causes/cause-actions";
 import type { Donor } from "@/types/campaign-view-types";
@@ -64,29 +66,29 @@ export function CampaignHealthCard({
 
   return (
     <motion.div
-      className="rounded-[20px] border border-[#DDE3EA] bg-white p-6"
+      className="rounded-[20px] border border-hairline bg-surface p-6"
       variants={fadeUp}
     >
       <div className="flex items-center justify-between">
-        <p className="text-xs uppercase tracking-[0.15em] text-slate-500">
-          Recent donors
-        </p>
-        <Share2 className="h-4 w-4 text-slate-400" />
+        <Eyebrow>Recent donors</Eyebrow>
+        <Share2 className="h-4 w-4 text-ink/40" />
       </div>
-      <div className="mt-3 grid gap-3 text-sm text-slate-600">
+      <div className="mt-3 grid gap-3 text-sm text-ink/70">
         {recentDonors.length > 0 ? (
           <>
             {recentDonors.slice(0, 3).map((donor) => (
               <div key={donor.id} className="flex items-center justify-between">
-                <span className="truncate pr-2">{donor.name}</span>
-                <span className="shrink-0 font-medium text-emerald-600">
+                <Span className="truncate pr-2 text-sm text-ink/80">
+                  {donor.name}
+                </Span>
+                <Span className="shrink-0 text-sm font-medium tabular-nums text-forest">
                   ₦{Number(donor.amount).toLocaleString()}
-                </span>
+                </Span>
               </div>
             ))}
             {recentDonors.length > 3 && (
-              <details className="group border-t border-slate-100 pt-3">
-                <summary className="flex cursor-pointer list-none items-center justify-between text-xs font-bold text-[#235DA7]">
+              <details className="group border-t border-hairline pt-3">
+                <summary className="flex cursor-pointer list-none items-center justify-between text-xs font-semibold text-forest">
                   View all donors
                   <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
                 </summary>
@@ -96,10 +98,12 @@ export function CampaignHealthCard({
                       key={donor.id}
                       className="flex items-center justify-between"
                     >
-                      <span className="truncate pr-2">{donor.name}</span>
-                      <span className="shrink-0 font-medium text-emerald-600">
+                      <Span className="truncate pr-2 text-sm text-ink/80">
+                        {donor.name}
+                      </Span>
+                      <Span className="shrink-0 text-sm font-medium tabular-nums text-forest">
                         ₦{Number(donor.amount).toLocaleString()}
-                      </span>
+                      </Span>
                     </div>
                   ))}
                 </div>
@@ -107,25 +111,26 @@ export function CampaignHealthCard({
             )}
           </>
         ) : (
-          <div className="text-sm text-slate-500">Be the first to donate.</div>
+          <P className="text-ink/60 md:text-sm">Be the first to donate.</P>
         )}
       </div>
 
       {followed ? (
-        <div className="mt-5 flex items-center justify-center gap-2 rounded-xl border border-[#C5E6A0] bg-[#EFF9E3] px-4 py-3 text-sm font-semibold text-[#31551A]">
+        <div className="mt-5 flex items-center justify-center gap-2 rounded-xl border border-forest/30 bg-forest/10 px-4 py-3 text-sm font-semibold text-forest">
           <CheckCheck className="h-4 w-4" />
           Following this campaign
         </div>
       ) : (
-        <button
+        <Button
           type="button"
+          variant="ink"
           onClick={handleFollow}
           disabled={isPending}
-          className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#235DA7] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#2563EB] disabled:opacity-50"
+          className="mt-5 h-11 w-full rounded-xl"
         >
-          <Bell className="h-3 w-3" />
+          <Bell className="mr-2 h-3.5 w-3.5" />
           {isPending ? "Following..." : "Follow campaign"}
-        </button>
+        </Button>
       )}
 
       <Dialog open={showLoginModal} onOpenChange={setShowLoginModal}>
@@ -139,7 +144,8 @@ export function CampaignHealthCard({
           </DialogHeader>
           <div className="mt-4 flex flex-col gap-3">
             <Button
-              className="w-full rounded-full bg-[#0F172A] text-white hover:bg-[#1E293B]"
+              variant="ink"
+              className="w-full rounded-full"
               onClick={() => {
                 setShowLoginModal(false);
                 window.location.href = `/login?redirect=${encodeURIComponent(causePath)}`;
@@ -148,7 +154,7 @@ export function CampaignHealthCard({
               Sign in
             </Button>
             <Button
-              variant="outline"
+              variant="surface"
               className="w-full rounded-full"
               onClick={() => {
                 setShowLoginModal(false);

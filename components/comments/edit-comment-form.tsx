@@ -33,12 +33,13 @@ export function EditCommentForm({
       <div className="flex gap-2">
         <Button
           type="submit"
+          variant="ink"
           size="sm"
           disabled={!content.trim() || content === initialContent}
         >
           Save Changes
         </Button>
-        <Button type="button" variant="outline" size="sm" onClick={onCancel}>
+        <Button type="button" variant="surface" size="sm" onClick={onCancel}>
           Cancel
         </Button>
       </div>

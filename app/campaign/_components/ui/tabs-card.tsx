@@ -1,8 +1,8 @@
-import { useState } from "react";
 import { motion } from "framer-motion";
 import { MessagesSquare, ChevronDown } from "lucide-react";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Heading, P, Span } from "@/components/marketing/Typography";
 import type { CauseDetail, TabKey } from "@/types/campaign-view-types";
 import { TABS, DEFAULT_FAQS, fadeUp } from "@/lib/causes/campaign-constants";
 import type { Comment } from "@/types/common-types";
@@ -17,7 +17,6 @@ const CommentsSection = dynamic(
 
 export function TabsCard({
   cause,
-  formattedDate,
   comments,
   currentUserId,
   activeTab,
@@ -34,12 +33,12 @@ export function TabsCard({
 
   return (
     <motion.div
-      className="overflow-hidden rounded-2xl border border-[#DDE3EA] bg-white sm:rounded-[20px]"
+      className="overflow-hidden rounded-2xl border border-hairline bg-surface sm:rounded-[20px]"
       variants={fadeUp}
     >
-      <div className="border-b border-[#E8EDF2] px-4 py-4 sm:hidden">
+      <div className="border-b border-hairline px-4 py-4 sm:hidden">
         <select
-          className="w-full rounded-xl border border-[#DDE3EA] bg-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.15em] text-[#10233F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#235DA7]"
+          className="w-full rounded-xl border border-hairline bg-surface px-4 py-3 text-xs font-semibold uppercase tracking-[0.15em] text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest"
           value={activeTab}
           onChange={(event) => setActiveTab(event.target.value as TabKey)}
         >
@@ -51,16 +50,16 @@ export function TabsCard({
         </select>
       </div>
 
-      <div className="hidden items-center gap-1 overflow-x-auto border-b border-[#E8EDF2] px-6 py-4 sm:flex">
+      <div className="hidden items-center gap-1 overflow-x-auto border-b border-hairline px-6 py-4 sm:flex">
         {TABS.map((tab) => (
           <button
             key={tab}
             type="button"
             onClick={() => setActiveTab(tab)}
-            className={`shrink-0 whitespace-nowrap rounded-[10px] px-4 py-2.5 text-[13px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#235DA7] ${
+            className={`shrink-0 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest ${
               activeTab === tab
-                ? "bg-[#ECF5FF] text-[#235DA7]"
-                : "text-[#53647A] hover:bg-[#F8FAFC] hover:text-[#10233F]"
+                ? "bg-ink text-ink-foreground"
+                : "text-ink/60 hover:bg-bone hover:text-ink"
             }`}
             aria-pressed={activeTab === tab}
           >
@@ -71,10 +70,12 @@ export function TabsCard({
 
       <div className="p-5 sm:p-7">
         {activeTab === "Comments" && (
-          <div className="rounded-2xl bg-[#F8FAFC] p-4 sm:p-5">
-            <div className="flex items-center gap-2 text-sm text-slate-600">
-              <MessagesSquare className="h-4 w-4 text-emerald-500" />
-              {commentCount} comments
+          <div className="rounded-2xl bg-bone p-4 sm:p-5">
+            <div className="flex items-center gap-2 text-sm text-ink/70">
+              <MessagesSquare className="h-4 w-4 text-forest" />
+              <Span className="text-sm text-ink/70">
+                {commentCount} comments
+              </Span>
             </div>
             <div className="mt-4">
               <CommentsSection
@@ -95,9 +96,9 @@ export function TabsCard({
             exit={{ opacity: 0, y: -10 }}
             className="space-y-4"
           >
-            <h3 className="text-lg font-semibold text-[#0F172A]">
+            <Heading as="h3" size="panel" className="font-medium">
               Frequently Asked Questions
-            </h3>
+            </Heading>
             <div className="space-y-3">
               {(cause.faqs && cause.faqs.length > 0
                 ? cause.faqs
@@ -105,13 +106,13 @@ export function TabsCard({
               ).map((faq, idx) => (
                 <details
                   key={idx}
-                  className="rounded-[14px] border border-[#E5E7EB] bg-white p-4 shadow-sm"
+                  className="rounded-xl border border-hairline bg-surface p-4"
                 >
-                  <summary className="flex cursor-pointer items-center justify-between font-medium text-[#0F172A]">
+                  <summary className="flex cursor-pointer items-center justify-between font-medium text-ink">
                     {faq.question}
-                    <ChevronDown className="h-5 w-5 text-[#64748B]" />
+                    <ChevronDown className="h-5 w-5 text-ink/50" />
                   </summary>
-                  <p className="mt-2 text-sm text-[#64748B]">{faq.answer}</p>
+                  <P className="mt-2 text-ink/70 md:text-sm">{faq.answer}</P>
                 </details>
               ))}
             </div>

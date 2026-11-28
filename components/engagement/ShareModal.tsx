@@ -254,7 +254,7 @@ export function ShareModal({
           size="sm"
           className="flex items-center gap-2"
         >
-          <Share2 className="h-6 w-6" />
+          <Share2 className="h-4 w-4" />
           Share
         </Button>
       </DialogTrigger>
@@ -265,17 +265,16 @@ export function ShareModal({
           <DialogDescription>{dialogDescription}</DialogDescription>
         </DialogHeader>
 
-        {}
-        <div className="flex rounded-xl border border-slate-200 bg-slate-50 p-1">
+        <div className="flex rounded-xl border border-hairline bg-bone p-1">
           {(["share", "qr"] as Tab[]).map((tab) => (
             <button
               key={tab}
               type="button"
               onClick={() => setActiveTab(tab)}
-              className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-1.5 text-xs font-semibold transition-all ${
+              className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-1.5 text-xs font-semibold transition-all ${
                 activeTab === tab
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
+                  ? "bg-surface text-ink shadow-subtle"
+                  : "text-ink/60 hover:text-ink"
               }`}
             >
               {tab === "share" ? (
@@ -338,7 +337,7 @@ export function ShareModal({
                 />
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="surface"
                   size="sm"
                   onClick={handleCopyLink}
                   className="shrink-0"
@@ -359,7 +358,7 @@ export function ShareModal({
               </div>
               <Button
                 type="button"
-                variant="outline"
+                variant="surface"
                 size="sm"
                 onClick={handleCopyMessage}
                 className="w-full"
@@ -395,7 +394,7 @@ export function ShareModal({
             <div className="flex gap-2">
               <Button
                 type="button"
-                variant="outline"
+                variant="surface"
                 className="flex-1"
                 onClick={downloadQR}
               >
@@ -404,7 +403,8 @@ export function ShareModal({
               </Button>
               <Button
                 type="button"
-                className="flex-1 bg-blue-600 text-white hover:bg-blue-700"
+                variant="ink"
+                className="flex-1"
                 onClick={shareQR}
               >
                 <Share2 className="mr-2 h-4 w-4" />

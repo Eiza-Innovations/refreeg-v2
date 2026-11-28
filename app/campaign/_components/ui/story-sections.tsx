@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { P } from "@/components/marketing/Typography";
 
 export function StorySections({
   sections,
@@ -24,19 +25,19 @@ export function StorySections({
         {visible.map((section, index) => (
           <div
             key={index}
-            className="border-b border-[#E1E7ED] pb-5 last:border-0 last:pb-0"
+            className="border-b border-hairline pb-5 last:border-0 last:pb-0"
           >
-            <p className="text-base font-bold text-[#10233F]">
+            <P className="font-semibold text-ink md:text-base">
               {section.heading}
-            </p>
-            <p className="mt-2 whitespace-pre-line text-sm leading-7 text-[#53647A]">
+            </P>
+            <P className="mt-2 whitespace-pre-line text-ink/70 md:text-sm">
               {section.description}
-            </p>
+            </P>
           </div>
         ))}
         {isLongStory && !expanded && (
           <div
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-white via-white/90 to-transparent"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-surface via-surface/90 to-transparent"
             aria-hidden="true"
           />
         )}
@@ -45,7 +46,7 @@ export function StorySections({
         <button
           type="button"
           onClick={() => setExpanded((prev) => !prev)}
-          className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-[#235DA7] hover:text-[#2563EB]"
+          className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-forest hover:text-forest/80"
           aria-expanded={expanded}
         >
           {expanded ? "Show less" : "Read more"}
@@ -67,12 +68,10 @@ export function CollapsibleStoryText({ text }: { text: string }) {
       <div
         className={`relative ${isLongStory && !expanded ? "max-h-[210px] overflow-hidden" : ""}`}
       >
-        <p className="whitespace-pre-line text-sm leading-7 text-[#53647A]">
-          {text}
-        </p>
+        <P className="whitespace-pre-line text-ink/70 md:text-sm">{text}</P>
         {isLongStory && !expanded && (
           <div
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-white via-white/90 to-transparent"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-surface via-surface/90 to-transparent"
             aria-hidden="true"
           />
         )}
@@ -81,7 +80,7 @@ export function CollapsibleStoryText({ text }: { text: string }) {
         <button
           type="button"
           onClick={() => setExpanded((prev) => !prev)}
-          className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-[#235DA7] hover:text-[#2563EB]"
+          className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-forest hover:text-forest/80"
           aria-expanded={expanded}
         >
           {expanded ? "Show less" : "Read more"}
