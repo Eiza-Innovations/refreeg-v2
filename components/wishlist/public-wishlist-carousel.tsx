@@ -1,0 +1,281 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { useGsap } from "@/hooks/use-gsap";
+import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
+import { wishlistPublicPath } from "@/lib/wishlist/slug";
+import { formatNaira } from "@/components/giving/format";
+import { BookmarkButton } from "@/components/saved/BookmarkButton";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Gift,
+} from "lucide-react";
+import type { DiscoverableWishlist } from "@/types";
+
+/**
+ * Horizontal, swipeable rail of public wishlists on /wishlist.
+ * Mirrors the LiveCampaigns carousel (same scroll shell, buttons, hint,
+ * GSAP entrance, card anatomy) so the two sections feel identical.
+ */
+export function PublicWishlistCarousel({
+  items,
+  savedKeys,
+}: {
+  items: DiscoverableWishlist[];
+  savedKeys: string[];
+}) {
+  const [showScrollHint, setShowScrollHint] = useState(true);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+  const sectionRef = useRef<HTMLElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const savedSet = useMemo(() => new Set(savedKeys), [savedKeys]);
+
+  useGsap(
+    (gsap) => {
+      if (items.length === 0) return;
+
+      gsap.from(headerRef.current, {
+        scrollTrigger: {
+          trigger: headerRef.current,
+          start: "top 85%",
+          toggleActions: "play none none reverse",
+        },
+        opacity: 0,
+        y: 30,
+        duration: 0.7,
+        ease: "power2.out",
+      });
+
+      cardsRef.current.forEach((card, index) => {
+        if (card) {
+          gsap.from(card, {
+            scrollTrigger: {
+              trigger: card,
+              start: "top 85%",
+              toggleActions: "play none none reverse",
+            },
+            opacity: 0,
+            y: 50,
+            duration: 0.6,
+            delay: index * 0.1,
+            ease: "power2.out",
+          });
+        }
+      });
+    },
+    sectionRef,
+    [items],
+  );
+
+  const checkScrollButtons = () => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const { scrollLeft, scrollWidth, clientWidth } = container;
+    setCanScrollLeft(scrollLeft > 0);
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+  };
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      setShowScrollHint(false);
+      checkScrollButtons();
+    };
+
+    container.addEventListener("scroll", handleScroll);
+    checkScrollButtons();
+    window.addEventListener("resize", checkScrollButtons);
+
+    return () => {
+      container.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", checkScrollButtons);
+    };
+  }, [items]);
+
+  const scroll = (direction: "left" | "right") => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const scrollAmount = 320;
+    container.scrollTo({
+      left:
+        direction === "left"
+          ? container.scrollLeft - scrollAmount
+          : container.scrollLeft + scrollAmount,
+      behavior: "smooth",
+    });
+  };
+
+  if (items.length === 0) return null;
+
+  return (
+    <section ref={sectionRef} className="py-16 bg-surface">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div ref={headerRef} className="mb-8">
+          <p className="text-[11px] font-medium tracking-[0.16em] uppercase text-forest mb-3">
+            DISCOVER WISHLISTS
+          </p>
+          <h2 className="font-serif font-normal text-near-black text-4xl md:text-5xl lg:text-6xl leading-[1.08]">
+            Wishlists you can gift right now.
+          </h2>
+          <p className="text-ink/70 max-w-2xl text-base mt-4">
+            Real wishes from real people. Fund a gift fully or chip in what you
+            can.
+          </p>
+        </div>
+
+        {showScrollHint && (
+          <div className="flex items-center justify-center gap-2 sm:gap-3 mb-6 animate-pulse">
+            <ChevronsLeft size={14} className="text-forest sm:hidden" />
+            <ChevronsLeft size={16} className="text-forest hidden sm:block" />
+            <span className="text-xs sm:text-sm font-medium text-ink/60 tracking-wide text-center">
+              <span className="sm:hidden">← Swipe to explore →</span>
+              <span className="hidden sm:inline">
+                Swipe to explore more wishlists
+              </span>
+            </span>
+            <ChevronsRight size={14} className="text-forest sm:hidden" />
+            <ChevronsRight size={16} className="text-forest hidden sm:block" />
+          </div>
+        )}
+
+        <div className="relative">
+          {canScrollLeft && (
+            <button
+              onClick={() => scroll("left")}
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-surface/90 hover:bg-surface shadow-lg rounded-full p-1.5 sm:p-2 border border-hairline transition-all duration-200 -ml-2 sm:-ml-4 flex items-center justify-center"
+              aria-label="Scroll left"
+            >
+              <ChevronLeft size={16} className="text-ink/80 sm:hidden" />
+              <ChevronLeft size={20} className="text-ink/80 hidden sm:block" />
+            </button>
+          )}
+
+          <div className="absolute left-0 top-0 w-8 h-full bg-gradient-to-r from-white to-transparent pointer-events-none sm:hidden z-10" />
+          <div className="absolute right-0 top-0 w-8 h-full bg-gradient-to-l from-white to-transparent pointer-events-none sm:hidden z-10" />
+
+          <div
+            ref={scrollContainerRef}
+            className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide"
+            style={{
+              scrollbarWidth: "none",
+              msOverflowStyle: "none",
+            }}
+          >
+            {items.map((item, index) => {
+              const percent =
+                item.target_total > 0
+                  ? Math.min(
+                      100,
+                      Math.round(
+                        (item.contributed_total / item.target_total) * 100,
+                      ),
+                    )
+                  : 0;
+              const cover = item.preview_images[0];
+
+              return (
+                <Link href={wishlistPublicPath(item)} key={item.id}>
+                  <div
+                    ref={(el) => {
+                      cardsRef.current[index] = el;
+                    }}
+                    className="group cursor-pointer flex-shrink-0 w-[280px] md:w-[320px]"
+                  >
+                    <div className="bg-surface rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                      <div className="aspect-[4/3] w-full overflow-hidden relative bg-cream-muted">
+                        {cover ? (
+                          <Image
+                            src={getMediaUrl(cover)}
+                            alt={item.title}
+                            fill
+                            sizes="(max-width: 768px) 280px, 320px"
+                            className="object-cover group-hover:scale-105 transition-transform duration-500"
+                            unoptimized={isProxyMediaUrl(getMediaUrl(cover))}
+                          />
+                        ) : (
+                          <div className="flex h-full items-center justify-center text-ink/30">
+                            <Gift className="h-10 w-10" />
+                          </div>
+                        )}
+
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                        <BookmarkButton
+                          itemId={item.id}
+                          itemType="wishlist"
+                          initialSaved={savedSet.has(`wishlist:${item.id}`)}
+                        />
+                      </div>
+
+                      <div className="p-5">
+                        <div className="text-xs font-medium text-ink/60 uppercase tracking-wide mb-2">
+                          {item.item_count}{" "}
+                          {item.item_count === 1 ? "gift" : "gifts"} · by @
+                          {item.ownerUsername}
+                          {item.funded_count > 0
+                            ? ` · ${item.funded_count} funded`
+                            : ""}
+                        </div>
+
+                        <h3 className="font-semibold text-ink text-base leading-tight mb-4 line-clamp-2">
+                          {item.title}
+                        </h3>
+
+                        <div className="flex items-baseline gap-2 mb-3">
+                          <span className="text-2xl font-bold text-gray-900">
+                            {formatNaira(item.contributed_total)} given
+                          </span>
+                          {item.target_total > 0 && (
+                            <span className="text-sm text-gray-500">
+                              of {formatNaira(item.target_total)}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="w-full bg-cream-muted rounded-full h-1">
+                          <div
+                            className="bg-forest h-1 rounded-full transition-all duration-300"
+                            style={{ width: `${percent}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+
+          {canScrollRight && (
+            <button
+              onClick={() => scroll("right")}
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-surface/90 hover:bg-surface shadow-lg rounded-full p-1.5 sm:p-2 border border-hairline transition-all duration-200 -mr-2 sm:-mr-4 flex items-center justify-center"
+              aria-label="Scroll right"
+            >
+              <ChevronRight size={16} className="text-ink/80 sm:hidden" />
+              <ChevronRight size={20} className="text-ink/80 hidden sm:block" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      <style jsx>{`
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
+    </section>
+  );
+}

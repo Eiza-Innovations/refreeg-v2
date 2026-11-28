@@ -63,6 +63,7 @@ async function requireOwnedWishlist(wishlistId: string, userId: string) {
 export async function createWishlist(input: {
   title: string;
   message?: string;
+  isPublic?: boolean;
 }): Promise<{ success: boolean; error?: string; data?: Wishlist }> {
   const session = await auth();
   if (!session?.user?.id) return { success: false, error: "Not authenticated" };
@@ -109,6 +110,9 @@ export async function createWishlist(input: {
         title: parsed.data.title,
         slug,
         message: parsed.data.message || null,
+        // Public by default so new wishlists can be discovered; the owner
+        // can flip it to private at creation or any time after.
+        is_public: parsed.data.isPublic ?? true,
       },
     });
     return { success: true, data: mapPrismaToWishlist(wishlist) };
@@ -120,7 +124,7 @@ export async function createWishlist(input: {
 
 export async function updateWishlist(
   wishlistId: string,
-  input: { title?: string; message?: string },
+  input: { title?: string; message?: string; isPublic?: boolean },
 ): Promise<{ success: boolean; error?: string; data?: Wishlist }> {
   const session = await auth();
   if (!session?.user?.id) return { success: false, error: "Not authenticated" };
@@ -142,6 +146,9 @@ export async function updateWishlist(
           : {}),
         ...(parsed.data.message !== undefined
           ? { message: parsed.data.message || null }
+          : {}),
+        ...(parsed.data.isPublic !== undefined
+          ? { is_public: parsed.data.isPublic }
           : {}),
       },
     });
@@ -199,6 +206,11 @@ export async function deleteWishlist(
 
     await prisma.$transaction([
       prisma.wishlist_items.deleteMany({ where: { wishlist_id: wishlistId } }),
+      // Saved-wishlist bookmarks are polymorphic rows with no FK; sweep them
+      // so /saved never keeps a pointer at a deleted wishlist.
+      prisma.bookmark.deleteMany({
+        where: { target_type: "wishlist", target_id: wishlistId },
+      }),
       prisma.wishlists.delete({ where: { id: wishlistId } }),
     ]);
     revalidateSharePath(wishlist.user.username, wishlist.slug);
@@ -576,8 +588,17 @@ export async function listPublicWishlistsByUsername(username: string): Promise<{
     });
     if (!owner) return { success: true, data: [] };
 
+    // The owner sees all of their wishlists on their own profile; everyone
+    // else only sees the ones marked public.
+    const viewer = await auth();
+    const viewerIsOwner = viewer?.user?.id === owner.id;
+
     const wishlists = await prisma.wishlists.findMany({
-      where: { user_id: owner.id, status: "active" },
+      where: {
+        user_id: owner.id,
+        status: "active",
+        ...(viewerIsOwner ? {} : { is_public: true }),
+      },
       include: { items: { orderBy: { sort_order: "asc" } } },
       orderBy: { created_at: "desc" },
     });
@@ -605,6 +626,115 @@ export async function listPublicWishlistsByUsername(username: string): Promise<{
   } catch (error) {
     console.error("Error listing public wishlists:", error);
     return { success: false, error: "Could not load wishlists" };
+  }
+}
+
+/**
+ * Public wishlists for the /wishlist landing carousel. Only active, public
+ * wishlists with at least one item are discoverable here; private ones stay
+ * reachable through their link only.
+ */
+export async function listDiscoverableWishlists(limit = 12): Promise<{
+  success: boolean;
+  error?: string;
+  data?: import("@/types").DiscoverableWishlist[];
+}> {
+  try {
+    const rows = await prisma.wishlists.findMany({
+      where: {
+        status: "active",
+        is_public: true,
+        items: { some: {} },
+        user: { username: { not: null } },
+      },
+      include: {
+        items: { orderBy: { sort_order: "asc" } },
+        user: { select: { username: true, fullName: true } },
+      },
+      orderBy: { created_at: "desc" },
+      take: Math.min(Math.max(limit, 1), 24),
+    });
+
+    return {
+      success: true,
+      data: rows.flatMap((w) => {
+        const ownerUsername = w.user.username;
+        if (!ownerUsername) return [];
+        return [
+          {
+            id: w.id,
+            title: w.title,
+            slug: w.slug,
+            ownerUsername,
+            ownerName: w.user.fullName,
+            created_at: toIso(w.created_at),
+            item_count: w.items.length,
+            funded_count: w.items.filter((i) => i.funded_at).length,
+            contributed_total: w.items.reduce(
+              (sum, i) => sum + Number(i.contributed),
+              0,
+            ),
+            target_total: w.items.reduce((sum, i) => sum + Number(i.price), 0),
+            preview_images: w.items
+              .filter((i) => i.image_url)
+              .slice(0, 3)
+              .map((i) => i.image_url as string),
+          },
+        ];
+      }),
+    };
+  } catch (error) {
+    console.error("Error listing discoverable wishlists:", error);
+    return { success: false, error: "Could not load wishlists" };
+  }
+}
+
+/**
+ * The public givers list for a wishlist. Anyone who can open the wishlist
+ * can see who gave — anonymous givers keep the "Anonymous" name and never
+ * expose their email (it is never selected here).
+ */
+export async function getWishlistGivers(wishlistId: string): Promise<{
+  success: boolean;
+  error?: string;
+  data?: import("@/types").WishlistContributor[];
+}> {
+  try {
+    const wishlist = await prisma.wishlists.findUnique({
+      where: { id: wishlistId },
+      select: { id: true },
+    });
+    if (!wishlist) return { success: false, error: "Wishlist not found" };
+
+    const rows = await prisma.wishlist_contributions.findMany({
+      where: { item: { wishlist_id: wishlistId }, status: "completed" },
+      orderBy: { created_at: "desc" },
+      select: {
+        id: true,
+        amount: true,
+        name: true,
+        message: true,
+        is_anonymous: true,
+        created_at: true,
+        item: { select: { name: true } },
+      },
+    });
+
+    return {
+      success: true,
+      data: rows.map((row) => ({
+        id: row.id,
+        itemName: row.item.name,
+        amount: Number(row.amount),
+        name: row.name,
+        message: row.message,
+        isAnonymous: row.is_anonymous,
+        createdAt: toIso(row.created_at),
+      })),
+    };
+  } catch (error) {
+    console.error("Error listing wishlist givers:", error);
+    return { success: false, error: "Could not load the givers" };
   }
 }
 

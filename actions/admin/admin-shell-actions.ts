@@ -14,19 +14,21 @@ export async function getAdminShellSummary() {
     return { success: false, error: "Unauthorized", data: null };
   }
 
-  const [campaigns, kyc, receipts, petitions, health] = await Promise.all([
-    prisma.cause.count({ where: reviewQueueWhere.campaigns }),
-    prisma.kyc_verifications.count({ where: reviewQueueWhere.kyc }),
-    prisma.campaign_proof_updates.count({ where: reviewQueueWhere.receipts }),
-    prisma.petitions.count({ where: reviewQueueWhere.petitions }),
-    runHealthChecks(),
-  ]);
+  const [campaigns, kyc, receipts, petitions, wishlists, health] =
+    await Promise.all([
+      prisma.cause.count({ where: reviewQueueWhere.campaigns }),
+      prisma.kyc_verifications.count({ where: reviewQueueWhere.kyc }),
+      prisma.campaign_proof_updates.count({ where: reviewQueueWhere.receipts }),
+      prisma.petitions.count({ where: reviewQueueWhere.petitions }),
+      prisma.wishlists.count({ where: reviewQueueWhere.wishlists }),
+      runHealthChecks(),
+    ]);
 
   return {
     success: true,
     error: null,
     data: {
-      counts: { campaigns, kyc, receipts, petitions },
+      counts: { campaigns, kyc, receipts, petitions, wishlists },
       systemsNormal: health.status === "operational",
     },
   };

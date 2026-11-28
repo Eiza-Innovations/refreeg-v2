@@ -25,10 +25,14 @@ export type ToggleBookmarkResult = { saved: boolean; count: number };
 
 export async function toggleBookmark(
   targetId: string,
-  targetType: "cause" | "petition",
+  targetType: "cause" | "petition" | "wishlist",
 ): Promise<ToggleBookmarkResult> {
   const userId = await requireUserId();
-  if (targetType !== "cause" && targetType !== "petition") {
+  if (
+    targetType !== "cause" &&
+    targetType !== "petition" &&
+    targetType !== "wishlist"
+  ) {
     throw new Error("Invalid target type");
   }
 
@@ -45,10 +49,15 @@ export async function toggleBookmark(
           where: { id: targetId },
           select: { id: true },
         })
-      : await prisma.petitions.findUnique({
-          where: { id: targetId },
-          select: { id: true },
-        });
+      : targetType === "wishlist"
+        ? await prisma.wishlists.findUnique({
+            where: { id: targetId },
+            select: { id: true },
+          })
+        : await prisma.petitions.findUnique({
+            where: { id: targetId },
+            select: { id: true },
+          });
   if (!target) throw new Error("Not found");
 
   try {

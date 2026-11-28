@@ -43,6 +43,7 @@ export function CreateWishlistForm({
   const [wishlist, setWishlist] = useState<WishlistDraft>({
     title: "",
     message: "",
+    isPublic: true,
   });
   const itemRows = useWishlistItemRows();
   const validator = useValidator({

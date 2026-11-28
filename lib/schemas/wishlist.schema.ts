@@ -21,6 +21,9 @@ export const wishlistCreateSchema = z.object({
     .max(500, "Notes stay under 500 characters.")
     .optional()
     .or(z.literal("")),
+  // Public wishlists appear on /wishlist and the owner's profile; private
+  // ones stay reachable only through their link.
+  isPublic: z.boolean().optional(),
 });
 
 export const wishlistUpdateSchema = wishlistCreateSchema.partial();

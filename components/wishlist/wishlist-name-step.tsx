@@ -8,7 +8,11 @@ import { inputClass, labelClass } from "@/components/wishlist/form-classes";
 import { slugifyWishlistTitle } from "@/lib/wishlist/slug";
 import { cn } from "@/lib/utils";
 
-export type WishlistDraft = { title: string; message: string };
+export type WishlistDraft = {
+  title: string;
+  message: string;
+  isPublic: boolean;
+};
 
 export function WishlistNameStep({
   wishlist,
@@ -73,6 +77,47 @@ export function WishlistNameStep({
         />
         <FieldError message={errors.message} />
       </div>
+
+      <fieldset className="rounded-xl border border-hairline bg-surface p-4">
+        <legend className="px-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink/55">
+          Who can find this wishlist?
+        </legend>
+        <div className="mt-1 space-y-2.5">
+          <label className="flex cursor-pointer items-start gap-3">
+            {/* Native input: Radix Checkbox loops on its ref under React 19 here. */}
+            <input
+              type="radio"
+              name="wishlist-visibility"
+              checked={wishlist.isPublic}
+              onChange={() => onChange({ isPublic: true })}
+              className="mt-1 h-4 w-4 shrink-0 accent-ink"
+            />
+            <span className="text-sm leading-6">
+              <span className="font-medium text-ink">Public</span>
+              <span className="text-ink/60">
+                {" "}
+                : listed on /wishlist and your profile, so anyone can find it.
+              </span>
+            </span>
+          </label>
+          <label className="flex cursor-pointer items-start gap-3">
+            <input
+              type="radio"
+              name="wishlist-visibility"
+              checked={!wishlist.isPublic}
+              onChange={() => onChange({ isPublic: false })}
+              className="mt-1 h-4 w-4 shrink-0 accent-ink"
+            />
+            <span className="text-sm leading-6">
+              <span className="font-medium text-ink">Private</span>
+              <span className="text-ink/60">
+                {" "}
+                : only people with the link (and you) can open it.
+              </span>
+            </span>
+          </label>
+        </div>
+      </fieldset>
     </div>
   );
 }

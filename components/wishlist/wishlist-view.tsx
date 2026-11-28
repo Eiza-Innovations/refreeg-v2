@@ -26,6 +26,7 @@ import { ContributeSheet } from "@/components/wishlist/contribute-sheet";
 import { ItemEditorSheet } from "@/components/wishlist/item-editor-sheet";
 import { OwnerToolbar } from "@/components/wishlist/owner-toolbar";
 import { ShareLinkRow } from "@/components/wishlist/share-link-row";
+import { WishlistSaveButton } from "@/components/wishlist/wishlist-save-button";
 import { WishlistItemCard } from "@/components/wishlist/wishlist-item-card";
 import { WishlistSummaryPanel } from "@/components/wishlist/wishlist-summary-panel";
 import { toast } from "@/hooks/use-toast";
@@ -44,6 +45,7 @@ export interface WishlistViewProps {
   viewerIsOwner: boolean;
   ownerPayoutReady?: boolean;
   ownerPayoutState?: WishlistOwnerPayoutState;
+  initialSaved?: boolean;
   viewer: { id: string; name: string; email: string } | null;
   seasonal: boolean;
   givers?: React.ReactNode;
@@ -55,6 +57,7 @@ export function WishlistView({
   viewerIsOwner,
   ownerPayoutReady = true,
   ownerPayoutState,
+  initialSaved = false,
   viewer,
   seasonal,
   givers,
@@ -263,7 +266,19 @@ export function WishlistView({
           <aside className="space-y-6">
             <WishlistSummaryPanel wishlist={{ ...wishlist, items }} />
             <ShareLinkRow slug={wishlist.slug} ownerUsername={ownerUsername} />
-            {viewerIsOwner && givers}
+            {/* Save works for everyone; owners manage visibility in Edit details. */}
+            <WishlistSaveButton
+              wishlistId={wishlist.id}
+              initialSaved={initialSaved}
+            />
+            {!wishlist.is_public && viewerIsOwner ? (
+              <p className="rounded-xl border border-hairline bg-bone p-3 text-xs leading-5 text-ink/60">
+                This wishlist is private — only people with the link can open
+                it. Tick “Public wishlist” in Edit details to list it on
+                /wishlist and your profile.
+              </p>
+            ) : null}
+            {givers}
           </aside>
         </div>
       </div>
