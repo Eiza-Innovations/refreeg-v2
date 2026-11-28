@@ -194,8 +194,9 @@ export function OwnerToolbar({
               <span className="text-sm leading-6">
                 <span className="font-medium text-ink">Public wishlist</span>
                 <span className="block text-ink/60">
-                  Listed on /wishlist and your profile when ticked. Untick to
-                  keep it private — only people with the link can open it.
+                  Show this wishlist on the Wishlist page and your profile so
+                  others can find it. Untick to keep it private, so only people
+                  with your link can open it.
                 </span>
               </span>
             </label>
