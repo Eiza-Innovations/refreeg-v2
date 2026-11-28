@@ -447,25 +447,6 @@ export function DonationForm({
               "sticky bottom-3 z-20 mt-4 rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-[0_16px_36px_-18px_rgba(15,23,42,0.45)] backdrop-blur-xl",
           )}
         >
-          {/* REMOVE THIS TEST BUTTON IN PRODUCTION */}
-          {/* <Button 
-            type="button" 
-            variant="outline"
-            onClick={async () => {
-              try {
-                await sendUnfinishedDonationEmail({
-                  causeName: causeName,
-                  continueUrl: `${window.location.origin}${causeUrl}`
-                });
-                alert("Test donation email sent successfully!");
-              } catch (error) {
-                alert("Failed to send test donation email");
-              }
-            }}
-          >
-            Test Donation Email
-          </Button> */}
-
           <Button
             type="submit"
             disabled={

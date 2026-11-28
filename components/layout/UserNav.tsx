@@ -14,13 +14,13 @@ import { useAuth } from "@/hooks/use-auth";
 import { useAdmin } from "@/hooks/use-admin";
 import { useProfile } from "@/hooks/use-profile";
 import Link from "next/link";
-import { ChevronDown } from "lucide-react";
+import { AlertCircle, BadgeCheck, ChevronDown } from "lucide-react";
 import { getMediaUrl } from "@/lib/s3/media";
 import { getOrganizationWorkspace } from "@/actions/users/organization-actions";
 
 export function UserNav() {
   const { user, signOut } = useAuth();
-  const { profile } = useProfile(user?.id);
+  const { profile, hasBankDetails } = useProfile(user?.id);
   const [organization, setOrganization] = useState<any>(null);
   const [open, setOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -111,16 +111,26 @@ export function UserNav() {
           className="flex items-center gap-1.5 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-blue-accent"
           aria-label="Open profile menu"
         >
-          <Avatar className="h-9 w-9 rounded-full">
-            <AvatarImage
-              src={personalAvatarUrl}
-              alt=""
-              className="object-cover"
-            />
-            <AvatarFallback className="rounded-full bg-forest text-xs font-semibold text-lime">
-              {personalInitials}
-            </AvatarFallback>
-          </Avatar>
+          <span className="relative">
+            <Avatar className="h-9 w-9 rounded-full">
+              <AvatarImage
+                src={personalAvatarUrl}
+                alt=""
+                className="object-cover"
+              />
+              <AvatarFallback className="rounded-full bg-forest text-xs font-semibold text-lime">
+                {personalInitials}
+              </AvatarFallback>
+            </Avatar>
+            {isVerified && (
+              <span
+                aria-label="Verified"
+                className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-surface bg-forest text-surface"
+              >
+                <BadgeCheck className="h-3 w-3" />
+              </span>
+            )}
+          </span>
           <ChevronDown className="h-4 w-4 text-ink/50" />
         </button>
       </DropdownMenuTrigger>
@@ -150,21 +160,34 @@ export function UserNav() {
 
         <DropdownMenuGroup>
           <MenuLink href="/dashboard">Dashboard</MenuLink>
-          <MenuLink href="/dashboard/settings/profile">Your profile</MenuLink>
-          <MenuLink href="/dashboard/causes">Your causes</MenuLink>
-          <MenuLink href="/dashboard/settings/kyc">
-            Verification
-            <span
-              className={
-                isVerified
-                  ? "rounded-full bg-forest/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-forest"
-                  : "rounded-full bg-gold/40 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-ink"
-              }
-            >
-              {isVerified ? "Verified" : "Not verified"}
-            </span>
+          <MenuLink href={personalProfileHref}>
+            <span>Your profile</span>
+            {profile?.username && (
+              <span className="text-xs font-normal text-ink/50">
+                @{profile.username}
+              </span>
+            )}
           </MenuLink>
-          <MenuLink href="/dashboard/settings/bank">Payment methods</MenuLink>
+          <MenuLink href="/dashboard/causes">Your causes</MenuLink>
+          {!isVerified && (
+            <MenuLink href="/dashboard/settings/kyc">
+              Verification
+              <AlertCircle
+                className="h-4 w-4 shrink-0 text-amber-600"
+                aria-label="Verification required"
+              />
+            </MenuLink>
+          )}
+
+          <MenuLink href="/dashboard/settings/bank">
+            Payment methods
+            {!hasBankDetails && (
+              <AlertCircle
+                className="h-4 w-4 shrink-0 text-amber-600"
+                aria-label="Bank account required"
+              />
+            )}
+          </MenuLink>
           <MenuLink href="/dashboard/settings">Settings</MenuLink>
         </DropdownMenuGroup>
 

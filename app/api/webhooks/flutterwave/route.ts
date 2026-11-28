@@ -1,14 +1,16 @@
-import { NextResponse, NextRequest } from "next/server";
-import { createDonation } from "@/actions";
-import Flutterwave from "@/services/flutterwave";
-import { calculateProviderFee, calculateServiceFee } from "@/lib/utils";
+import { NextRequest, NextResponse } from "next/server";
+import {
+  processFlutterwaveCharge,
+  verifyFlutterwaveWebhookHash,
+} from "@/lib/payments/flutterwave-charge-processing";
+import type { FlutterwaveWebhookPayload } from "@/types/payment-types";
 
 export async function POST(request: NextRequest) {
   try {
     const payload = await request.text();
     if (!payload) {
-      return new NextResponse(
-        JSON.stringify({ error: "Empty payload received" }),
+      return NextResponse.json(
+        { error: "Empty payload received" },
         { status: 400 },
       );
     }
@@ -17,23 +19,32 @@ export async function POST(request: NextRequest) {
     const secretHash = process.env.FLUTTERWAVE_WEBHOOK_HASH;
 
     if (!secretHash) {
-      return new NextResponse(
-        JSON.stringify({ error: "Server configuration error" }),
+      return NextResponse.json(
+        { error: "Server configuration error" },
         { status: 500 },
       );
     }
 
-    if (!webhookHash || webhookHash !== secretHash) {
-      return new NextResponse(
-        JSON.stringify({ error: "Invalid webhook hash" }),
+    if (!verifyFlutterwaveWebhookHash(webhookHash, secretHash)) {
+      return NextResponse.json(
+        { error: "Invalid webhook hash" },
         { status: 400 },
       );
     }
 
-    const webhookData = JSON.parse(payload);
+    let webhookData: FlutterwaveWebhookPayload;
+    try {
+      webhookData = JSON.parse(payload) as FlutterwaveWebhookPayload;
+    } catch {
+      return NextResponse.json(
+        { error: "Invalid JSON payload" },
+        { status: 400 },
+      );
+    }
+
     if (!webhookData?.event) {
-      return new NextResponse(
-        JSON.stringify({ error: "Invalid webhook data structure" }),
+      return NextResponse.json(
+        { error: "Invalid webhook data structure" },
         { status: 400 },
       );
     }
@@ -42,125 +53,46 @@ export async function POST(request: NextRequest) {
 
     switch (event) {
       case "charge.completed": {
-        const txRef = data?.tx_ref;
+        const rawTxRef = data?.tx_ref;
+        const txRef = typeof rawTxRef === "string" ? rawTxRef.trim() : "";
         const transactionId = data?.id;
 
         if (!txRef) {
-          return new NextResponse(JSON.stringify({ error: "Missing tx_ref" }), {
-            status: 400,
-          });
-        }
-
-        let full: any;
-        if (transactionId) {
-          full = await Flutterwave.verifyTransactionFull(String(transactionId));
-        } else {
-          full = await Flutterwave.verifyByReferenceFull(txRef);
-        }
-
-        if (full.status !== "successful") {
-          return new NextResponse(
-            JSON.stringify({ message: "Transaction not successful" }),
-            { status: 200 },
+          return NextResponse.json(
+            { error: "Missing tx_ref" },
+            { status: 400 },
           );
         }
 
-        const meta = full.meta || {};
+        // Acknowledge immediately with 200 OK so Flutterwave never marks the
+        // endpoint down while verification, DB writes, or emails run.
+        Promise.resolve().then(async () => {
+          try {
+            await processFlutterwaveCharge({
+              txRef,
+              transactionId,
+            });
+          } catch (bgError) {
+            console.error("[Flutterwave Webhook Background] Failed:", bgError);
+          }
+        });
 
-        if (String(meta.pledge_flow) === "authorization") {
-          const { processPledgeAuthorizationSuccess } =
-            await import("@/lib/payments/pledge-provider");
-          await processPledgeAuthorizationSuccess(txRef, "flutterwave");
-          return new NextResponse(
-            JSON.stringify({ message: "Pledge authorization stored" }),
-            { status: 201 },
-          );
-        }
-
-        if (String(meta.pledge_flow) === "scheduled_charge") {
-          const { processPledgeScheduledChargeSuccess } =
-            await import("@/lib/payments/pledge-provider");
-          await processPledgeScheduledChargeSuccess(txRef, "flutterwave");
-          return new NextResponse(
-            JSON.stringify({ message: "Pledge charge processed" }),
-            { status: 201 },
-          );
-        }
-
-        if (!meta.cause_id) {
-          return new NextResponse(
-            JSON.stringify({ message: "Metadata missing cause_id, skipping" }),
-            { status: 200 },
-          );
-        }
-
-        const baseAmount = Number(meta.amount);
-        const tipAmount = Number(meta.tip_amount || 0);
-
-        // Cross-check what Flutterwave actually charged against the total
-        // implied by the metadata (donation + server-side fees + tip, in
-        // naira). A mismatch means the charge does not match the
-        // initialization, so it is left for manual review (SAW-013).
-        const expectedTotal =
-          baseAmount +
-          calculateServiceFee(baseAmount) +
-          calculateProviderFee(baseAmount, "flutterwave") +
-          tipAmount;
-        const chargedAmount = Number(full.amount);
-
-        if (
-          !Number.isFinite(chargedAmount) ||
-          !Number.isFinite(baseAmount) ||
-          Math.abs(
-            Math.round(chargedAmount * 100) - Math.round(expectedTotal * 100),
-          ) > 1
-        ) {
-          console.error(
-            `[Flutterwave] Amount mismatch for ${txRef}: charged ${chargedAmount}, metadata implies ${expectedTotal} - not recording donation`,
-          );
-          return new NextResponse(
-            JSON.stringify({
-              message: "Amount mismatch; transaction flagged for review",
-            }),
-            { status: 200 },
-          );
-        }
-
-        await createDonation(
-          String(meta.cause_id),
-          meta.user_id ? String(meta.user_id) : null,
-          {
-            amount: baseAmount,
-            name: String(meta.customer_name || ""),
-            email: String(meta.email || ""),
-            message: String(meta.message || ""),
-            isAnonymous: Boolean(meta.is_anonymous),
-            tip_amount: tipAmount,
-          },
-          undefined,
-          txRef,
-          "flutterwave",
-          meta.ref_v1 ? String(meta.ref_v1) : undefined,
-        );
-
-        return new NextResponse(
-          JSON.stringify({ message: "Donation processed successfully" }),
-          { status: 201 },
+        return NextResponse.json(
+          { message: "Webhook received, processing in background" },
+          { status: 200 },
         );
       }
 
       default:
-        return new NextResponse(
-          JSON.stringify({ message: "Webhook event not supported yet" }),
+        return NextResponse.json(
+          { message: "Webhook event not supported yet" },
           { status: 200 },
         );
     }
   } catch (e) {
     console.error("Flutterwave webhook processing error:", e);
-    return new NextResponse(
-      JSON.stringify({
-        error: e instanceof Error ? e.message : "Internal Error",
-      }),
+    return NextResponse.json(
+      { error: "Internal server error" },
       { status: 500 },
     );
   }

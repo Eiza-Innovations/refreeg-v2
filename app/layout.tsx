@@ -13,9 +13,10 @@ export const metadata: Metadata = {
     template: "%s - Refreeg",
   },
   description:
-    "Refreeg is a secure, blockchain-powered crowdfunding and petition platform.",
+    "Refreeg is a secure, blockchain-powered crowdfunding, wishlist, and petition platform.",
   keywords: [
     "crowdfunding",
+    "wishlists",
     "petitions",
     "blockchain",
     "social impact",
@@ -40,7 +41,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Refreeg - Secure Crowdfunding & Petitions",
     description:
-      "Secure crowdfunding and global petitions for causes that matter.",
+      "Secure crowdfunding, wishlists, and global petitions for causes that matter.",
     images: ["/og-image.png"],
   },
 };

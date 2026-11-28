@@ -166,24 +166,6 @@ export default function CsrSetupStep({ user, onNext }: CsrSetupStepProps) {
           Decide how much your company plans to give, what it cares about and
           who can act on its behalf.
         </p>
-        <div className="mt-8 flex gap-3 lg:mt-auto lg:pt-8">
-          <Button
-            type="button"
-            variant="ink"
-            onClick={handleContinue}
-            disabled={saveMutation.isPending}
-            className="h-12 px-10"
-          >
-            {saveMutation.isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              "Continue"
-            )}
-          </Button>
-        </div>
       </div>
 
       <div className="space-y-6">
@@ -278,6 +260,25 @@ export default function CsrSetupStep({ user, onNext }: CsrSetupStepProps) {
           error={errors.invites}
           onChange={(next) => setFormFields("invites", next)}
         />
+      </div>
+
+      <div className="border-t border-hairline pt-6 lg:col-span-2">
+        <Button
+          type="button"
+          variant="ink"
+          onClick={handleContinue}
+          disabled={saveMutation.isPending}
+          className="h-12 px-10"
+        >
+          {saveMutation.isPending ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            "Continue"
+          )}
+        </Button>
       </div>
     </div>
   );

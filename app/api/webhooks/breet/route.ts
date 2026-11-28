@@ -9,6 +9,7 @@ import {
   parseBreetLabel,
 } from "@/lib/payments/breet";
 import { getClientIp } from "@/lib/api/client-ip";
+import { isUuid } from "@/lib/uuid";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,9 @@ export async function GET(req: Request) {
     const causeId = searchParams.get("causeId");
 
     if (checkStatus && causeId) {
+      if (!isUuid(causeId)) {
+        return NextResponse.json({ error: "Invalid causeId" }, { status: 400 });
+      }
       const dynamicWindow = new Date(Date.now() - 3 * 60 * 1000);
       const recentRecord = await prisma.crypto_donations.findFirst({
         where: {
@@ -45,7 +49,11 @@ export async function GET(req: Request) {
     }
     return NextResponse.json({ error: "Missing criteria" }, { status: 400 });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error("Breet webhook status check error:", err);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
 
@@ -67,18 +75,7 @@ export async function POST(req: Request) {
     }
 
     const incomingSecret = req.headers.get("x-webhook-secret") || "";
-    const expectedSecret =
-      process.env.BREET_WEBHOOK_SECRET ||
-      process.env.NEXT_PUBLIC_BREET_WEBHOOK_SECRET ||
-      "";
-
-    if (expectedSecret && !process.env.BREET_WEBHOOK_SECRET) {
-      console.error(
-        "🚨 BREET_WEBHOOK_SECRET is unset; falling back to NEXT_PUBLIC_BREET_WEBHOOK_SECRET. " +
-          "NEXT_PUBLIC_ variables are inlined into the client JavaScript bundle and readable " +
-          "by every visitor - rename this secret (BREET_WEBHOOK_SECRET) so it stays server-only.",
-      );
-    }
+    const expectedSecret = process.env.BREET_WEBHOOK_SECRET || "";
 
     if (expectedSecret) {
       const providedBuf = Buffer.from(incomingSecret, "utf8");
@@ -243,7 +240,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error("💥 WEBHOOK PIPELINE CRASH:", error.message);
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: "Internal server error" },
       { status: 500 },
     );
   }

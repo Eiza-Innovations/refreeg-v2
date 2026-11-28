@@ -10,6 +10,7 @@ jest.mock("@/lib/prisma", () => ({
     user: { findUnique: jest.fn() },
     cause: { findMany: jest.fn() },
     campaign_proof_updates: { findMany: jest.fn() },
+    wishlist_contributions: { findMany: jest.fn() },
   },
 }));
 jest.mock("@/lib/auth/session-user", () => ({ getSessionUser: jest.fn() }));
@@ -49,17 +50,38 @@ function seed({
   subscriptions = [] as any[],
   delivered = [] as string[],
   extraCauses = [] as any[],
+  wishlistGifts = [] as any[],
 } = {}) {
   db.donation.findMany.mockResolvedValue(donations);
   db.pledges.findMany.mockResolvedValue(pledges);
   db.subscriptions.findMany.mockResolvedValue(subscriptions);
   db.bookmark.count.mockResolvedValue(12);
-  db.user.findUnique.mockResolvedValue({ total_points: 2418 });
+  db.user.findUnique.mockResolvedValue({
+    total_points: 2418,
+    username: "amara",
+  });
   db.cause.findMany.mockResolvedValue(extraCauses);
   db.campaign_proof_updates.findMany.mockResolvedValue(
     delivered.map((cause_id) => ({ cause_id })),
   );
+  db.wishlist_contributions.findMany.mockResolvedValue(wishlistGifts);
 }
+
+const wishlistGift = (
+  id: string,
+  itemName: string,
+  wishlistTitle: string,
+  amount: number,
+  iso: string,
+) => ({
+  id,
+  amount,
+  created_at: new Date(iso),
+  item: {
+    name: itemName,
+    wishlist: { title: wishlistTitle, slug: "nomsos-wishlist" },
+  },
+});
 
 describe("getGivingOverview", () => {
   beforeAll(() => jest.useFakeTimers().setSystemTime(NOW));
@@ -125,6 +147,58 @@ describe("getGivingOverview", () => {
     expect(overview?.givenByCause).toEqual([
       { category: "education", label: "Education", amount: 186000 },
     ]);
+  });
+
+  it("counts wishlist gifts as giving alongside cause donations", async () => {
+    seed({
+      donations: [donation("d1", "c1", 50000, "2026-08-12")],
+      wishlistGifts: [
+        wishlistGift(
+          "wg1",
+          "A new study desk",
+          "Nomso's Wishlist",
+          25000,
+          "2026-09-20",
+        ),
+        wishlistGift(
+          "wg2",
+          "Fuel for the year",
+          "Nomso's Wishlist",
+          5000,
+          "2025-12-01",
+        ),
+      ],
+    });
+
+    const overview = await getGivingOverview();
+
+    // Both years count toward the headline; the default list shows the
+    // donation first, then the two wishlist gifts newest first.
+    expect(overview?.periodTotals).toEqual({
+      year: 75000,
+      "last-year": 5000,
+      all: 80000,
+    });
+    expect(overview?.headline.amount).toBe(80000);
+    expect(overview?.headline.wishlistCount).toBe(2);
+    expect(overview?.givenByCause).toEqual([
+      { category: "education", label: "Education", amount: 50000 },
+      { category: "wishlists", label: "Wishlists", amount: 30000 },
+    ]);
+    expect(overview?.gifts.map((g) => [g.kind, g.id, g.status])).toEqual([
+      ["donation", "d1", "in-progress"],
+      ["wishlist-gift", "wg1", "given"],
+      ["wishlist-gift", "wg2", "given"],
+    ]);
+    const wishlistRow = overview?.gifts.find((g) => g.id === "wg1");
+    expect(wishlistRow).toMatchObject({
+      title: "A new study desk",
+      owner: "Nomso's Wishlist",
+      href: "/amara/nomsos-wishlist",
+    });
+    // Wishlist gifts stay out of the cause-specific filters.
+    const delivered = await getGivingOverview({ filter: "delivered" });
+    expect(delivered?.gifts.map((g) => g.id)).toEqual([]);
   });
 
   it("includes open pledges, including ones made by email before sign-up", async () => {

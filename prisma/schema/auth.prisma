@@ -81,15 +81,17 @@ model User {
   roles                       Role[]
   saved_searches              saved_searches[]
   sessions                    Session[]
+  wishlists                   wishlists[]
+  wishlist_contributions      wishlist_contributions[]
   ownedOrganization           Organization?            @relation("OrganizationOwner")
   organizationMemberships     OrganizationMember[]
   sentOrganizationInvitations OrganizationInvitation[] @relation("OrganizationInviter")
 
   /// New Saved feature relations
-  savedLists       SavedList[]
-  bookmarks        Bookmark[]
-  alertPreferences UserAlertPrefs?
-  notifications    notifications[]
+  savedLists              SavedList[]
+  bookmarks               Bookmark[]
+  alertPreferences        UserAlertPrefs?
+  notifications           notifications[]
   user_saved_cards        user_saved_cards[]
   submittedContentReports content_reports[]  @relation("ContentReportsSubmitted")
   reportedContentReports  content_reports[]  @relation("ContentReportsAgainst")
@@ -176,41 +178,41 @@ model PendingRegistration {
 }
 
 model Organization {
-  id             String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name           String
-  slug           String                   @unique
-  adminEmail     String                   @map("admin_email")
-  phone          String?
-  address        String?
-  industry       String?
-  organisationType       String?                  @map("organisation_type")
-  registrationNumber     String?                  @map("registration_number")
-  country                String?
-  purpose                String?
-  contactRole            String?                  @map("contact_role")
-  csrBudget              Decimal?                 @map("csr_budget") @db.Decimal
-  csrFinancialYearStart  String?                  @map("csr_financial_year_start")
-  csrFocusCauses         String[]                 @default([]) @map("csr_focus_causes")
-  csrMatchEmployeeDonations Boolean               @default(false) @map("csr_match_employee_donations")
-  csrMatchCap            Decimal?                 @map("csr_match_cap") @db.Decimal
-  csrPublicReport        Boolean                  @default(false) @map("csr_public_report")
-  verificationStatus     String                   @default("unverified") @map("verification_status")
-  logoUrl        String?                  @map("logo_url")
-  bio            String?
-  websiteUrl     String?                  @map("website_url")
-  instagramUrl   String?                  @map("instagram_url")
-  twitterUrl     String?                  @map("twitter_url")
-  tiktokUrl      String?                  @map("tiktok_url")
-  facebookUrl    String?                  @map("facebook_url")
-  whatsappNumber String?                  @map("whatsapp_number")
-  preferences    Json                     @default("{}")
-  ownerId        String                   @unique @map("owner_id") @db.Uuid
-  createdAt      DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt      DateTime                 @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  owner          User                     @relation("OrganizationOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  members        OrganizationMember[]
-  invitations    OrganizationInvitation[]
-  verifications  OrganizationVerification[]
+  id                        String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                      String
+  slug                      String                     @unique
+  adminEmail                String                     @map("admin_email")
+  phone                     String?
+  address                   String?
+  industry                  String?
+  organisationType          String?                    @map("organisation_type")
+  registrationNumber        String?                    @map("registration_number")
+  country                   String?
+  purpose                   String?
+  contactRole               String?                    @map("contact_role")
+  csrBudget                 Decimal?                   @map("csr_budget") @db.Decimal
+  csrFinancialYearStart     String?                    @map("csr_financial_year_start")
+  csrFocusCauses            String[]                   @default([]) @map("csr_focus_causes")
+  csrMatchEmployeeDonations Boolean                    @default(false) @map("csr_match_employee_donations")
+  csrMatchCap               Decimal?                   @map("csr_match_cap") @db.Decimal
+  csrPublicReport           Boolean                    @default(false) @map("csr_public_report")
+  verificationStatus        String                     @default("unverified") @map("verification_status")
+  logoUrl                   String?                    @map("logo_url")
+  bio                       String?
+  websiteUrl                String?                    @map("website_url")
+  instagramUrl              String?                    @map("instagram_url")
+  twitterUrl                String?                    @map("twitter_url")
+  tiktokUrl                 String?                    @map("tiktok_url")
+  facebookUrl               String?                    @map("facebook_url")
+  whatsappNumber            String?                    @map("whatsapp_number")
+  preferences               Json                       @default("{}")
+  ownerId                   String                     @unique @map("owner_id") @db.Uuid
+  createdAt                 DateTime                   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                 DateTime                   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  owner                     User                       @relation("OrganizationOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members                   OrganizationMember[]
+  invitations               OrganizationInvitation[]
+  verifications             OrganizationVerification[]
 
   @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "idx_organizations_name_trgm")
   @@map("organizations")

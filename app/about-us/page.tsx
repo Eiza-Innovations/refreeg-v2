@@ -12,7 +12,7 @@ import { PeopleBehind } from "./_components/PeopleBehind";
 export const metadata: Metadata = {
   title: "About Refreeg - Transparent Crowdfunding",
   description:
-    "Refreeg connects people who care with causes that matter. Every donation is tracked, so you can see exactly where your money lands.",
+    "Refreeg connects people who care with causes, wishlists, and petitions that matter. Every donation is tracked, so you can see exactly where your money lands.",
 };
 
 export default function AboutPage() {

@@ -118,8 +118,8 @@ export default function DeleteAccountInfoPage() {
                     push notification device tokens
                   </li>
                   <li>
-                    Comments, petitions, bookmarks, saved searches, and unfunded
-                    campaigns
+                    Comments, petitions, wishlists, bookmarks, saved searches,
+                    and unfunded campaigns
                   </li>
                 </ul>
               </div>

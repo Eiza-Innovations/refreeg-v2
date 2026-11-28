@@ -173,7 +173,7 @@ describe("Mobile KYC Route (/api/mobile/kyc)", () => {
 
       const request = new NextRequest("http://localhost/api/mobile/kyc", {
         method: "POST",
-        body: JSON.stringify({ callback_url: "custom://callback" }),
+        body: JSON.stringify({ callback_url: "refreeg://kyc/callback" }),
       });
 
       const response = await POST(request);
@@ -194,7 +194,7 @@ describe("Mobile KYC Route (/api/mobile/kyc)", () => {
           method: "POST",
           body: JSON.stringify({
             workflow_id: process.env.DIDIT_WORKFLOW_ID || "",
-            callback: "custom://callback",
+            callback: "refreeg://kyc/callback",
             vendor_data: "user-123",
           }),
         }),

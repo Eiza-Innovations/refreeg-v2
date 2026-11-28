@@ -3,100 +3,93 @@
 import { useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "nextjs-toploader/app";
-import { KycTab } from "../kyc-tab";
-import { SettingsShell } from "../components/settings-shell";
-import { toast } from "@/hooks/use-toast";
+import { CalloutBanner } from "@/components/ui/callout-banner";
 import { ToastAction } from "@/components/ui/toast";
-import { getVerificationStatus } from "@/actions/users/kyc-actions";
-import type { Profile } from "@/types";
+import { toast } from "@/hooks/use-toast";
+import type { KycSettingsContentProps } from "@/types/kyc-types";
+import { SettingsShell } from "../components/settings-shell";
+import { KycTab } from "../kyc-tab";
 
-interface KycSettingsContentProps {
-  profile: Profile | null;
-  user: { id: string; email: string };
-}
-
-export function KycSettingsContent({ profile, user }: KycSettingsContentProps) {
+export function KycSettingsContent({
+  profile,
+  initialKyc,
+  initialError,
+}: KycSettingsContentProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const hasShownToast = useRef(false);
 
   useEffect(() => {
-    async function checkKycStatus() {
-      const kycResult = await getVerificationStatus(user.id);
-      const kycStatus = (kycResult?.status ?? undefined) as
-        "pending" | "approved" | "rejected" | undefined;
+    if (hasShownToast.current) return;
 
-      if (searchParams.get("error") === "kyc_required") {
-        if (!hasShownToast.current) {
-          hasShownToast.current = true;
-          toast({
-            title: "KYC Verification Required",
-            description:
-              "Complete your KYC verification to list causes and access all features.",
-            variant: "destructive",
-            action: (
-              <ToastAction
-                altText="Set up KYC"
-                onClick={() => router.push("/dashboard/settings/kyc-setup")}
-              >
-                Set up KYC
-              </ToastAction>
-            ),
-          });
-        }
-      } else if (
-        kycStatus === "pending" ||
-        searchParams.get("error") === "kyc_pending"
-      ) {
-        if (!hasShownToast.current) {
-          hasShownToast.current = true;
-          toast({
-            title: "KYC Under Review",
-            description:
-              "Your KYC submission is pending review. You will be notified via email once it is approved.",
-            variant: "default",
-          });
-        }
-      } else if (
-        kycStatus === "rejected" ||
-        searchParams.get("error") === "kyc_rejected"
-      ) {
-        if (!hasShownToast.current) {
-          hasShownToast.current = true;
-          toast({
-            title: "KYC Rejected",
-            description:
-              "Your KYC submission was rejected. Please review the requirements and resubmit.",
-            variant: "destructive",
-            action: (
-              <ToastAction
-                altText="Resubmit KYC"
-                onClick={() => router.push("/dashboard/settings/kyc-setup")}
-              >
-                Resubmit
-              </ToastAction>
-            ),
-          });
-        }
-      }
+    const kycStatus = initialKyc?.status;
+    const errorParam = searchParams.get("error");
+
+    if (errorParam === "kyc_required") {
+      hasShownToast.current = true;
+      toast({
+        title: "Verification required",
+        description:
+          "Complete your verification to list causes and access all features.",
+        variant: "destructive",
+        action: (
+          <ToastAction
+            altText="Start verification"
+            onClick={() => router.push("/dashboard/settings/kyc-setup")}
+          >
+            Start verification
+          </ToastAction>
+        ),
+      });
+    } else if (kycStatus === "pending" || errorParam === "kyc_pending") {
+      hasShownToast.current = true;
+      toast({
+        title: "Verification under review",
+        description:
+          "Your verification submission is pending review. We'll email you once approved.",
+        variant: "default",
+      });
+    } else if (kycStatus === "rejected" || errorParam === "kyc_rejected") {
+      hasShownToast.current = true;
+      toast({
+        title: "Verification not approved",
+        description:
+          "Your verification was not approved. Review the notes and try again.",
+        variant: "destructive",
+        action: (
+          <ToastAction
+            altText="Resubmit verification"
+            onClick={() => router.push("/dashboard/settings/kyc-setup")}
+          >
+            Resubmit
+          </ToastAction>
+        ),
+      });
     }
-
-    checkKycStatus();
-  }, [user.id, searchParams, router]);
+  }, [initialKyc?.status, searchParams, router]);
 
   if (!profile) {
     return (
       <SettingsShell>
-        <div className="text-sm text-muted-foreground">
-          Couldn&apos;t load your profile. Refresh the page to try again.
-        </div>
+        <CalloutBanner
+          variant="rust"
+          title="Couldn't load your profile"
+          description="Refresh the page to try again."
+        />
       </SettingsShell>
     );
   }
 
   return (
-    <SettingsShell isVerified={profile.is_verified}>
-      <KycTab profile={profile} user={user} />
+    <SettingsShell
+      isOrganization={profile.account_type === "organization"}
+      isVerified={profile.is_verified}
+    >
+      <KycTab
+        profile={profile}
+        initialKyc={initialKyc}
+        initialError={initialError}
+      />
     </SettingsShell>
   );
 }

@@ -38,7 +38,7 @@ import { DashboardDeliveredCard } from "@/components/dashboard/dashboard-deliver
 export const metadata: Metadata = {
   title: "Dashboard",
   description:
-    "Manage your causes, petitions, and track your social impact on RefreeG.",
+    "Manage your causes, wishlists, and petitions, and track your social impact on RefreeG.",
 };
 
 export default async function DashboardPage() {
@@ -52,7 +52,7 @@ export default async function DashboardPage() {
 
   const [profile, donorStats, weeklyStats, hasBank] = await Promise.all([
     getProfile(user.id as string),
-    getUserDonorGivingStats(user.id as string),
+    getUserDonorGivingStats(user.id as string, user.email),
     getPlatformWeeklyDeliveredStats(),
     hasBankDetails(user.id as string),
   ]);
@@ -240,6 +240,9 @@ export default async function DashboardPage() {
         <div className="lg:col-span-4 space-y-4">
           <DashboardGivingCard
             givenSoFar={donorStats.givenSoFar}
+            causesGiven={donorStats.causesGiven}
+            wishlistsGiven={donorStats.wishlistsGiven}
+            wishlistGifts={donorStats.wishlistGifts}
             campaignsBacked={donorStats.campaignsBacked}
             livePledges={donorStats.livePledges}
             eizaBalance={profile?.total_points ?? 0}

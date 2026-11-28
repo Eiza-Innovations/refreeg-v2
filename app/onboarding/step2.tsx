@@ -36,29 +36,31 @@ export default function Step2({
         <p className="mt-4 text-base leading-7 text-ink/70">
           We use this to personalise what you see on your dashboard.
         </p>
-        <div className="mt-8 flex gap-3 lg:mt-auto lg:pt-8">
-          <Button
-            type="button"
-            variant="ink"
-            onClick={handleNext}
-            disabled={!selected}
-            className="h-12 px-10"
-          >
-            Continue
-          </Button>
+        <div className="mt-6 space-y-3">
+          {genderOptions.map((option) => (
+            <ChoiceCard
+              key={option.value}
+              icon={genderIcons[option.value as keyof typeof genderIcons]}
+              label={option.label}
+              active={selected === option.value}
+              onSelect={() => setSelected(option.value)}
+            />
+          ))}
         </div>
       </div>
 
-      <div className="space-y-3">
-        {genderOptions.map((option) => (
-          <ChoiceCard
-            key={option.value}
-            icon={genderIcons[option.value as keyof typeof genderIcons]}
-            label={option.label}
-            active={selected === option.value}
-            onSelect={() => setSelected(option.value)}
-          />
-        ))}
+      {/* CTA row sits after the choice cards so Continue is the last thing on
+          screen on phones; on desktop it spans beneath both columns. */}
+      <div className="flex gap-3 lg:col-span-2">
+        <Button
+          type="button"
+          variant="ink"
+          onClick={handleNext}
+          disabled={!selected}
+          className="h-12 px-10"
+        >
+          Continue
+        </Button>
       </div>
     </div>
   );

@@ -499,7 +499,7 @@ export default function ManagePetition() {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 p-4 bg-muted rounded-lg">
                 <div>
                   <h3 className="font-medium mb-2">Goal</h3>
                   <div className="space-y-1 text-sm">

@@ -1,22 +1,21 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import Link from "next/link";
+import { useEffect, useRef, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Option } from "@/types/options";
 
 type Props = {
   options: readonly Option[];
   status: string;
-  /** The section path, such as /dashboard/causes. */
   basePath: string;
 };
 
-/** Pill tabs that filter a dashboard list by status through the URL. */
 export function StatusTabs({ options, status, basePath }: Props) {
+  const router = useRouter();
+  const [, startTransition] = useTransition();
   const listRef = useRef<HTMLDivElement>(null);
 
-  // On narrow screens the active pill can sit off to the side; bring it in view.
   useEffect(() => {
     const list = listRef.current;
     const active = list?.querySelector<HTMLElement>("[data-state=active]");
@@ -25,6 +24,12 @@ export function StatusTabs({ options, status, basePath }: Props) {
       left: active.offsetLeft - (list.clientWidth - active.clientWidth) / 2,
     });
   }, [status]);
+
+  const selectStatus = (value: string) => {
+    if (value === status) return;
+    const url = value === "all" ? basePath : `${basePath}?status=${value}`;
+    startTransition(() => router.replace(url, { scroll: false }));
+  };
 
   return (
     <Tabs value={status}>
@@ -38,17 +43,9 @@ export function StatusTabs({ options, status, basePath }: Props) {
             key={option.value}
             value={option.value}
             variant="pill"
-            asChild
+            onClick={() => selectStatus(option.value)}
           >
-            <Link
-              href={
-                option.value === "all"
-                  ? basePath
-                  : `${basePath}?status=${option.value}`
-              }
-            >
-              {option.label}
-            </Link>
+            {option.label}
           </TabsTrigger>
         ))}
       </TabsList>

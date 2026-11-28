@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
+import { wishlistGiftDonorFilter } from "@/lib/wishlist/giving";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -18,7 +19,7 @@ const loadUserCausesWithRaised = cache(async (userId: string) => {
   const grouped = await prisma.donation.groupBy({
     by: ["causeId"],
     _sum: { amount: true },
-    where: { causeId: { in: causes.map((c) => c.id) } },
+    where: { causeId: { in: causes.map((c) => c.id) }, status: "completed" },
   });
   for (const d of grouped) {
     raisedByCause[d.causeId] = Number(d._sum.amount || 0);
@@ -67,7 +68,11 @@ export async function getDashboardStats(userId: string) {
 
     const donors = await prisma.donation.groupBy({
       by: ["userId"],
-      where: { causeId: { in: causeIds }, userId: { not: null } },
+      where: {
+        causeId: { in: causeIds },
+        userId: { not: null },
+        status: "completed",
+      },
     });
 
     const totalRaised = causeIds.reduce(
@@ -86,15 +91,25 @@ export async function getDashboardStats(userId: string) {
   }
 }
 
-export async function getUserDonorGivingStats(userId: string) {
+export async function getUserDonorGivingStats(
+  userId: string,
+  email?: string | null,
+) {
   try {
-    const [donationAgg, donations, livePledgesCount] = await Promise.all([
+    const giftFilter = wishlistGiftDonorFilter(userId, email);
+    const [
+      donationAgg,
+      donations,
+      livePledgesCount,
+      wishlistAgg,
+      wishlistGifts,
+    ] = await Promise.all([
       prisma.donation.aggregate({
         _sum: { amount: true },
-        where: { userId },
+        where: { userId, status: "completed" },
       }),
       prisma.donation.findMany({
-        where: { userId },
+        where: { userId, status: "completed" },
         select: { causeId: true },
         distinct: ["causeId"],
       }),
@@ -103,18 +118,32 @@ export async function getUserDonorGivingStats(userId: string) {
             where: { user_id: userId, status: "pending" },
           })
         : Promise.resolve(0),
+      prisma.wishlist_contributions.aggregate({
+        _sum: { amount: true },
+        where: giftFilter,
+      }),
+      prisma.wishlist_contributions.count({ where: giftFilter }),
     ]);
 
+    const causesGiven = Number(donationAgg._sum.amount || 0);
+    const wishlistsGiven = Number(wishlistAgg._sum.amount || 0);
+
     return {
-      givenSoFar: Number(donationAgg._sum.amount || 0),
+      givenSoFar: causesGiven + wishlistsGiven,
+      causesGiven,
+      wishlistsGiven,
       campaignsBacked: donations.length,
+      wishlistGifts: wishlistGifts,
       livePledges: Number(livePledgesCount || 0),
     };
   } catch (error) {
     console.error("Error fetching user donor giving stats:", error);
     return {
       givenSoFar: 0,
+      causesGiven: 0,
+      wishlistsGiven: 0,
       campaignsBacked: 0,
+      wishlistGifts: 0,
       livePledges: 0,
     };
   }
@@ -163,10 +192,16 @@ export async function getPlatformWeeklyDeliveredStats(): Promise<{
   }
 }
 
-export async function getDonationTrends(userId: string) {
+export async function getDonationTrends(userId: string, days?: number) {
   try {
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const since =
+      typeof days === "number" && Number.isFinite(days) && days > 0
+        ? new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+        : (() => {
+            const d = new Date();
+            d.setMonth(d.getMonth() - 6);
+            return d;
+          })();
 
     const causes = (await loadUserCauses(userId)).filter(
       (c) => c.status === "approved",
@@ -179,7 +214,8 @@ export async function getDonationTrends(userId: string) {
     const donations = await prisma.donation.findMany({
       where: {
         causeId: { in: causeIds },
-        createdAt: { gte: sixMonthsAgo },
+        status: "completed",
+        createdAt: { gte: since },
       },
       select: { amount: true, createdAt: true },
       orderBy: { createdAt: "asc" },
@@ -269,7 +305,7 @@ export async function getCauseAnalytics(causeId: string) {
 
   try {
     const donations = await prisma.donation.findMany({
-      where: { causeId },
+      where: { causeId, status: "completed" },
       select: { amount: true, createdAt: true, message: true, userId: true },
     });
 

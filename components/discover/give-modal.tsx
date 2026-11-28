@@ -276,7 +276,7 @@ function GiveForm({ props }: { props: QuickDonateProps }) {
         </Small>
       )}
       <Small className="mt-4 block text-center text-[13px] text-ink/55">
-        Your gift goes to {props.orgName}, who post proof of how it&apos;s
+        Your gift goes to {props.orgName}, who will post proof of how it&apos;s
         spent.
       </Small>
     </div>

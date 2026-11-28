@@ -41,6 +41,30 @@ export const faqCategories: FaqCategory[] = [
         answer:
           "Funds sit in escrow and are released on milestones with proof, every transaction is publicly verifiable, and every campaign is identity-verified before it goes live.",
       },
+      {
+        id: "what-can-i-crowdfund",
+        question: "What can I crowdfund on Refreeg?",
+        answer:
+          "Curious about what you can crowdfund for? Here are some ideas. Businesses launch CSR campaigns, support community-driven causes, and connect with customers who care about impact. Nonprofits raise more and reach more with transparent fundraising tools designed to help them thrive and grow their donor communities. Disaster relief campaigns rally urgent support for communities hit by disasters and get aid to those who need it, quickly and securely. Healthcare fundraising gives hope a platform, covering medical bills, healthcare projects and critical treatments with transparency and community support. Creators fund their next project, tour or release with a page their audience can find, share and trust. You can also create a wishlist: name the specific gifts you want and let family and friends give toward them together. Read the full guide with examples for each on the What can I crowdfund? page at refreeg.com/crowdfund.",
+      },
+      {
+        id: "cause-legit",
+        question: "How do I know a cause is legitimate?",
+        answer:
+          "Every campaign is reviewed by our moderation team before it becomes publicly visible, and every fundraiser is identity-verified (KYC) first. Approved causes also carry trust indicators, and because every donation is recorded on the blockchain you can follow the money from wallet to milestone yourself.",
+      },
+      {
+        id: "what-is-a-wishlist",
+        question: "What is a wishlist?",
+        answer:
+          "A wishlist is a list of specific gifts you actually want. You name the items and prices, share one link, and family and friends give toward an item together or on their own, fully or partially, anonymously if they prefer. The money settles to your payout account, and you can see who gave to coordinate delivery. Create one at refreeg.com/wishlist.",
+      },
+      {
+        id: "wishlist-items",
+        question: "How many items can a wishlist hold?",
+        answer:
+          "Up to 8 items per wishlist. You can add them while creating the list, or start with one and add the rest any time from your dashboard.",
+      },
     ],
   },
   {
@@ -65,12 +89,24 @@ export const faqCategories: FaqCategory[] = [
         answer:
           "Yes. Every donation produces a receipt in your name that links to the on-chain record, so you can verify it any time.",
       },
+      {
+        id: "wishlist-giving",
+        question: "Do gifts to wishlists count as giving too?",
+        answer:
+          "Yes. Your dashboard's giving total includes what you gave to wishlists alongside what you gave to causes, and the Your giving card breaks the two out separately so you always know where your money went.",
+      },
     ],
   },
   {
     id: "campaigns",
     name: "Campaigns",
     items: [
+      {
+        id: "kyc-before-launch",
+        question: "Do I need KYC before launching a cause?",
+        answer:
+          "Yes. Creating a cause, wishlist, or petition requires an approved identity verification (KYC) and a complete profile. It keeps fundraising safer for donors, cuts down on fraud, and is also what unlocks payout setup for wishlists.",
+      },
       {
         id: "start-a-cause",
         question: "How do I start a cause?",

@@ -20,6 +20,7 @@ if (!FLUTTERWAVE_SECRET_KEY) {
 const Flutterwave = {
   api: axios.create({
     baseURL: "https://api.flutterwave.com/v3",
+    timeout: 15_000,
     headers: {
       Authorization: `Bearer ${FLUTTERWAVE_SECRET_KEY}`,
       "Content-Type": "application/json",
@@ -49,20 +50,28 @@ const Flutterwave = {
         currency: "NGN",
         redirect_url:
           data.callbackUrl ||
-          `${baseUrl}/causes/${data.causeId}/payment/verify`,
+          // Non-cause charges (wishlist items) must pass an explicit
+          // callbackUrl; no cause-verify URL exists for them.
+          (data.causeId
+            ? `${baseUrl}/causes/${data.causeId}/payment/verify`
+            : undefined),
         customer: {
           email: data.email,
           name: data.full_name || data.email,
         },
         customizations: {
           title: "RefreeG Donation",
-          description: `Donation to cause ${data.causeId}`,
+          description: data.wishlistItemId
+            ? "Wishlist gift"
+            : `Donation to cause ${data.causeId}`,
         },
         meta: {
           amount: data.amount,
           tip_amount: data.tipAmount || 0,
           customer_name: data.full_name || "",
-          cause_id: data.causeId,
+          ...(data.wishlistItemId
+            ? { wishlist_item_id: data.wishlistItemId }
+            : { cause_id: data.causeId }),
           email: data.email,
           message: data.message || "",
           is_anonymous: String(data.isAnonymous),
@@ -128,17 +137,32 @@ const Flutterwave = {
   },
 
   verifyTransaction: async function (transactionId: string) {
+    const cleanId = String(transactionId).trim();
+    if (!/^\d+$/.test(cleanId)) {
+      throw new Error("Invalid Flutterwave transaction ID");
+    }
     const response = await this.api.get(
-      `/transactions/${transactionId}/verify`,
+      `/transactions/${encodeURIComponent(cleanId)}/verify`,
     );
-    return response.data.data.status === "successful";
+    return response.data?.data?.status === "successful";
   },
 
   verifyTransactionFull: async function (transactionId: string) {
-    const response = await this.api.get(
-      `/transactions/${transactionId}/verify`,
-    );
-    return response.data.data;
+    const cleanId = String(transactionId).trim();
+    if (!/^\d+$/.test(cleanId)) {
+      throw new Error("Invalid Flutterwave transaction ID");
+    }
+    try {
+      const response = await this.api.get(
+        `/transactions/${encodeURIComponent(cleanId)}/verify`,
+      );
+      return response.data?.data ?? null;
+    } catch (error: any) {
+      if (error.response?.status === 400 || error.response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   },
 
   /**
@@ -148,9 +172,9 @@ const Flutterwave = {
    */
   verifyByReference: async function (txRef: string) {
     const response = await this.api.get(
-      `/transactions/verify_by_reference?tx_ref=${txRef}`,
+      `/transactions/verify_by_reference?tx_ref=${encodeURIComponent(txRef)}`,
     );
-    return response.data.data.status === "successful";
+    return response.data?.data?.status === "successful";
   },
 
   verifyByReferenceFull: async function (txRef: string) {
@@ -158,7 +182,7 @@ const Flutterwave = {
       const response = await this.api.get(
         `/transactions/verify_by_reference?tx_ref=${encodeURIComponent(txRef)}`,
       );
-      return response.data.data;
+      return response.data?.data ?? null;
     } catch (error: any) {
       if (error.response?.status === 400 || error.response?.status === 404) {
         return null;

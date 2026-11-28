@@ -1,301 +1,188 @@
-"use client";
-
+import type { Metadata } from "next";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import {
-  Shield,
-  Lock,
-  Eye,
-  Database,
-  UserCheck,
-  Mail,
-  Scale,
-  Trash2,
-  type LucideIcon,
-} from "lucide-react";
-import { useAnimateInView } from "@/hooks/use-animate-In-view";
 import { DATA_RETENTION_POLICY } from "@/lib/config/retention";
 
-interface PolicyContentItem {
-  subtitle: string;
-  text: string;
-}
+export const metadata: Metadata = {
+  title: "Privacy Policy - RefreeG",
+  description:
+    "How RefreeG collects, uses, shares and protects your data — written for Nigerian data protection law (NDPA 2023).",
+};
 
-interface PolicySection {
-  icon: LucideIcon;
+const sections: {
   title: string;
-  content: PolicyContentItem[];
-}
-
-const sections: PolicySection[] = [
+  body: string[];
+  points?: string[];
+}[] = [
   {
-    icon: Eye,
-    title: "1. Information We Collect",
-    content: [
-      {
-        subtitle: "Personal & Profile Information",
-        text: "When you create an account on RefreeG, we collect your name, email address, phone number, profile photo, and payout bank details (when you register as a cause creator). This information is required to provide crowdfunding services and route funds securely.",
-      },
-      {
-        subtitle: "Identity Verification (KYC) Data",
-        text: "If you apply to verify your identity as a campaign creator, we and our identity verification partner (Didit) collect your government-issued ID details, residential address, date of birth, and a live selfie/biometric liveness check solely for identity verification and fraud prevention.",
-      },
-      {
-        subtitle: "Cause, Petition & Community Content",
-        text: "When you create a cause, petition, or comment, we collect the title, story, funding goals, uploaded images/videos, and supporting verification documents.",
-      },
-      {
-        subtitle: "Transaction & Device Data",
-        text: "We collect records of donations, pledges, and settlements (amount, currency, payment reference, and optional donor note), as well as device push notification tokens (Firebase Cloud Messaging) and basic technical diagnostics needed to keep the service secure.",
-      },
+    title: "1. Who we are",
+    body: [
+      "RefreeG is operated by Eiza Innovations Limited (RC 8032815), Nigeria. We are the data controller for personal data processed through refreeg.com and the RefreeG mobile app. Questions or requests about your data go to support@refreeg.com.",
     ],
   },
   {
-    icon: Database,
-    title: "2. How We Use Your Information",
-    content: [
-      {
-        subtitle: "Service Delivery & Direct Settlement",
-        text: "We use your information to manage your account, process fiat and cryptocurrency donations, verify campaign creators, and settle raised funds directly to verified creators.",
-      },
-      {
-        subtitle: "Safety, Moderation & Fraud Prevention",
-        text: `We use identity and activity data to prevent fraud, enforce our Terms of Service, and review user-reported content within ${DATA_RETENTION_POLICY.MODERATION_SLA_HOURS} hours.`,
-      },
-      {
-        subtitle: "Notifications & Updates",
-        text: "We send transactional updates about your donations, pledges, KYC verification status, and campaigns. You can manage push and email notification preferences in your account settings at any time.",
-      },
+    title: "2. Information we collect",
+    body: ["What we collect depends on what you do on RefreeG:"],
+    points: [
+      "Account data: name, email, phone number, username, profile photo, password (hashed), account type and onboarding answers (gender, location, interests).",
+      "Identity verification (KYC) data: the identity document images and details you submit, verification session results and decision notes from our verification provider (Didit).",
+      "Payout data: bank account number, bank name and account holder details, plus provider sub-account codes (Paystack/Flutterwave) when you register to receive funds.",
+      "Giving data: donation and wishlist gift amounts, recipient campaign or wishlist, payment references, referral codes, and — for guest gifts — the name and email you entered at checkout.",
+      "Petition data: signatures and any message you add to a petition you sign.",
+      "Wishlist data: wishlist titles, item lists, prices and images you publish.",
+      "Technical data: IP address, device and browser information, error logs and crash reports (via Sentry), and product analytics.",
     ],
   },
   {
-    icon: Lock,
-    title: "3. How We Protect Your Information",
-    content: [
-      {
-        subtitle: "Encryption in Transit & at Rest",
-        text: "All personal data, KYC documents, and payment communications are transmitted over HTTPS/TLS and stored in encrypted databases and access-controlled Amazon Web Services (AWS S3) storage using short-lived presigned URLs.",
-      },
-      {
-        subtitle: "No Raw Card Storage",
-        text: "RefreeG does not store full credit/debit card numbers or CVV codes. Card and bank payments are processed directly by PCI-DSS compliant payment partners.",
-      },
-      {
-        subtitle: "Strict Access Controls",
-        text: "Only authorized compliance and support personnel can review KYC submissions or moderation reports, and only when necessary for verification or safety enforcement.",
-      },
+    title: "3. Why we process it",
+    body: [
+      "We process your data to run the platform: to create and secure your account, verify identity before payouts, move money through our payment providers, deliver receipts, show your public profile, attribute gifts to your giving history, administer referral rewards, provide support, and prevent fraud and abuse.",
+      "Where Nigerian law requires a legal basis, we rely on: performance of a contract (running your account and payments), legitimate interests (security, fraud prevention, product improvement), consent (marketing emails and optional data uses), and legal obligations (financial and tax record-keeping).",
     ],
   },
   {
-    icon: UserCheck,
-    title: "4. Third-Party Service Providers",
-    content: [
-      {
-        subtitle: "Payment & Crypto Settlement Partners (Paystack & Breet)",
-        text: "Fiat NGN donations and recurring pledges are processed via Paystack. One-way cryptocurrency donations (such as USDT) are processed and settled via Breet. RefreeG is not a cryptocurrency exchange or custodial wallet.",
-      },
-      {
-        subtitle: "Identity Verification (Didit)",
-        text: "Creator identity verification and facial liveness checks are processed securely through Didit.",
-      },
-      {
-        subtitle: "Authentication, Push Notifications & Cloud Storage",
-        text: "We use Google Sign-In and Firebase Cloud Messaging (FCM) for authentication and push notifications, and AWS S3 for secure media storage.",
-      },
-      {
-        subtitle: "Legal Compliance",
-        text: "We may disclose information when required by applicable law, court order, or financial regulatory authorities.",
-      },
+    title: "4. Who we share it with",
+    body: ["We only share what is needed, with:"],
+    points: [
+      "Payment processors — Paystack and Flutterwave — to charge and settle donations and payouts.",
+      "Identity verification provider (Didit) for KYC checks and status syncs.",
+      "Infrastructure providers — hosting, database, object storage and email delivery — under contract to process data only on our instructions.",
+      "Error monitoring (Sentry) for crash and error reporting, filtered to exclude browser-extension noise.",
+      "Law enforcement, regulators or courts where the law requires it, or to protect users and the platform from fraud.",
+      "Public surfaces: your public profile, campaigns, wishlists and petitions show the information you chose to publish.",
     ],
   },
   {
-    icon: Trash2,
-    title: "5. Account Deletion & Data Retention",
-    content: [
-      {
-        subtitle: "Self-Service Account Deletion (Mobile & Web)",
-        text: "You can permanently delete your account at any time directly inside the RefreeG mobile app (open the You tab -> tap Delete account) or on the web (Dashboard -> Settings -> Security -> Delete Account). You can also view full instructions at refreeg.com/delete-account.",
-      },
-      {
-        subtitle: "What Is Deleted Immediately",
-        text: "When you delete your account, we immediately and permanently delete your personal profile information (name, email, phone number, bio, social links, saved bank details), KYC verification records and uploaded ID/selfie images, Didit verification sessions, push notification device tokens, saved cards, comments, petitions, and any unfunded campaigns.",
-      },
-      {
-        subtitle: "Financial Record Anonymization & Retention Period",
-        text: `To comply with financial audit, anti-money-laundering (AML), and tax regulations, completed donation, pledge, and settlement records are not deleted; instead, they are permanently anonymized (unlinked from your user ID, with your name replaced by "${DATA_RETENTION_POLICY.DELETED_ACCOUNT_DISPLAY_NAME}" and your email replaced with a non-identifiable placeholder) and retained for ${DATA_RETENTION_POLICY.FINANCIAL_RECORDS_RETENTION_YEARS} years. Security and moderation audit logs are retained for up to ${DATA_RETENTION_POLICY.SECURITY_LOGS_RETENTION_DAYS} days.`,
-      },
-      {
-        subtitle: "Active Funded Campaigns",
-        text: "If you have an active, unpaused campaign that has raised funds from donors, you must pause or close the campaign before deleting your account so donor transparency is preserved.",
-      },
+    title: "5. Cookies and local storage",
+    body: [
+      "We use essential cookies and browser local storage to keep you signed in, remember where you were in onboarding, attribute gifts you make while logged out to the right email, and track referral codes (the ref_v1 cookie) so referral rewards are credited. We do not run third-party advertising trackers.",
     ],
   },
   {
-    icon: Scale,
-    title: "6. Your Rights and Choices",
-    content: [
-      {
-        subtitle: "Access, Correction & Portability",
-        text: "You can access and update your personal details at any time in your profile settings, or contact us to request a copy of your personal data.",
-      },
-      {
-        subtitle: "Content Reporting & User Blocking",
-        text: `You can report inappropriate campaigns, petitions, or comments and block abusive users directly in the app. Our moderation team reviews all reports within ${DATA_RETENTION_POLICY.MODERATION_SLA_HOURS} hours.`,
-      },
+    title: "6. How long we keep data",
+    body: [
+      "We keep personal data only as long as needed for the purposes above and the retention windows required by law. The current retention schedule by data category is:",
+    ],
+    points: Object.entries(DATA_RETENTION_POLICY).map(([category, value]) => {
+      const unit = /YEARS$/.test(category)
+        ? "years"
+        : /DAYS$/.test(category)
+          ? "days"
+          : "months";
+      return `${category
+        .replace(/_/g, " ")
+        .toLowerCase()
+        .replace(/ years$| days$| months$/, "")}: ${String(value)} ${unit}.`;
+    }),
+  },
+  {
+    title: "7. Your rights",
+    body: [
+      "Under the Nigeria Data Protection Act 2023 you can ask us to: confirm what we hold about you; give you a copy; correct inaccurate data; delete your data where the law allows; object to or restrict certain processing; and withdraw consent where processing is based on consent.",
+      "You can do most of this yourself: edit profile and payout details in settings, delete your account from settings (account deletion), and unsubscribe from emails. For anything else, email support@refreeg.com and we will respond within the statutory window. If you are not satisfied, you can complain to the Nigeria Data Protection Commission (NDPC).",
     ],
   },
   {
-    icon: Mail,
-    title: "7. Cookies and Session Storage",
-    content: [
-      {
-        subtitle: "Essential Authentication Cookies & Tokens",
-        text: "We use secure session cookies on the web and encrypted token storage on mobile devices strictly to keep you signed in and protect your account.",
-      },
-      {
-        subtitle: "Analytics & Performance",
-        text: "We use aggregate performance metrics to diagnose crashes and improve platform reliability.",
-      },
+    title: "8. Security",
+    body: [
+      "We encrypt data in transit, hash passwords, restrict access to production data to roles that need it, and log administrative actions (including KYC decisions and admin activity) for accountability. No system is perfectly secure; if a breach affects your data, we will notify you and the NDPC as required by law.",
+    ],
+  },
+  {
+    title: "9. Children",
+    body: [
+      "RefreeG is not for anyone under 18. We do not knowingly collect data from children; if we learn we hold data of someone under 18, we delete it.",
+    ],
+  },
+  {
+    title: "10. International transfers",
+    body: [
+      "Some of our providers operate outside Nigeria, so your data may be processed in other countries. We use providers that protect data to standards equivalent to Nigerian law and contract with them accordingly.",
+    ],
+  },
+  {
+    title: "11. Changes to this policy",
+    body: [
+      'We update this policy as the product changes. The "last updated" date at the top always reflects the current version; material changes will be announced on the platform.',
     ],
   },
 ];
 
-export default function PrivacyPolicy() {
-  const { ref: headerRef, isInView: headerInView } = useAnimateInView({
-    once: true,
-    margin: "-100px",
-  });
-
+export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100">
-      <motion.div
-        ref={headerRef}
-        initial={{ opacity: 0, y: 30 }}
-        animate={headerInView ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.8 }}
-        className="bg-gradient-to-r from-palette-primary to-[#0055aa] text-white py-20"
-      >
-        <div className="container px-6">
-          <div className="max-w-4xl mx-auto text-center">
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={headerInView ? { scale: 1 } : {}}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="inline-block mb-6"
-            >
-              <Shield className="w-20 h-20 mx-auto" />
-            </motion.div>
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              Privacy Policy
-            </h1>
-            <p className="text-lg md:text-xl text-blue-100">
-              Your privacy matters to us. Learn how we collect, use, protect,
-              and delete your personal information.
-            </p>
-            <p className="text-sm text-blue-200 mt-4">
-              Last Updated: November 2026
-            </p>
-          </div>
-        </div>
-      </motion.div>
+    <main className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/60">
+        Legal
+      </p>
+      <h1 className="mt-3 font-fraunces text-4xl font-medium text-ink sm:text-5xl">
+        Privacy Policy
+      </h1>
+      <p className="mt-3 text-sm text-ink/60">
+        Last updated 28 November 2026 · Eiza Innovations Limited (RC 8032815)
+      </p>
+      <p className="mt-6 text-base leading-7 text-ink/70">
+        What we collect, why, who sees it, and how to get it back. Written for
+        Nigerian data protection law. Pair it with our{" "}
+        <Link
+          href="/terms"
+          className="font-medium text-blue-accent underline underline-offset-2"
+        >
+          terms of service
+        </Link>
+        .
+      </p>
 
-      <div className="container px-6 py-12">
-        <div className="max-w-4xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="bg-white rounded-2xl shadow-lg p-8 mb-12 border border-blue-100"
+      <div className="mt-10 space-y-8">
+        {sections.map((section) => (
+          <section
+            key={section.title}
+            className="rounded-xl border border-hairline bg-surface p-6 shadow-subtle sm:p-8"
           >
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              Welcome to RefreeG
-            </h2>
-            <p className="text-gray-700 leading-relaxed mb-4">
-              At RefreeG, we are committed to protecting your privacy and
-              ensuring the security of your personal information. This Privacy
-              Policy explains how we collect, use, share, retain, and delete
-              your data when you use the RefreeG web and mobile applications.
-            </p>
-            <p className="text-gray-700 leading-relaxed">
-              Need to delete your account and personal data? Visit our{" "}
-              <Link
-                href="/delete-account"
-                className="text-blue-600 hover:underline font-medium"
+            <h2 className="text-lg font-semibold text-ink">{section.title}</h2>
+            {section.body.map((paragraph) => (
+              <p
+                key={paragraph.slice(0, 24)}
+                className="mt-3 text-sm leading-7 text-ink/70"
               >
-                Account &amp; Data Deletion page
-              </Link>{" "}
-              or contact us at{" "}
-              <a
-                href={`mailto:${DATA_RETENTION_POLICY.SUPPORT_EMAIL}`}
-                className="text-blue-600 hover:underline font-medium"
-              >
-                {DATA_RETENTION_POLICY.SUPPORT_EMAIL}
-              </a>
-              .
-            </p>
-          </motion.div>
-
-          {sections.map((section, index) => {
-            const Icon = section.icon;
-            return (
-              <Section
-                key={section.title}
-                section={section}
-                index={index}
-                Icon={Icon}
-              />
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Section({
-  section,
-  index,
-  Icon,
-}: {
-  section: PolicySection;
-  index: number;
-  Icon: LucideIcon;
-}) {
-  const { ref, isInView } = useAnimateInView({ once: true, margin: "-100px" });
-
-  return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, x: index % 2 === 0 ? -30 : 30 }}
-      animate={isInView ? { opacity: 1, x: 0 } : {}}
-      transition={{ duration: 0.6, delay: index * 0.1 }}
-      className="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100 hover:shadow-xl transition-shadow"
-    >
-      <div className="flex items-start gap-4 mb-6">
-        <div className="bg-blue-100 p-3 rounded-lg">
-          <Icon className="w-6 h-6 text-blue-600" />
-        </div>
-        <h2 className="text-2xl font-bold text-gray-900 flex-1">
-          {section.title}
-        </h2>
-      </div>
-
-      <div className="space-y-6">
-        {section.content.map((item, idx) => (
-          <motion.div
-            key={item.subtitle}
-            initial={{ opacity: 0, y: 10 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5, delay: index * 0.1 + idx * 0.1 }}
-          >
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">
-              {item.subtitle}
-            </h3>
-            <p className="text-gray-600 leading-relaxed">{item.text}</p>
-          </motion.div>
+                {paragraph}
+              </p>
+            ))}
+            {section.points ? (
+              <ul className="mt-3 space-y-2">
+                {section.points.map((point) => (
+                  <li
+                    key={point.slice(0, 24)}
+                    className="flex gap-2.5 text-sm leading-7 text-ink/70"
+                  >
+                    <span
+                      aria-hidden
+                      className="mt-[0.55rem] h-1.5 w-1.5 shrink-0 rounded-full bg-forest"
+                    />
+                    <span>{point}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </section>
         ))}
       </div>
-    </motion.div>
+
+      <div className="mt-10 rounded-xl border border-hairline bg-bone p-6">
+        <p className="text-sm font-semibold text-ink">Related policies</p>
+        <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+          <Link
+            href="/terms"
+            className="text-blue-accent underline underline-offset-2"
+          >
+            Terms of service
+          </Link>
+          <Link
+            href="/crowdfund/fees"
+            className="text-blue-accent underline underline-offset-2"
+          >
+            Fee policy
+          </Link>
+        </div>
+      </div>
+    </main>
   );
 }

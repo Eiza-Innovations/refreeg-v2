@@ -6,3 +6,5 @@ export * from "./donation-types";
 export * from "./database-types";
 export * from "./role-types";
 export * from "./petition-types";
+export * from "./wishlist-types";
+export * from "./payment-types";

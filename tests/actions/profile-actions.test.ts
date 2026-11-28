@@ -11,7 +11,10 @@ jest.mock("@/lib/prisma", () => ({
       findFirst: jest.fn(),
       update: jest.fn(),
     },
-    donation: { count: jest.fn() },
+    donation: {
+      count: jest.fn(),
+      findMany: jest.fn(),
+    },
     organization: { findFirst: jest.fn() },
   },
 }));
@@ -44,7 +47,7 @@ import {
 const mockPrisma = prisma as unknown as {
   user: { findUnique: jest.Mock; update: jest.Mock };
   kyc_verifications: { findFirst: jest.Mock; update: jest.Mock };
-  donation: { count: jest.Mock };
+  donation: { count: jest.Mock; findMany: jest.Mock };
   organization: { findFirst: jest.Mock };
 };
 
@@ -81,6 +84,9 @@ describe("profile-actions", () => {
     jest.clearAllMocks();
     // Mutating actions enforce session ownership; tests act as user-1.
     (auth as jest.Mock).mockResolvedValue({ user: { id: "user-1" } });
+    // getProfile now reads distinct funded causes, not a raw donation count.
+    // Default to "no funded causes" so unrelated tests are unaffected.
+    mockPrisma.donation.findMany.mockResolvedValue([]);
   });
 
   describe("getProfile", () => {
@@ -97,16 +103,24 @@ describe("profile-actions", () => {
       });
     });
 
-    it("counts donations with an indexed per-user query, not a _count include", async () => {
+    it("counts funded causes with an indexed distinct query, not a _count include", async () => {
       mockPrisma.user.findUnique.mockResolvedValue(baseUser);
-      mockPrisma.donation.count.mockResolvedValue(4);
+      // Two completed gifts to the same cause collapse to one funded cause.
+      mockPrisma.donation.findMany.mockResolvedValue([
+        { causeId: "cause-a" },
+        { causeId: "cause-b" },
+      ]);
 
       const result = await getProfile("user-1");
 
-      expect(result?.causes_count).toBe(4);
-      expect(mockPrisma.donation.count).toHaveBeenCalledWith({
-        where: { userId: "user-1" },
+      expect(result?.causes_count).toBe(2);
+      expect(mockPrisma.donation.findMany).toHaveBeenCalledWith({
+        where: { userId: "user-1", status: "completed" },
+        select: { causeId: true },
+        distinct: ["causeId"],
       });
+      // The old grouped-count include must not come back.
+      expect(mockPrisma.donation.count).not.toHaveBeenCalled();
       expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
         where: { id: "user-1" },
         omit: { password: true },

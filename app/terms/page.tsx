@@ -1,393 +1,210 @@
-"use client";
+import type { Metadata } from "next";
+import Link from "next/link";
 
-import { motion } from "framer-motion";
-import {
-  FileText,
-  UserCheck,
-  AlertCircle,
-  DollarSign,
-  Shield,
-  Ban,
-  Scale,
-  CheckCircle,
-  Info,
-  Search,
-  RefreshCw,
-  Users,
-  Lock,
-  Globe,
-} from "lucide-react";
-import { useAnimateInView } from "@/hooks/use-animate-In-view";
+export const metadata: Metadata = {
+  title: "Terms of Service - RefreeG",
+  description:
+    "The rules for giving, raising and trading value on RefreeG — campaigns, petitions and wishlists operated by Eiza Innovations Limited.",
+};
 
-const sections = [
+const sections: {
+  title: string;
+  body: string[];
+  points?: string[];
+}[] = [
   {
-    icon: UserCheck,
-    title: "1. Acceptance of Terms",
-    content: [
-      {
-        subtitle: "Agreement to Terms",
-        text: "By accessing or using RefreeG, you agree to be bound by these Terms of Service and all applicable laws and regulations. If you do not agree with any part of these terms, you may not use our platform.",
-      },
-      {
-        subtitle: "Eligibility",
-        text: "You must be at least 18 years old to use RefreeG. By using our platform, you represent and warrant that you meet this age requirement and have the legal capacity to enter into these Terms.",
-      },
-      {
-        subtitle: "Account Registration",
-        text: "To use certain features of RefreeG, you must create an account. You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account.",
-      },
+    title: "1. About these terms",
+    body: [
+      'RefreeG is a crowdfunding platform operated by Eiza Innovations Limited (RC 8032815), Nigeria ("RefreeG", "we", "us"). These Terms of Service form an agreement between you and Eiza Innovations Limited and govern your use of refreeg.com and everything offered through it: fundraising campaigns, petitions, wishlists, referral rewards and the tools around them.',
+      "By creating an account, giving to a campaign or wishlist, signing a petition or otherwise using the platform, you accept these terms. If you do not accept them, do not use RefreeG.",
     ],
   },
   {
-    icon: CheckCircle,
-    title: "2. User Responsibilities",
-    content: [
-      {
-        subtitle: "Accurate Information",
-        text: "You agree to provide accurate, current, and complete information when creating causes, making donations, or using our services. Misleading or false information may result in account suspension or termination.",
-      },
-      {
-        subtitle: "Cause Verification",
-        text: "If you create a cause, you must provide truthful information and supporting documentation. You are responsible for ensuring that all funds raised are used for their stated purpose.",
-      },
-      {
-        subtitle: "Lawful Use",
-        text: "You agree to use RefreeG only for lawful purposes and in accordance with these Terms. You may not use our platform to engage in any fraudulent, illegal, or harmful activities.",
-      },
-      {
-        subtitle: "Content Ownership",
-        text: "You retain ownership of any content you submit to RefreeG, but you grant us a license to use, display, and distribute that content on our platform for the purpose of operating our services.",
-      },
+    title: "2. Who can use RefreeG",
+    body: [
+      "You must be at least 18 years old and legally able to enter contracts. Accounts are personal until you register an organisation, and you are responsible for everything done through your account, so keep your credentials safe and tell us immediately if you suspect unauthorised access.",
+      "Giving from outside Nigeria is supported through our payment providers, but payouts are made to Nigerian bank accounts in Naira.",
     ],
   },
   {
-    icon: Search,
-    title: "3. Cause Vetting Process",
-    content: [
-      {
-        subtitle: "Verification Requirements",
-        text: "All causes created on RefreeG undergo a mandatory vetting process before going live. This includes identity verification of the cause creator, review of supporting documentation, and assessment of the cause's legitimacy and purpose.",
-      },
-      {
-        subtitle: "Due Diligence",
-        text: "RefreeG conducts due diligence on each cause to verify the authenticity of the campaign, the intended use of funds, and the credibility of the beneficiary. We reserve the right to request additional information or documentation at any time.",
-      },
-      {
-        subtitle: "Right to Reject",
-        text: "RefreeG reserves the right to reject, suspend, or remove any cause that fails our vetting process, contains false information, or appears fraudulent. We are committed to protecting our users from scams and malicious campaigns.",
-      },
-      {
-        subtitle: "Ongoing Monitoring",
-        text: "Causes may be subject to ongoing monitoring and review even after going live. We may investigate reports of misuse, fraud, or violation of these Terms and take appropriate action, including removing the cause or freezing funds.",
-      },
-      {
-        subtitle: "No Guarantee of Authenticity",
-        text: "While we take reasonable steps to vet all causes and prevent fraudulent activity, RefreeG cannot guarantee the absolute authenticity, truthfulness, or accuracy of every cause. We encourage users to exercise due diligence and report any suspicious activity immediately.",
-      },
+    title: "3. Accounts, verification and KYC",
+    body: [
+      "Some actions require identity verification. We verify identity documents through Didit, and payout eligibility depends on it: campaign and wishlist owners need approved identity verification and matching payout details before funds move.",
+      "You agree to provide accurate, current information during onboarding, KYC and payout setup. Providing false information, or using another person's identity or documents, is grounds for immediate suspension and forfeiture of pending payouts.",
     ],
   },
   {
-    icon: RefreshCw,
-    title: "4. Fund Usage and Reporting",
-    content: [
-      {
-        subtitle: "Transparency Requirements",
-        text: "Cause creators are required to provide regular updates on how funds are being spent. This includes sharing progress reports, receipts, and evidence of fund application to ensure donor trust and accountability.",
-      },
-      {
-        subtitle: "Update Schedule",
-        text: "Creators must provide updates at least once every 30 days or at key milestones of their project. Failure to provide timely updates may result in account suspension or removal of the cause from the platform.",
-      },
-      {
-        subtitle: "Proof of Impact",
-        text: "Donors have the right to request proof of how funds were used. Cause creators must maintain documentation and evidence of how funds are spent and make this available upon reasonable request.",
-      },
-      {
-        subtitle: "Consequences of Misuse",
-        text: "Misappropriation of funds, failure to provide updates, or inability to demonstrate proper use of donations may result in legal action, account termination, and reporting to relevant authorities.",
-      },
+    title: "4. Raising money on RefreeG",
+    body: [
+      "Campaigns, wishlists and petitions are created by users. As a creator you promise that:",
+    ],
+    points: [
+      "the story, goal amount, photos and supporting documents you publish are truthful and not misleading;",
+      "funds raised are used for the stated purpose, and you can account for how they were used;",
+      "you are not raising for anything illegal, fraudulent, hateful, sexual, dangerous or in breach of these terms;",
+      "you are not re-launching a campaign that was previously taken down or refunded;",
+      "you keep proof-of-impact updates on your campaign accurate and current.",
     ],
   },
   {
-    icon: Info,
-    title: "5. Platform Nature and Funding",
-    content: [
-      {
-        subtitle: "Platform Role",
-        text: "RefreeG is a crowdfunding platform that provides a space for verified cause creators to present their campaigns to potential supporters. We are not an investor matching service, venture capital firm, or funding provider. We do not guarantee that any cause will receive contributions, reach its funding goal, or attract investors.",
-      },
-      {
-        subtitle: "No Investment Obligations",
-        text: "RefreeG does not have a board of investors, funding pool, or internal investment committee that reviews or donates to campaigns. We do not promise or imply that using our platform will result in funding from RefreeG or any affiliated entities. All contributions come from independent third-party donors and supporters.",
-      },
-      {
-        subtitle: "Campaign Success Disclaimer",
-        text: "Creating a cause on RefreeG does not guarantee that it will be funded. The success of any campaign depends on the appeal of the cause to the public and the promotional efforts of the campaign creator. We do not accept liability or responsibility for campaigns that fail to attract contributions.",
-      },
-      {
-        subtitle: "No Funding Obligation",
-        text: "RefreeG does not have an obligation to contribute to, invest in, or provide funding for any cause created on the platform. We are not responsible for sourcing investors or connecting cause creators with funding opportunities. Users should not create campaigns with the expectation that RefreeG will fund them.",
-      },
-      {
-        subtitle: "User Acknowledgment",
-        text: "By using RefreeG, you expressly acknowledge and agree that: (a) RefreeG is solely a technology platform; (b) we do not provide financial advice or investment services; (c) we are not an investor, lender, or funding source; and (d) any expectation of funding from RefreeG or its affiliates is unfounded and not part of this agreement.",
-      },
+    title: "5. Giving on RefreeG",
+    body: [
+      "When you give to a campaign or a wishlist item, you authorise our payment providers (Paystack, Flutterwave and any provider we later add) to charge the amount you confirmed, in Naira. A completed transaction is a completed gift: RefreeG is not a shop, and gifts are not purchases of goods or services.",
+      "Guest giving is supported: we record your email so receipts can be delivered and, where you later claim the gift with the same email, so the gift can appear in your giving history.",
+      "RefreeG does not guarantee that a campaign reaches its goal, that a creator completes their project, or that a wishlist item is bought. We screen campaigns before they go live and act on reports, but the decision to give is yours. Read the campaign or wishlist, use the verified markers and proof updates, and give accordingly.",
     ],
   },
   {
-    icon: Ban,
-    title: "6. Prohibited Activities",
-    content: [
-      {
-        subtitle: "Fraudulent Causes",
-        text: "Creating causes with false, misleading, or deceptive information is strictly prohibited. This includes misrepresenting the purpose, beneficiary, or urgency of a cause, or implying that RefreeG has endorsed or will fund the cause.",
-      },
-      {
-        subtitle: "Hate Speech and Discrimination",
-        text: "RefreeG does not tolerate content that promotes violence, hatred, discrimination, or harassment based on race, ethnicity, religion, gender, sexual orientation, disability, or any other protected characteristic.",
-      },
-      {
-        subtitle: "Illegal Activities",
-        text: "You may not use RefreeG to raise funds for illegal activities, including but not limited to weapons, drugs, human trafficking, or any activity that violates local, national, or international law.",
-      },
-      {
-        subtitle: "Platform Manipulation",
-        text: "Attempting to manipulate our platform, including vote manipulation, fake donations, or circumventing our security measures, is prohibited and may result in legal action.",
-      },
+    title: "6. Fees",
+    body: [
+      "RefreeG charges no platform service fee on donations today: creators keep 100% of what is raised. Payment processing fees charged by Paystack or Flutterwave apply to transactions and are shown to the giver before payment. Our full, current fee schedule — including any future changes — lives on the Fee Policy page, which forms part of these terms.",
     ],
   },
   {
-    icon: DollarSign,
-    title: "7. Payments and Fees",
-    content: [
-      {
-        subtitle: "Transaction Fees",
-        text: "RefreeG charges a platform fee on donations to cover operational costs and maintain our services. The current fee structure is available on our Fees & Payouts page and may be updated from time to time.",
-      },
-      {
-        subtitle: "Payment Processing",
-        text: "Donations are processed through our payment partners (Paystack for fiat, blockchain networks for crypto). RefreeG is not responsible for delays or issues caused by third-party payment processors.",
-      },
-      {
-        subtitle: "Withdrawals",
-        text: "Cause creators can withdraw funds according to our withdrawal policy. Fiat withdrawals are typically processed within 1-3 business days, while crypto withdrawals depend on blockchain network confirmations.",
-      },
-      {
-        subtitle: "Refund Policy",
-        text: "All donations made on RefreeG are final and non-refundable except in cases of proven fraud or technical error. We encourage donors to carefully review causes before donating.",
-      },
+    title: "7. Payouts and holds",
+    body: [
+      "Funds you raise are paid out to the bank account or sub-account registered on your profile, subject to verification. We may hold or delay a payout where identity or bank details are unverified or mismatched, where we receive credible reports of fraud, where a chargeback or dispute is in progress, or where the law requires it.",
+      "Wishlists have a collection cap until the owner completes payout verification; the cap is lifted automatically once verification completes.",
     ],
   },
   {
-    icon: Shield,
-    title: "8. Platform Security",
-    content: [
-      {
-        subtitle: "Account Security",
-        text: "You are responsible for maintaining the security of your account. Use a strong, unique password and enable two-factor authentication (2FA) for added protection.",
-      },
-      {
-        subtitle: "Blockchain Transparency",
-        text: "Cryptocurrency transactions on RefreeG are recorded on the blockchain, providing permanent and transparent records. This ensures accountability but also means transactions cannot be reversed.",
-      },
-      {
-        subtitle: "Suspicious Activity",
-        text: "If you notice any suspicious activity on your account or encounter fraudulent causes, report them immediately through our support channels. We take security concerns seriously.",
-      },
+    title: "8. Refunds and chargebacks",
+    body: [
+      "Donations are generally irreversible once completed. We will refund a transaction where we are legally required to, where the payment was clearly fraudulent or duplicated, or where a creator is removed for fraud — in that case we refund from available funds.",
+      "If you dispute a charge through your bank (chargeback), we will cooperate with the payment provider's process and may suspend the campaign and the giver or creator accounts involved until it is resolved.",
     ],
   },
   {
-    icon: AlertCircle,
-    title: "9. Disclaimers and Limitations",
-    content: [
-      {
-        subtitle: "No Guarantees",
-        text: "RefreeG does not guarantee that any cause will reach its funding goal or that donations will be used exactly as intended. While we thoroughly vet all causes before they go live to minimize the risk of fraud and scams, we cannot control individual user behavior after funds are disbursed. However, we require regular updates from creators to maintain transparency and accountability.",
-      },
-      {
-        subtitle: "Platform Availability",
-        text: "While we strive for 100% uptime, RefreeG is provided 'as is' without warranties of any kind. We do not guarantee uninterrupted access and may perform maintenance that temporarily limits availability.",
-      },
-      {
-        subtitle: "Third-Party Links",
-        text: "Our platform may contain links to third-party websites or services. RefreeG is not responsible for the content, privacy practices, or terms of these external sites.",
-      },
-      {
-        subtitle: "Limitation of Liability",
-        text: "RefreeG and its affiliates shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the platform, to the fullest extent permitted by law, including but not limited to any loss of funding opportunities, failure to raise funds, or reliance on the platform as a funding source.",
-      },
+    title: "9. Petitions",
+    body: [
+      "Petitions on RefreeG are advocacy tools: signatures and messages are collected and shown to decision-makers as public pressure, not payments. You may not offer or imply payment for signatures, sign with fabricated identities, or use a petition to harass a named individual. We may remove petitions that break these rules or the law.",
     ],
   },
   {
-    icon: Scale,
-    title: "10. Dispute Resolution",
-    content: [
-      {
-        subtitle: "Governing Law",
-        text: "These Terms are governed by the laws of Nigeria. Any disputes arising from these Terms or your use of RefreeG will be subject to the exclusive jurisdiction of the courts in Lagos, Nigeria.",
-      },
-      {
-        subtitle: "Arbitration",
-        text: "For disputes that cannot be resolved through direct negotiation, both parties agree to participate in good faith mediation before pursuing legal action.",
-      },
-      {
-        subtitle: "User Disputes",
-        text: "Disputes between users (donors and cause creators) should first be resolved directly. RefreeG may assist in mediation but is not responsible for resolving user-to-user conflicts.",
-      },
+    title: "10. Referral rewards",
+    body: [
+      "RefreeG may reward users who bring new givers to the platform. Rewards are credited under the rules shown on the referrals page and require, at minimum, that the referred gift is genuine and completed. Self-referrals, fake accounts and collusive gifting void rewards, and we may claw back rewards credited in error.",
     ],
   },
   {
-    icon: FileText,
-    title: "11. Changes to Terms",
-    content: [
-      {
-        subtitle: "Modifications",
-        text: "RefreeG reserves the right to modify these Terms of Service at any time. We will notify users of significant changes via email or platform notifications.",
-      },
-      {
-        subtitle: "Continued Use",
-        text: "Your continued use of RefreeG after changes to these Terms constitutes acceptance of the updated terms. If you do not agree to the changes, you should discontinue use of the platform.",
-      },
-      {
-        subtitle: "Review Regularly",
-        text: "We encourage you to review these Terms periodically to stay informed about your rights and responsibilities as a RefreeG user.",
-      },
+    title: "11. Content and conduct",
+    body: [
+      "You keep ownership of what you publish, but you grant RefreeG a licence to host, display and share it for the purpose of running the platform — including showing campaign media on public pages, receipts and social channels.",
+      "Do not upload content you have no right to use, impersonate people or organisations, scrape the platform, interfere with its security, or use it to send spam or malicious code. We may remove content, pause a campaign pending review, or take down a campaign that breaches these rules.",
+    ],
+  },
+  {
+    title: "12. Suspension and termination",
+    body: [
+      "You can delete your account from settings at any time; required financial records are retained as described in the Privacy Policy. We may suspend or terminate an account where these terms are breached, where verification fails, or where the law requires it. Where funds are involved, payouts on legitimately completed gifts are settled before closure, and confirmed fraud forfeits them.",
+    ],
+  },
+  {
+    title: "13. Disclaimers and liability",
+    body: [
+      'RefreeG is provided "as is". To the extent permitted by law, we are not liable for indirect or consequential losses, for a creator\'s failure to use funds as promised, or for losses arising from events outside our reasonable control.',
+      "Nothing in these terms limits liability that cannot lawfully be limited. Our total liability to you for any claim connected to the platform is limited to the total amount you gave or raised through RefreeG in the six months before the claim.",
+    ],
+  },
+  {
+    title: "14. Law, changes and contact",
+    body: [
+      "These terms are governed by the laws of the Federal Republic of Nigeria, and the courts of Nigeria have jurisdiction over disputes.",
+      "We may update these terms as the product changes; material changes will be announced on the platform or by email, and continuing to use RefreeG after a change takes effect means you accept the updated terms.",
+      "Questions, reports and legal notices: support@refreeg.com, or via the community channels linked in the app footer.",
     ],
   },
 ];
 
-export default function TermsOfService() {
-  const { ref: headerRef, isInView: headerInView } = useAnimateInView({
-    once: true,
-    margin: "-100px",
-  });
-
+export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100">
-      <motion.div
-        ref={headerRef}
-        initial={{ opacity: 0, y: 30 }}
-        animate={headerInView ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.8 }}
-        className="bg-gradient-to-r from-palette-primary to-[#0055aa] text-white py-20"
-      >
-        <div className="container px-6">
-          <div className="max-w-4xl mx-auto text-center">
-            <motion.div
-              initial={{ scale: 0, rotate: -180 }}
-              animate={headerInView ? { scale: 1, rotate: 0 } : {}}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="inline-block mb-6"
-            >
-              <FileText className="w-20 h-20 mx-auto" />
-            </motion.div>
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              Terms of Service
-            </h1>
-            <p className="text-lg md:text-xl text-purple-100">
-              Please read these terms carefully before using RefreeG&apos;s
-              crowdfunding platform.
-            </p>
-            <p className="text-sm text-purple-200 mt-4">
-              Last Updated: January 9, 2026
-            </p>
-          </div>
-        </div>
-      </motion.div>
+    <main className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink/60">
+        Legal
+      </p>
+      <h1 className="mt-3 font-fraunces text-4xl font-medium text-ink sm:text-5xl">
+        Terms of Service
+      </h1>
+      <p className="mt-3 text-sm text-ink/60">
+        Last updated 28 November 2026 · Eiza Innovations Limited (RC 8032815)
+      </p>
+      <p className="mt-6 text-base leading-7 text-ink/70">
+        The rules for giving, raising and being part of RefreeG — written to be
+        read, not skimmed past. Pair it with our{" "}
+        <Link
+          href="/privacy"
+          className="font-medium text-blue-accent underline underline-offset-2"
+        >
+          privacy policy
+        </Link>{" "}
+        and{" "}
+        <Link
+          href="/crowdfund/fees"
+          className="font-medium text-blue-accent underline underline-offset-2"
+        >
+          fee policy
+        </Link>
+        .
+      </p>
 
-      <div className="container px-6 py-12">
-        <div className="max-w-4xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="bg-white rounded-2xl shadow-lg p-8 mb-12 border border-blue-100"
+      <div className="mt-10 space-y-8">
+        {sections.map((section) => (
+          <section
+            key={section.title}
+            className="rounded-xl border border-hairline bg-surface p-6 shadow-subtle sm:p-8"
           >
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              Welcome to RefreeG&apos;s Terms of Service
-            </h2>
-            <p className="text-gray-700 leading-relaxed mb-4">
-              These Terms of Service (&quot;Terms&quot;) govern your access to
-              and use of RefreeG&apos;s blockchain-powered crowdfunding
-              platform. RefreeG connects verified cause creators with supporters
-              to make a positive impact through transparent and secure
-              fundraising.
-            </p>
-            <p className="text-gray-700 leading-relaxed">
-              By creating an account or using our services, you acknowledge that
-              you have read, understood, and agree to be bound by these Terms.
-              For questions, contact us at{" "}
-              <a
-                href="mailto:legal@refreeg.com"
-                className="text-blue-600 hover:underline font-medium"
+            <h2 className="text-lg font-semibold text-ink">{section.title}</h2>
+            {section.body.map((paragraph) => (
+              <p
+                key={paragraph.slice(0, 24)}
+                className="mt-3 text-sm leading-7 text-ink/70"
               >
-                support@refreeg.com
-              </a>
-              .
-            </p>
-          </motion.div>
-
-          {sections.map((section, index) => {
-            const Icon = section.icon;
-            return (
-              <Section
-                key={index}
-                section={section}
-                index={index}
-                Icon={Icon}
-              />
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Section({
-  section,
-  index,
-  Icon,
-}: {
-  section: any;
-  index: number;
-  Icon: any;
-}) {
-  const { ref, isInView } = useAnimateInView({ once: true, margin: "-100px" });
-
-  return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, x: index % 2 === 0 ? -30 : 30 }}
-      animate={isInView ? { opacity: 1, x: 0 } : {}}
-      transition={{ duration: 0.6, delay: index * 0.1 }}
-      className="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100 hover:shadow-xl transition-shadow"
-    >
-      <div className="flex items-start gap-4 mb-6">
-        <div className="bg-blue-100 p-3 rounded-lg">
-          <Icon className="w-6 h-6 text-blue-600" />
-        </div>
-        <h2 className="text-2xl font-bold text-blue-900 flex-1">
-          {section.title}
-        </h2>
-      </div>
-
-      <div className="space-y-6">
-        {section.content.map((item: any, idx: number) => (
-          <motion.div
-            key={idx}
-            initial={{ opacity: 0, y: 10 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5, delay: index * 0.1 + idx * 0.1 }}
-          >
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">
-              {item.subtitle}
-            </h3>
-            <p className="text-gray-600 leading-relaxed">{item.text}</p>
-          </motion.div>
+                {paragraph}
+              </p>
+            ))}
+            {section.points ? (
+              <ul className="mt-3 space-y-2">
+                {section.points.map((point) => (
+                  <li
+                    key={point.slice(0, 24)}
+                    className="flex gap-2.5 text-sm leading-7 text-ink/70"
+                  >
+                    <span
+                      aria-hidden
+                      className="mt-[0.55rem] h-1.5 w-1.5 shrink-0 rounded-full bg-forest"
+                    />
+                    <span>{point}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </section>
         ))}
       </div>
-    </motion.div>
+
+      <div className="mt-10 rounded-xl border border-hairline bg-bone p-6">
+        <p className="text-sm font-semibold text-ink">Related policies</p>
+        <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+          <Link
+            href="/privacy"
+            className="text-blue-accent underline underline-offset-2"
+          >
+            Privacy policy
+          </Link>
+          <Link
+            href="/crowdfund/fees"
+            className="text-blue-accent underline underline-offset-2"
+          >
+            Fee policy
+          </Link>
+          <Link
+            href="/faq"
+            className="text-blue-accent underline underline-offset-2"
+          >
+            FAQ
+          </Link>
+        </div>
+      </div>
+    </main>
   );
 }

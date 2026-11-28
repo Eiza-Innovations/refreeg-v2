@@ -1,135 +1,110 @@
 "use client";
 
-import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { Lock, Shield } from "lucide-react";
+import { Heading, P, Small } from "@/components/marketing/Typography";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, ShieldCheck } from "lucide-react";
+import { CalloutBanner } from "@/components/ui/callout-banner";
+import { Card, CardContent } from "@/components/ui/card";
+import { Eyebrow } from "@/components/ui/eyebrow";
+import { FieldError } from "@/components/ui/field-error";
+import { useDiditSession } from "@/hooks/use-didit-session";
+import type { DiditKycFormProps } from "@/types/kyc-types";
+import { diditChecklistSteps } from "../kyc/kyc-status-meta";
 
-type DiditKycFormProps = {
-  userId: string;
-};
-
-export default function DiditKycForm({ userId }: DiditKycFormProps) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const startVerification = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/kyc/didit/session", {
-        method: "POST",
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to create session");
-      }
-
-      const { DiditSdk } = await import("@didit-protocol/sdk-web");
-
-      if (DiditSdk && data.url) {
-        DiditSdk.shared.startVerification({
-          url: data.url,
-        });
-
-        DiditSdk.shared.onComplete = (result) => {
-          if (result.type === "completed") {
-            window.location.assign("/dashboard/settings/kyc-setup");
-          } else {
-            window.location.reload();
-          }
-        };
-      } else {
-        throw new Error("SDK not loaded properly or URL is missing");
-      }
-    } catch (err: any) {
-      setError(err.message || "Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+export default function DiditKycForm({
+  userId,
+  rejectedNote,
+  kycFetchError,
+}: DiditKycFormProps) {
+  const { startVerification, isPending, errorMessage } = useDiditSession();
 
   return (
-    <Card className="w-full max-w-lg mx-auto mt-10 border border-slate-200 shadow-sm bg-white overflow-hidden relative">
-      <div className="absolute inset-0 bg-gradient-to-b from-blue-50/50 to-transparent pointer-events-none h-32" />
+    <Card
+      variant="surface"
+      className="mx-auto max-w-2xl overflow-hidden rounded-2xl shadow-none"
+      data-userid={userId}
+    >
+      <div className="flex flex-col items-center gap-6 border-b border-hairline bg-bone/60 p-6 sm:flex-row">
+        <Image
+          src="/images/kyc-guide.png"
+          alt="RefreeG identity verification guide"
+          width={160}
+          height={160}
+          className="h-32 w-32 shrink-0 rounded-2xl object-contain"
+          priority
+        />
+        <div className="text-center sm:text-left">
+          <Eyebrow>Didit automated check</Eyebrow>
+          <Heading as="h1" size="panel" className="mt-1 font-semibold">
+            RefreeG identity verification
+          </Heading>
+          <P className="mt-1.5 text-sm text-ink/60">
+            Complete verification in under 2 minutes with a valid government ID
+            and a clear camera.
+          </P>
+        </div>
+      </div>
 
-      <CardHeader className="text-center pt-10 relative z-10">
-        <CardTitle className="text-2xl font-bold text-slate-900 tracking-tight">
-          RefreeG Identity Verification
-        </CardTitle>
-        <CardDescription className="text-base text-slate-500 mt-2">
-          Fast, secure, and automated identity verification that qualifies your
-          account for premium features.
-        </CardDescription>
-      </CardHeader>
+      <CardContent className="space-y-6 p-6">
+        {kycFetchError && (
+          <CalloutBanner
+            variant="rust"
+            title="Could not check existing status"
+            description={kycFetchError}
+          />
+        )}
 
-      <CardContent className="space-y-6 pb-10 relative z-10 px-8">
-        <div className="bg-slate-50 border border-slate-100 rounded-xl p-5 mb-2">
-          <h4 className="text-sm font-semibold text-slate-900 mb-4">
-            What to expect:
-          </h4>
-          <ul className="space-y-3">
-            <li className="flex items-start text-sm text-slate-600">
-              <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold mr-3 shrink-0">
-                1
-              </span>
-              <span className="leading-relaxed">
-                Have a valid{" "}
-                <span className="font-semibold text-slate-700">
-                  government-issued ID
-                </span>{" "}
-                ready (Passport, ID Card, etc).
-              </span>
-            </li>
-            <li className="flex items-start text-sm text-slate-600">
-              <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold mr-3 shrink-0">
-                2
-              </span>
-              <span className="leading-relaxed">
-                Take a clear photo of your identity document.
-              </span>
-            </li>
-            <li className="flex items-start text-sm text-slate-600">
-              <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold mr-3 shrink-0">
-                3
-              </span>
-              <span className="leading-relaxed">
-                Complete a quick facial scan to verify it&apos;s you.
-              </span>
-            </li>
+        {rejectedNote && (
+          <CalloutBanner
+            variant="rust"
+            title="What to fix before retrying"
+            description={rejectedNote}
+          />
+        )}
+
+        <div className="rounded-xl border border-hairline bg-bone/70 p-5">
+          <Eyebrow className="text-ink/50">Before you begin</Eyebrow>
+          <ul className="mt-4 space-y-4">
+            {diditChecklistSteps.map((item) => (
+              <li key={item.step} className="flex items-start gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-forest/10 text-xs font-semibold text-forest">
+                  {item.step}
+                </span>
+                <div>
+                  <p className="text-sm font-medium text-ink">{item.title}</p>
+                  <p className="text-xs leading-relaxed text-ink/60">
+                    {item.description}
+                  </p>
+                </div>
+              </li>
+            ))}
           </ul>
         </div>
 
-        {error && (
-          <Alert
-            variant="destructive"
-            className="bg-red-50 text-red-900 border-red-200"
+        <FieldError message={errorMessage} />
+
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            variant="ink"
+            size="lg"
+            onClick={() => startVerification()}
+            disabled={isPending}
           >
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
+            <Shield className="mr-2 h-4 w-4" />
+            {isPending ? "Preparing session..." : "Start secure verification"}
+          </Button>
+          <Button asChild variant="surface" size="lg">
+            <Link href="/dashboard/settings/kyc">Back</Link>
+          </Button>
+        </div>
 
-        <Button
-          className="w-full h-14 text-base bg-slate-900 text-white hover:bg-slate-800 transition-all duration-200 shadow-md hover:shadow-lg hover:-translate-y-0.5 rounded-xl mt-2"
-          onClick={startVerification}
-          disabled={loading}
-        >
-          {loading ? "Preparing session..." : "Start Secure Verification"}
-        </Button>
-
-        <p className="text-xs text-center text-slate-400 pt-2">
-          Your information is encrypted and securely processed according to our
-          privacy policy.
-        </p>
+        <Small className="flex items-center gap-1.5 text-ink/55">
+          <Lock className="h-3.5 w-3.5 shrink-0" />
+          256-bit secure encryption · Exclusively used for regulatory identity
+          compliance.
+        </Small>
       </CardContent>
     </Card>
   );

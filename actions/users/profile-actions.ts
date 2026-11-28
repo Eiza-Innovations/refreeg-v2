@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth/auth";
+import { isReservedUsername } from "@/utils/username";
 import { isOwnUploadKey } from "@/lib/s3/owned-key";
 import {
   completeOnboardingCore,
@@ -41,21 +42,23 @@ async function assertSelf(userId: string): Promise<void> {
 
 export async function getProfile(userId: string): Promise<Profile | null> {
   try {
-    // A Prisma `_count` include makes Postgres GROUP BY the whole causes and
-    // donations tables on every profile read; a filtered count uses the
-    // user_id index instead.
-    const [profile, donationCount] = await Promise.all([
+    const [profile, fundedCauses] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
         omit: { password: true },
       }),
-      prisma.donation.count({ where: { userId } }),
+
+      prisma.donation.findMany({
+        where: { userId, status: "completed" },
+        select: { causeId: true },
+        distinct: ["causeId"],
+      }),
     ]);
 
     if (!profile) return null;
 
     const mapped = mapPrismaToProfile(profile);
-    mapped.causes_count = donationCount;
+    mapped.causes_count = fundedCauses.length;
     return mapped;
   } catch (error) {
     console.error("Error fetching profile:", error);
@@ -401,6 +404,10 @@ export async function checkUsernameAvailability(
     if (!normalizedUsername || normalizedUsername.length < 3) {
       return true; // Too short to check: let field validation handle it
     }
+
+    // A username that collides with a static route would make that route's
+    // profile page unreachable (e.g. a user named "wishlist").
+    if (isReservedUsername(normalizedUsername)) return false;
 
     const profile = await prisma.user.findUnique({
       where: { username: normalizedUsername },

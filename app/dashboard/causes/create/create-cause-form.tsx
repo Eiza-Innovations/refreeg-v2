@@ -129,6 +129,8 @@ export default function CreateCauseForm() {
       busyLabel="Sending…"
       busy={submitMutation.isPending}
       submitError={submitMutation.error?.message}
+      submitCalloutTitle="Send for review"
+      submitCalloutDescription="RefreeG reviews submissions before they appear publicly."
       onSaveAndExit={() => {
         saveDraft();
         router.push("/dashboard/causes");

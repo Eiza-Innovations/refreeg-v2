@@ -13,12 +13,105 @@ import {
 } from "@/lib/auth/store-review-demo";
 
 const MAX_DONATION_AMOUNT = 10_000_000;
+const PENDING_CHARGE_TTL_MS = 15 * 60 * 1000;
+const MAX_PENDING_CHARGE_OWNERS = 2_000;
 const SUPPORTED_CHARGE_CHANNELS = new Set([
   "bank_transfer",
   "ussd",
   "card",
   "opay",
 ]);
+
+const pendingChargeOwners = new Map<
+  string,
+  { userId: string | null; expiresAt: number }
+>();
+
+function trackPendingChargeOwner(reference: unknown, userId: string | null) {
+  if (typeof reference !== "string" || !reference.trim()) return;
+  const now = Date.now();
+  if (pendingChargeOwners.size >= MAX_PENDING_CHARGE_OWNERS) {
+    for (const [key, entry] of pendingChargeOwners.entries()) {
+      if (now >= entry.expiresAt) pendingChargeOwners.delete(key);
+    }
+    if (pendingChargeOwners.size >= MAX_PENDING_CHARGE_OWNERS) {
+      const oldestKey = pendingChargeOwners.keys().next().value;
+      if (oldestKey) pendingChargeOwners.delete(oldestKey);
+    }
+  }
+  pendingChargeOwners.set(reference.trim(), {
+    userId,
+    expiresAt: now + PENDING_CHARGE_TTL_MS,
+  });
+}
+
+function validateSubmitAction(
+  request: NextRequest,
+  rawReference: unknown,
+  authUser?: { id: string; email: string; fullName: string | null },
+) {
+  const trimmedRef = String(rawReference).trim();
+  const submitLimited = enforceRateLimit(request, {
+    namespace: "mobile_payments_submit",
+    limit: 5,
+    windowMs: 60_000,
+    identifier: trimmedRef,
+  });
+  if (submitLimited) return { trimmedRef, errorResponse: submitLimited };
+
+  const owner = pendingChargeOwners.get(trimmedRef);
+  if (owner) {
+    if (Date.now() >= owner.expiresAt) {
+      pendingChargeOwners.delete(trimmedRef);
+    } else if (owner.userId && authUser?.id !== owner.userId) {
+      return {
+        trimmedRef,
+        errorResponse: apiError("Unauthorized for this payment reference", 403),
+      };
+    }
+  }
+
+  return { trimmedRef, errorResponse: null };
+}
+
+async function handleChallengeSubmit(
+  request: NextRequest,
+  authUser: { id: string; email: string; fullName: string | null } | undefined,
+  label: string,
+  value: unknown,
+  rawReference: unknown,
+  submitter: (val: string, ref: string) => Promise<unknown>,
+) {
+  if (!value || !rawReference) {
+    return apiError(`Missing ${label} or payment reference`, 400);
+  }
+  const { trimmedRef, errorResponse } = validateSubmitAction(
+    request,
+    rawReference,
+    authUser,
+  );
+  if (errorResponse) return errorResponse;
+
+  if (
+    isStoreReviewDemoAccount(authUser?.email) &&
+    decodeStoreReviewDemoReference(trimmedRef)
+  ) {
+    return apiSuccess({
+      status: "success",
+      reference: trimmedRef,
+      isStoreReviewDemo: true,
+    });
+  }
+
+  try {
+    const res = await submitter(String(value).trim(), trimmedRef);
+    return apiSuccess(res);
+  } catch (e: unknown) {
+    const message =
+      e instanceof Error ? e.message : `Failed to submit ${label}`;
+    return apiError(message, 400);
+  }
+}
 
 export async function OPTIONS() {
   return handleCorsPreflight();
@@ -46,72 +139,36 @@ export async function POST(request: NextRequest) {
 
     // 1. Handle PIN / OTP / Phone submissions for ongoing charge
     if (data.action === "submit_pin") {
-      if (!data.pin || !data.reference) {
-        return apiError("Missing PIN or payment reference", 400);
-      }
-      const trimmedRef = String(data.reference).trim();
-      if (
-        isStoreReviewDemoAccount(authUser?.email) &&
-        decodeStoreReviewDemoReference(trimmedRef)
-      ) {
-        return apiSuccess({
-          status: "success",
-          reference: trimmedRef,
-          isStoreReviewDemo: true,
-        });
-      }
-      try {
-        const res = await Paystack.submitPin(data.pin, trimmedRef);
-        return apiSuccess(res);
-      } catch (e: any) {
-        return apiError(e.message || "Failed to submit PIN", 400);
-      }
+      return handleChallengeSubmit(
+        request,
+        authUser,
+        "PIN",
+        data.pin,
+        data.reference,
+        (pin, ref) => Paystack.submitPin(pin, ref),
+      );
     }
 
     if (data.action === "submit_otp") {
-      if (!data.otp || !data.reference) {
-        return apiError("Missing OTP or payment reference", 400);
-      }
-      const trimmedRef = String(data.reference).trim();
-      if (
-        isStoreReviewDemoAccount(authUser?.email) &&
-        decodeStoreReviewDemoReference(trimmedRef)
-      ) {
-        return apiSuccess({
-          status: "success",
-          reference: trimmedRef,
-          isStoreReviewDemo: true,
-        });
-      }
-      try {
-        const res = await Paystack.submitOtp(data.otp, trimmedRef);
-        return apiSuccess(res);
-      } catch (e: any) {
-        return apiError(e.message || "Failed to submit OTP", 400);
-      }
+      return handleChallengeSubmit(
+        request,
+        authUser,
+        "OTP",
+        data.otp,
+        data.reference,
+        (otp, ref) => Paystack.submitOtp(otp, ref),
+      );
     }
 
     if (data.action === "submit_phone") {
-      if (!data.phone || !data.reference) {
-        return apiError("Missing phone or payment reference", 400);
-      }
-      const trimmedRef = String(data.reference).trim();
-      if (
-        isStoreReviewDemoAccount(authUser?.email) &&
-        decodeStoreReviewDemoReference(trimmedRef)
-      ) {
-        return apiSuccess({
-          status: "success",
-          reference: trimmedRef,
-          isStoreReviewDemo: true,
-        });
-      }
-      try {
-        const res = await Paystack.submitPhone(data.phone, trimmedRef);
-        return apiSuccess(res);
-      } catch (e: any) {
-        return apiError(e.message || "Failed to submit phone", 400);
-      }
+      return handleChallengeSubmit(
+        request,
+        authUser,
+        "phone",
+        data.phone,
+        data.reference,
+        (phone, ref) => Paystack.submitPhone(phone, ref),
+      );
     }
 
     // 2. Initiate fresh direct charge (Bank Transfer, USSD, Card, OPay, or ₦50 Card Setup)
@@ -306,6 +363,7 @@ export async function POST(request: NextRequest) {
 
     try {
       const chargeResponse = await Paystack.charge(chargePayload);
+      trackPendingChargeOwner(chargeResponse.reference, authUser?.id ?? null);
       return apiSuccess({
         status: chargeResponse.status,
         reference: chargeResponse.reference,
