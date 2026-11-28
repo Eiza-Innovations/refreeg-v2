@@ -229,12 +229,12 @@ export function PublicWishlistCarousel({
                           {item.title}
                         </h3>
 
-                        <div className="flex items-baseline gap-2 mb-3">
-                          <span className="text-2xl font-bold text-gray-900">
+                        <div className="flex items-baseline gap-2 mb-3 whitespace-nowrap">
+                          <span className="text-xl font-bold text-gray-900 shrink-0">
                             {formatNaira(item.contributed_total)} given
                           </span>
                           {item.target_total > 0 && (
-                            <span className="text-sm text-gray-500">
+                            <span className="text-sm text-gray-500 min-w-0 truncate">
                               of {formatNaira(item.target_total)}
                             </span>
                           )}
