@@ -1,0 +1,30 @@
+/// A reward a cause owner posts for supporters who complete a task (a video,
+/// outreach, a fundraising push). Admins review submitted bounties before
+/// they go live. Matches the table already created directly against the
+/// database by migration 20261123120000_add_bounties, captured here and in
+/// that migration folder so schema and database agree.
+model bounties {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  owner_id           String    @db.Uuid
+  cause_id           String    @db.Uuid
+  title              String
+  category           String
+  description        String
+  deliverable        String
+  reward             Decimal   @db.Decimal
+  available_spots    Int
+  deadline           DateTime  @db.Date
+  /// draft | in-review | changes-requested | live
+  status             String    @default("draft")
+  changes_requested  String?
+  submitted_at       DateTime? @db.Timestamptz(6)
+  reviewed_at        DateTime? @db.Timestamptz(6)
+  created_at         DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime  @default(now()) @db.Timestamptz(6)
+  owner              User      @relation(fields: [owner_id], references: [id])
+  cause              Cause     @relation(fields: [cause_id], references: [id])
+
+  @@index([cause_id], map: "idx_bounties_cause_id")
+  @@index([owner_id, created_at], map: "idx_bounties_owner_created")
+  @@index([status, submitted_at], map: "idx_bounties_status_submitted")
+}

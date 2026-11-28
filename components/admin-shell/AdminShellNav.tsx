@@ -16,6 +16,7 @@ import {
   ScrollText,
   TrendingUp,
   TriangleAlert,
+  Trophy,
   Users,
 } from "lucide-react";
 import { Eyebrow } from "@/components/ui/eyebrow";
@@ -83,6 +84,11 @@ const navGroups: { label: string; items: NavItem[] }[] = [
         href: "/dashboard/admin/petitions",
         icon: Flag,
         countKey: "petitions",
+      },
+      {
+        title: "Bounties",
+        href: "/dashboard/admin/bounties",
+        icon: Trophy,
       },
       {
         title: "Organizations",

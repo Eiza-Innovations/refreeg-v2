@@ -67,6 +67,7 @@ model User {
   locked_until                DateTime?                @map("locked_until") @db.Timestamptz(6)
   accounts                    Account[]
   campaign_follows            campaign_follows[]
+  bounties                    bounties[]
   campaign_proof_updates      campaign_proof_updates[]
   cause_edits                 cause_edits[]
   cause_shares                cause_shares[]

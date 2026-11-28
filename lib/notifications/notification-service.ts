@@ -9,6 +9,7 @@ export type NotificationType =
   | "milestone_proof"
   | "petition_signed"
   | "comment_received"
+  | "bounty_reviewed"
   | "general";
 
 export interface NotificationRecord {
@@ -102,10 +103,7 @@ export async function createNotification(
           console.error("Failed to send push notification:", pushErr);
         });
       } catch (pushImportErr) {
-        console.warn(
-          "FCM push notification dispatch skipped:",
-          pushImportErr,
-        );
+        console.warn("FCM push notification dispatch skipped:", pushImportErr);
       }
     }
 
