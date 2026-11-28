@@ -17,12 +17,13 @@ import {
   TrendingUp,
   TriangleAlert,
   Users,
+  Gift,
 } from "lucide-react";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { useAdminShellSummary } from "@/hooks/use-admin-shell";
 import { cn } from "@/lib/utils";
 
-type CountKey = "campaigns" | "kyc" | "receipts" | "petitions";
+type CountKey = "campaigns" | "kyc" | "receipts" | "petitions" | "wishlists";
 
 type NavItem = {
   title: string;
@@ -83,6 +84,12 @@ const navGroups: { label: string; items: NavItem[] }[] = [
         href: "/dashboard/admin/petitions",
         icon: Flag,
         countKey: "petitions",
+      },
+      {
+        title: "Wishlists",
+        href: "/dashboard/admin/wishlists",
+        icon: Gift,
+        countKey: "wishlists",
       },
       {
         title: "Organizations",

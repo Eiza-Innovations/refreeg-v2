@@ -5,13 +5,24 @@ jest.mock("@/lib/prisma", () => ({
   prisma: {
     wishlists: {
       findUnique: jest.fn(),
+      update: jest.fn(),
       delete: jest.fn(),
     },
     wishlist_items: {
+      count: jest.fn(),
+      findMany: jest.fn(),
       deleteMany: jest.fn(),
+      updateMany: jest.fn(),
     },
     wishlist_contributions: {
       count: jest.fn(),
+      findMany: jest.fn(),
+      aggregate: jest.fn(),
+    },
+    // Saved-wishlist bookmarks are polymorphic rows with no FK; the delete
+    // action sweeps them so /saved never points at a deleted wishlist.
+    bookmark: {
+      deleteMany: jest.fn(),
     },
     $transaction: jest.fn(),
   },
@@ -43,9 +54,27 @@ const ownedRow = {
 describe("deleteWishlist (owner-only, money-trail safe)", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    db.$transaction.mockImplementation((ops: unknown[]) =>
-      Promise.resolve(ops),
-    );
+
+    // Support both $transaction([...]) and $transaction(async (tx) => ...).
+    db.$transaction.mockImplementation(async (arg: unknown) => {
+      if (typeof arg === "function") {
+        return (arg as (tx: typeof db) => unknown)(db);
+      }
+      return Promise.all(arg as Promise<unknown>[]);
+    });
+
+    db.wishlists.update.mockResolvedValue({ ...ownedRow, status: "deleted" });
+    db.wishlists.delete.mockResolvedValue({ id: "w-1" });
+    db.wishlist_items.count.mockResolvedValue(0);
+    db.wishlist_items.findMany.mockResolvedValue([]);
+    db.wishlist_items.deleteMany.mockResolvedValue({ count: 0 });
+    db.wishlist_items.updateMany.mockResolvedValue({ count: 0 });
+    db.wishlist_contributions.count.mockResolvedValue(0);
+    db.wishlist_contributions.findMany.mockResolvedValue([]);
+    db.wishlist_contributions.aggregate.mockResolvedValue({
+      _sum: { amount: 0 },
+    });
+    db.bookmark.deleteMany.mockResolvedValue({ count: 0 });
   });
 
   it("fails closed when unauthenticated", async () => {
@@ -71,6 +100,9 @@ describe("deleteWishlist (owner-only, money-trail safe)", () => {
     (auth as jest.Mock).mockResolvedValue({ user: { id: "owner-1" } });
     db.wishlists.findUnique.mockResolvedValue(ownedRow);
     db.wishlist_contributions.count.mockResolvedValue(2);
+    db.wishlist_contributions.aggregate.mockResolvedValue({
+      _sum: { amount: 10_000 },
+    });
 
     const result = await deleteWishlist("w-1");
 
@@ -91,6 +123,9 @@ describe("deleteWishlist (owner-only, money-trail safe)", () => {
     expect(db.$transaction).toHaveBeenCalledTimes(1);
     expect(db.wishlist_items.deleteMany).toHaveBeenCalledWith({
       where: { wishlist_id: "w-1" },
+    });
+    expect(db.bookmark.deleteMany).toHaveBeenCalledWith({
+      where: { target_type: "wishlist", target_id: "w-1" },
     });
     expect(db.wishlists.delete).toHaveBeenCalledWith({ where: { id: "w-1" } });
   });

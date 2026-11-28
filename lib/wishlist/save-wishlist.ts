@@ -18,11 +18,13 @@ function partialSaveNotice(added: number, total: number, firstError: string) {
 export async function saveWishlistWithItems(input: {
   title: string;
   message: string;
+  isPublic?: boolean;
   rows: ItemRow[];
 }): Promise<SaveResult> {
   const created = await createWishlist({
     title: input.title,
     message: input.message || undefined,
+    isPublic: input.isPublic,
   });
   if (!created.success || !created.data) {
     return { ok: false, error: created.error || "Could not save the wishlist" };

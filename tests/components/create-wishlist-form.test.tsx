@@ -104,7 +104,7 @@ describe("CreateWishlistForm item rows", () => {
       price: 80000,
       note: undefined,
     });
-    expect(push).toHaveBeenCalledWith("/nomso/nomsos-wishlist");
+    expect(push).toHaveBeenCalledWith("/nomso/w/nomsos-wishlist");
   });
 
   it("flags an under-priced item on its own row", async () => {

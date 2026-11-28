@@ -1,5 +1,6 @@
 import { revalidatePath } from "next/cache";
 import type { WishlistOwnerPayoutState } from "@/types";
+import { wishlistPublicPath } from "@/lib/wishlist/slug";
 
 export function resolveOwnerPayoutState(user: {
   isVerified: boolean | null;
@@ -14,7 +15,9 @@ export function wishlistSharePath(
   username: string | null | undefined,
   slug: string,
 ) {
-  return username ? `/${username}/${slug}` : null;
+  return username
+    ? wishlistPublicPath({ ownerUsername: username, slug })
+    : null;
 }
 
 export function revalidateSharePath(

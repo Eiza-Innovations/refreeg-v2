@@ -5,4 +5,6 @@ export const reviewQueueWhere = {
   receipts: { status: "pending" },
   petitions: { status: "pending" },
   reports: { status: "pending" },
+  // Wishlists don't queue for review; the badge tracks live wishlists.
+  wishlists: { status: "active" },
 };

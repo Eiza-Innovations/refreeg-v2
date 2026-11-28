@@ -5,6 +5,8 @@ import { ensureDefaultAdmin, isAdminOrManager } from "./role-actions";
 
 export type Action =
   | "approve-cause"
+  | "remove-wishlist"
+  | "restore-wishlist"
   | "reject-cause"
   | "approve-petition"
   | "reject-petition"
