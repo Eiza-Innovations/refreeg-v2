@@ -32,19 +32,16 @@ export function getBaseURL(): string {
     ? configured
     : `https://${configured}`;
 }
+
+type PaymentProvider = "paystack" | "flutterwave";
+
 const SERVICE_FEE_CAP_NAIRA = 10000;
 
-export const calculateServiceFee = (amount: number): number => {
-  const serviceFeePercentage = Number(
-    process.env.NEXT_PUBLIC_REFREEG_SERVICE_FEE || "0",
-  );
-  const fee = Math.round(amount * (serviceFeePercentage / 100) || 0);
-  return Math.min(fee, SERVICE_FEE_CAP_NAIRA);
-};
+const TOTAL_FEE_CAP_NAIRA = 10000;
 
 export const calculateProviderFee = (
   donationAmount: number,
-  provider: "paystack" | "flutterwave" = "paystack",
+  provider: PaymentProvider = "paystack",
 ): number => {
   if (provider === "flutterwave") {
     const totalNeeded = donationAmount / 0.986;
@@ -55,4 +52,21 @@ export const calculateProviderFee = (
   const percentageFee = Math.round(donationAmount * 0.015);
   const flatFee = donationAmount > 2500 ? 100 : 0;
   return Math.min(percentageFee + flatFee, 2000);
+};
+
+export const calculateServiceFee = (
+  amount: number,
+  provider: PaymentProvider = "paystack",
+): number => {
+  const serviceFeePercentage = Number(
+    process.env.NEXT_PUBLIC_REFREEG_SERVICE_FEE || "0",
+  );
+  const fee = Math.round(amount * (serviceFeePercentage / 100) || 0);
+  if (fee <= 0) return 0;
+
+  const room = Math.max(
+    TOTAL_FEE_CAP_NAIRA - calculateProviderFee(amount, provider),
+    0,
+  );
+  return Math.min(fee, SERVICE_FEE_CAP_NAIRA, room);
 };

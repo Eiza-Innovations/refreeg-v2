@@ -11,12 +11,12 @@ const processingFees = [
   {
     provider: "Paystack",
     detail:
-      "1.5% of the donation, plus a ₦100 flat fee on donations above ₦2,500. Capped at ₦10,000 per transaction.",
+      "1.5% of the donation, plus a ₦100 flat fee on donations above ₦2,500. Capped at ₦2,000 per transaction.",
   },
   {
     provider: "Flutterwave",
     detail:
-      "1.4% of the donation (the amount is adjusted so the net lands whole).",
+      "1.4% of the donation (the amount is adjusted so the net lands whole). This fee is not capped.",
   },
 ];
 
@@ -24,15 +24,16 @@ const rows: { title: string; body: string[] }[] = [
   {
     title: "What giving costs",
     body: [
-      "You pay the amount you choose to give, plus a payment processing fee charged by the payment provider (Paystack or Flutterwave) for handling the transaction. The processing fee is calculated in Naira and shown on the payment screen before you confirm — nothing is added silently.",
+      "You pay the amount you choose to give, plus a platform service fee and a payment processing fee charged by the payment provider (Paystack or Flutterwave). Both fees are calculated in Naira and shown on the payment screen before you confirm. Nothing is added silently.",
       "Guest giving works the same way: you do not need an account, and the receipt goes to the email you enter.",
     ],
   },
   {
     title: "Platform service fee",
     body: [
-      "RefreeG charges no platform service fee on donations today: creators keep 100% of what is raised, and givers pay nothing beyond the processing fee above.",
-      "If we ever introduce a service fee, it will be published on this page first and applied going forward — never retroactively. By design, any future service fee is capped at ₦10,000 per donation.",
+      "RefreeG charges a platform service fee of 2% of the donation. It is capped at ₦10,000 per donation.",
+      "The service fee and the processing fee together are capped at ₦10,000 per donation. When a large gift would go over that, the service fee is reduced so your total fees stay within ₦10,000. Flutterwave's processing fee is not capped, so on very large gifts (above about ₦705,000) it can exceed ₦10,000 on its own. In that case no service fee is charged.",
+      "Any change to the service fee is published on this page before it takes effect and applies going forward, never retroactively.",
     ],
   },
   {
@@ -42,7 +43,7 @@ const rows: { title: string; body: string[] }[] = [
   {
     title: "Wishlist gifts",
     body: [
-      "Gifts to wishlist items follow the same model: the giver pays the amount plus the provider's processing fee, and no platform service fee applies. Wishlist owners without verified payout details can collect up to ₦500,000 in total gifts; completing verification in settings lifts the cap automatically.",
+      "Gifts to wishlist items follow the same model: the giver pays the amount plus the platform service fee and the provider's processing fee, with the same combined ₦10,000 cap. Wishlist owners without verified payout details can collect up to ₦500,000 in total gifts; completing verification in settings lifts the cap automatically.",
     ],
   },
   {
@@ -80,7 +81,7 @@ export default function FeePolicyPage() {
         Last updated 28 November 2026 · Eiza Innovations Limited (RC 8032815)
       </p>
       <p className="mt-6 text-base leading-7 text-ink/70">
-        Every fee on RefreeG, up front — no hidden charges, no fine print
+        Every fee on RefreeG, up front. No hidden charges, no fine print
         surprises. Changes to this page are announced before they take effect.
         See also our{" "}
         <Link
