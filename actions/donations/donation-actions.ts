@@ -94,6 +94,15 @@ export async function createDonation(
       console.error("Error syncing proof milestones:", e);
     }
   } catch (error) {
+    const prismaCode = (error as { code?: string } | null)?.code;
+    if (prismaCode === "P2002" && paystackReference) {
+      const existing = await prisma.donation.findFirst({
+        where: { paystack_reference: paystackReference },
+      });
+      if (existing) {
+        return mapPrismaToDonation(existing);
+      }
+    }
     console.error("Error creating donation:", error);
     throw error;
   }

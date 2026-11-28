@@ -6,11 +6,25 @@ jest.mock("@/lib/auth/mobile-auth", () => ({
   authenticateMobileRequest: jest.fn(),
 }));
 
+jest.mock("@/lib/api/rate-limit", () => ({
+  enforceRateLimit: jest.fn().mockReturnValue(null),
+}));
+
+jest.mock("@/lib/prisma", () => ({
+  prisma: {
+    kyc_verifications: {
+      findFirst: jest.fn(),
+    },
+  },
+}));
+
 import { GET } from "@/app/api/mobile/kyc/session/[sessionId]/route";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
+import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
 
 describe("Mobile KYC Session Route (/api/mobile/kyc/session/[sessionId])", () => {
+  const originalEnv = process.env;
   const mockUser = {
     id: "user-123",
     email: "session@example.com",
@@ -19,7 +33,15 @@ describe("Mobile KYC Session Route (/api/mobile/kyc/session/[sessionId])", () =>
 
   beforeEach(() => {
     jest.clearAllMocks();
+    process.env = { ...originalEnv, DIDIT_API_KEY: "test-didit-key" };
     global.fetch = jest.fn();
+    (prisma.kyc_verifications.findFirst as jest.Mock).mockResolvedValue({
+      id: "kyc-1",
+    });
+  });
+
+  afterAll(() => {
+    process.env = originalEnv;
   });
 
   it("returns 401 when unauthenticated", async () => {
