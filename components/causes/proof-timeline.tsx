@@ -1,32 +1,22 @@
+import { Heading, P } from "@/components/marketing/Typography";
+import type { ProofMediaEntry, ProofUpdate } from "@/types/proof-types";
 import { ProofMediaGallery } from "./proof-media-gallery";
-
-type MediaEntry = {
-  type: "image" | "video" | "document";
-  url: string;
-  name: string;
-};
-
-type ProofUpdate = {
-  id: string;
-  milestone: number | null;
-  created_at: string | Date;
-  description: string;
-  media: unknown;
-};
 
 export function ProofTimeline({ updates }: { updates: ProofUpdate[] }) {
   if (!updates || updates.length === 0) return null;
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 mt-8">
-      <h2 className="text-xl font-bold text-slate-900">Updates & proof</h2>
-      <p className="mt-1 text-sm text-slate-500">
+    <section className="mt-8 rounded-2xl border border-hairline bg-surface p-6">
+      <Heading as="h2" size="panel" className="font-medium">
+        Updates &amp; proof
+      </Heading>
+      <P className="mt-1 text-ink/60 md:text-sm">
         Verified fund-use updates from the organizer - proof, not promises.
-      </p>
+      </P>
 
-      <ol className="mt-6 space-y-8 border-l border-slate-200 pl-6">
+      <ol className="mt-6 space-y-8 border-l border-hairline pl-6">
         {updates.map((update) => {
-          const media = (update.media as unknown as MediaEntry[]) ?? [];
+          const media = (update.media as unknown as ProofMediaEntry[]) ?? [];
           const date =
             typeof update.created_at === "string"
               ? new Date(update.created_at)

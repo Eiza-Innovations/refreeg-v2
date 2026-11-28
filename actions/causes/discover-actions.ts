@@ -26,124 +26,17 @@ import {
   DISCOVER_CACHE_TAG,
   DISCOVER_RESULT_CAP,
 } from "@/lib/causes/discover-constants";
-
-export type DiscoverSort =
-  | "most-urgent"
-  | "closest-to-goal"
-  | "newest"
-  | "most-given"
-  | "closing-soonest";
-
-export interface DiscoverFilters {
-  categories?: string[];
-  location?: string;
-  urgentOnly?: boolean;
-  verifiedOnly?: boolean;
-  claimedOnly?: boolean;
-  nearGoalOnly?: boolean;
-  minAmountNeeded?: number;
-  maxAmountNeeded?: number;
-  includeType?: "all" | "campaigns" | "petitions";
-  search?: string;
-  sortBy?: DiscoverSort;
-}
-
-export interface DiscoverItem {
-  type: "campaign" | "petition";
-  id: string;
-  title: string;
-  image: string | null;
-  orgName: string;
-  verified: boolean;
-  raised: number;
-  goal: number;
-  percent: number;
-  daysLeft: number | null;
-  urgent: boolean;
-  location: string | null;
-
-  paused: boolean;
-  createdAt: string;
-  /** Completed donations; null for petitions. */
-  giftCount: number | null;
-}
-
-function compareItems(
-  a: DiscoverItem,
-  b: DiscoverItem,
-  sortBy: DiscoverSort,
-): number {
-  if (a.paused !== b.paused) return a.paused ? 1 : -1;
-
-  switch (sortBy) {
-    case "closest-to-goal":
-      return b.percent - a.percent;
-    case "most-given":
-      return b.raised - a.raised;
-    case "most-urgent":
-    case "closing-soonest":
-      if (a.daysLeft == null && b.daysLeft == null) return 0;
-      if (a.daysLeft == null) return 1;
-      if (b.daysLeft == null) return -1;
-      return a.daysLeft - b.daysLeft;
-    case "newest":
-    default:
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-  }
-}
-
-function daysLeftFromEndDate(
-  endDate: string | null | undefined,
-): number | null {
-  if (!endDate) return null;
-  const diff = new Date(endDate).getTime() - Date.now();
-  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-}
-
-function causeToItem(cause: Cause): DiscoverItem {
-  const daysLeft = daysLeftFromEndDate(cause.end_date);
-  const goal = Number(cause.goal || 0);
-  const raised = Number(cause.raised || 0);
-  return {
-    type: "campaign",
-    id: cause.id,
-    title: cause.title,
-    image: cause.image || null,
-    orgName: cause.profiles?.full_name || "Anonymous",
-    verified: !!cause.profiles?.is_verified,
-    raised,
-    goal,
-    percent: goalPercent(raised, goal),
-    daysLeft,
-    urgent: daysLeft != null && daysLeft <= 7,
-    location: cause.location || null,
-    paused: !!cause.paused,
-    createdAt: cause.created_at,
-    giftCount: null,
-  };
-}
-
-function petitionToItem(petition: Petition): DiscoverItem {
-  const goal = Number(petition.goal || 0);
-  const raised = Number(petition.raised || 0);
-  return {
-    type: "petition",
-    id: petition.id,
-    title: petition.title,
-    image: petition.image || null,
-    orgName: petition.profiles?.full_name || "Anonymous",
-    verified: !!petition.profiles?.is_verified,
-    raised,
-    goal,
-    percent: goalPercent(raised, goal),
-    daysLeft: null,
-    urgent: false,
-    location: null,
-    paused: false,
-    createdAt: petition.created_at,
-    giftCount: null,
-  };
-}
+import {
+  causeToDiscoverItem,
+  compareDiscoverItems,
+  niceCeiling,
+  petitionToDiscoverItem,
+} from "@/lib/causes/discover-helpers";
+import type {
+  DiscoverFilters,
+  DiscoverItem,
+  DiscoverSort,
+} from "@/types/discover-types";
 
 // Only the fields that change what the database returns. Sorting and
 // near-goal filtering happen afterwards, so they must not split the cache.
@@ -211,7 +104,10 @@ const getCappedItems = cachedByArgs(
         : Promise.resolve([]),
     ]);
 
-    return [...causes.map(causeToItem), ...petitions.map(petitionToItem)];
+    return [
+      ...causes.map(causeToDiscoverItem),
+      ...petitions.map(petitionToDiscoverItem),
+    ];
   },
 );
 
@@ -229,7 +125,7 @@ export async function listDiscoverResults(
     items = items.filter((i) => i.percent >= 90 && i.percent < 100);
   }
 
-  items.sort((a, b) => compareItems(a, b, sortBy));
+  items.sort((a, b) => compareDiscoverItems(a, b, sortBy));
 
   const cappedTotal = Math.min(items.length, DISCOVER_RESULT_CAP);
   const page = items.slice(offset, offset + limit);
@@ -390,8 +286,8 @@ export async function searchDiscover(query: string) {
     ]);
 
   return {
-    campaigns: campaigns.map(causeToItem),
-    petitions: petitions.map(petitionToItem),
+    campaigns: campaigns.map(causeToDiscoverItem),
+    petitions: petitions.map(petitionToDiscoverItem),
     organizations,
     totalCount: campaignCount + petitionCount + organizations.length,
   };
@@ -408,12 +304,6 @@ async function countGifts(causeIds: string[]): Promise<Record<string, number>> {
 }
 
 /** Rounds up to a clean slider step: whole millions, else hundred-thousands. */
-function niceCeiling(value: number) {
-  if (value <= 0) return 1_000_000;
-  const step = value >= 1_000_000 ? 1_000_000 : 100_000;
-  return Math.ceil(value / step) * step;
-}
-
 const computeRailData = unstable_cache(
   async () => {
     const open = await prisma.cause.findMany({

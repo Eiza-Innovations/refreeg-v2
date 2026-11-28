@@ -11,8 +11,8 @@ import {
 } from "@/components/ui/dialog";
 import { SupportErrorCta } from "@/components/engagement/SupportErrorCta";
 import { followCampaign } from "@/actions/causes/cause-actions";
-import type { Donor } from "../types/types";
-import { fadeUp } from "../types/types";
+import type { Donor } from "@/types/campaign-view-types";
+import { fadeUp } from "@/lib/causes/campaign-constants";
 
 export function CampaignHealthCard({
   donors,

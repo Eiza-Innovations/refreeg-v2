@@ -9,8 +9,11 @@ import { causePublicPath } from "@/lib/causes/slug";
 import Image from "next/image";
 import Link from "next/link";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
-import type { CampaignQualityLabProps, TabKey } from "./types/types";
-import { stagger } from "./types/types";
+import type {
+  CampaignQualityLabProps,
+  TabKey,
+} from "@/types/campaign-view-types";
+import { stagger } from "@/lib/causes/campaign-constants";
 import { useCampaignDonation } from "./hooks/use-campaign-donation";
 import { HeroSummary } from "./ui/hero-summary";
 import { DonateCard } from "./ui/donate-card";

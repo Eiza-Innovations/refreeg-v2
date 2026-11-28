@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { DiscoverSearch } from "@/components/discover/discover-search";
 import { useDiscoverSearch } from "@/hooks/use-discover-search";
-import type { DiscoverItem } from "@/actions/causes/discover-actions";
+import type { DiscoverItem } from "@/types/discover-types";
 
 // The hook is the boundary under test: the combobox UI must drive it and
 // render whatever it returns, regardless of how searchDiscover fetches.

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "nextjs-toploader/app";
 import { useDebounce } from "@/hooks/use-debounce";
-import type { DiscoverItem } from "@/actions/causes/discover-actions";
+import type { DiscoverItem } from "@/types/discover-types";
 
 const SEARCH_DEBOUNCE_MS = 300;
 const SEARCH_MAX_LENGTH = 100;

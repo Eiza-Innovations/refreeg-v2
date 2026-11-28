@@ -10,11 +10,9 @@ import { causePublicPath } from "@/lib/causes/slug";
 import { CausePausedNotice } from "@/components/causes/CausePausedNotice";
 import { isAdminOrManager } from "@/actions/admin/role-actions";
 import { FunnelStepBeacon } from "@/components/causes/FunnelStepBeacon";
+import { isUuid } from "@/lib/uuid";
 
 import { Metadata } from "next";
-
-const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function generateMetadata({
   params,
@@ -53,7 +51,7 @@ export default async function CauseDetailPage({
     notFound();
   }
 
-  if (UUID_REGEX.test(id) && cause.slug) {
+  if (isUuid(id) && cause.slug) {
     redirect(causePublicPath(cause));
   }
 

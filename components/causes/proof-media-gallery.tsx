@@ -5,13 +5,9 @@ import Image from "next/image";
 import { getMediaUrl } from "@/lib/s3/media";
 import { FileText, X, ChevronLeft, ChevronRight } from "lucide-react";
 
-type MediaEntry = {
-  type: "image" | "video" | "document";
-  url: string;
-  name: string;
-};
+import type { ProofMediaEntry } from "@/types/proof-types";
 
-export function ProofMediaGallery({ media }: { media: MediaEntry[] }) {
+export function ProofMediaGallery({ media }: { media: ProofMediaEntry[] }) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const images = media.filter((m) => m.type === "image");
   const videos = media.filter((m) => m.type === "video");

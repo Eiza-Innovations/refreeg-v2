@@ -10,7 +10,7 @@ import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { formatNairaShort } from "@/lib/causes/discover-summary";
 import { BookmarkButton } from "@/components/saved/BookmarkButton";
 import { PetitionCard } from "@/components/petitions/PetitionCard";
-import type { DiscoverItem } from "@/actions/causes/discover-actions";
+import type { DiscoverItem } from "@/types/discover-types";
 
 type CardProps = {
   item: DiscoverItem;

@@ -1,4 +1,4 @@
-import type { DiscoverFilters } from "@/actions/causes/discover-actions";
+import type { DiscoverFilters } from "@/types/discover-types";
 import { getCampaignCategoryStyle } from "@/lib/causes/campaign-categories";
 
 export type FilterKey =

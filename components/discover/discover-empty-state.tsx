@@ -5,10 +5,8 @@ import { Bell, Search } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import {
-  explainNoResults,
-  type DiscoverFilters,
-} from "@/actions/causes/discover-actions";
+import { explainNoResults } from "@/actions/causes/discover-actions";
+import type { DiscoverFilters } from "@/types/discover-types";
 import { createSavedSearchAlert } from "@/actions/users/saved-search-actions";
 import { getCampaignCategoryStyle } from "@/lib/causes/campaign-categories";
 import {

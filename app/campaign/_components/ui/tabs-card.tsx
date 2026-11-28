@@ -3,8 +3,8 @@ import { motion } from "framer-motion";
 import { MessagesSquare, ChevronDown } from "lucide-react";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { CauseDetail, TabKey } from "../types/types";
-import { TABS, DEFAULT_FAQS, fadeUp } from "../types/types";
+import type { CauseDetail, TabKey } from "@/types/campaign-view-types";
+import { TABS, DEFAULT_FAQS, fadeUp } from "@/lib/causes/campaign-constants";
 import type { Comment } from "@/types/common-types";
 
 const CommentsSection = dynamic(

@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/command";
 import { getMediaUrl } from "@/lib/s3/media";
 import type { useDiscoverSearch } from "@/hooks/use-discover-search";
-import type { DiscoverItem } from "@/actions/causes/discover-actions";
+import type { DiscoverItem } from "@/types/discover-types";
 
 function HighlightedText({ text, query }: { text: string; query: string }) {
   if (!query.trim()) return <>{text}</>;

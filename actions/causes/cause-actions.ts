@@ -36,9 +36,7 @@ import {
   removeCause,
 } from "@/lib/causes/remove-cause";
 import { UNCLAIMED_OWNER_EMAIL } from "@/lib/causes/recovered-causes";
-
-const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuid } from "@/lib/uuid";
 
 async function isCauseSlugTaken(
   slug: string,
@@ -88,7 +86,7 @@ async function getCauseUncached(
   if (!causeId?.trim()) return null;
   const user = await getCurrentUser();
 
-  const data = UUID_REGEX.test(causeId)
+  const data = isUuid(causeId)
     ? await prisma.cause.findUnique({
         where: { id: causeId },
         include: {

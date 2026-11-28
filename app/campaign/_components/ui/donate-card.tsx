@@ -4,8 +4,8 @@ import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BreetCryptoDonationModal } from "@/components/crypto-details/BreetCryptoDonationModal";
 import { causePublicPath } from "@/lib/causes/slug";
-import type { CauseDetail, ProfileSummary } from "../types/types";
-import { DONATION_PRESETS, fadeUp } from "../types/types";
+import type { CauseDetail, ProfileSummary } from "@/types/campaign-view-types";
+import { DONATION_PRESETS, fadeUp } from "@/lib/causes/campaign-constants";
 
 const DonationForm = dynamic(
   () =>

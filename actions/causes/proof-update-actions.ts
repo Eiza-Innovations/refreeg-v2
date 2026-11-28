@@ -5,18 +5,13 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { isOwnUploadKey } from "@/lib/s3/owned-key";
 import { receiptDetailsSchema } from "@/lib/schemas/proof-update.schema";
-
-const MAX_FILES = 10;
-const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
-const MAX_DOC_BYTES = 20 * 1024 * 1024;
-const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
-
-function mediaKind(mime: string): "image" | "video" | "document" | null {
-  if (mime.startsWith("image/")) return "image";
-  if (mime.startsWith("video/")) return "video";
-  if (mime === "application/pdf") return "document";
-  return null;
-}
+import {
+  MAX_PROOF_DOC_BYTES,
+  MAX_PROOF_FILES,
+  MAX_PROOF_IMAGE_BYTES,
+  MAX_PROOF_VIDEO_BYTES,
+  mediaKind,
+} from "@/lib/causes/proof-constants";
 
 async function uploadProofFile(
   file: File,
@@ -103,10 +98,10 @@ export async function submitProofUpdate(formData: FormData) {
         return { success: false, error: `Unsupported file type: ${item.name}` };
       const limit =
         kind === "image"
-          ? MAX_IMAGE_BYTES
+          ? MAX_PROOF_IMAGE_BYTES
           : kind === "document"
-            ? MAX_DOC_BYTES
-            : MAX_VIDEO_BYTES;
+            ? MAX_PROOF_DOC_BYTES
+            : MAX_PROOF_VIDEO_BYTES;
       if (item.size > limit)
         return { success: false, error: `${item.name} is too large.` };
       const url = await uploadProofFile(item, userId, causeId);
@@ -120,8 +115,8 @@ export async function submitProofUpdate(formData: FormData) {
       error: "Attach at least one photo, video or document.",
     };
   }
-  if (media.length > MAX_FILES) {
-    return { success: false, error: `Maximum ${MAX_FILES} files.` };
+  if (media.length > MAX_PROOF_FILES) {
+    return { success: false, error: `Maximum ${MAX_PROOF_FILES} files.` };
   }
 
   const milestone =

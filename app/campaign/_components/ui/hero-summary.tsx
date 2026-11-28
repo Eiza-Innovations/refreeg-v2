@@ -2,8 +2,8 @@ import { motion } from "framer-motion";
 import { BadgeCheck, MapPin, Users } from "lucide-react";
 import { getCampaignCategoryStyle } from "@/lib/causes/campaign-categories";
 import { cn } from "@/lib/utils";
-import type { CauseDetail } from "../types/types";
-import { fadeUp } from "../types/types";
+import type { CauseDetail } from "@/types/campaign-view-types";
+import { fadeUp } from "@/lib/causes/campaign-constants";
 
 export function HeroSummary({
   cause,

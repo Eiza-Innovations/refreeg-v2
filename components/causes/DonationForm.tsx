@@ -26,7 +26,7 @@ import { useProfile } from "@/hooks/use-profile";
 import { calculateServiceFee, calculateProviderFee, cn } from "@/lib/utils";
 import { sendUnfinishedDonationEmail } from "@/services/mail";
 
-const MIN_DONATION_AMOUNT = 100;
+import { MIN_DONATION_AMOUNT } from "@/lib/causes/campaign-constants";
 
 interface DonationFormProps {
   causeId: string;
@@ -468,6 +468,7 @@ export function DonationForm({
 
           <Button
             type="submit"
+            variant="lime"
             disabled={
               isRedirecting ||
               isDisabled ||

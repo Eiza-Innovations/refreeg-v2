@@ -4,9 +4,7 @@ import { getSessionUser } from "@/lib/auth/session-user";
 import { getProfile } from "@/actions/users/profile-actions";
 import PledgeScreen from "@/app/campaign/_components/pledge-screen";
 import { causePublicPath } from "@/lib/causes/slug";
-
-const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuid } from "@/lib/uuid";
 
 export default async function CausePledgePage({
   params,
@@ -19,7 +17,7 @@ export default async function CausePledgePage({
     notFound();
   }
 
-  if (UUID_REGEX.test(id) && cause.slug) {
+  if (isUuid(id) && cause.slug) {
     redirect(`${causePublicPath(cause)}/pledge`);
   }
 

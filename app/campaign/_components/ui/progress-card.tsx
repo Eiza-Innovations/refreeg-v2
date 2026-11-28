@@ -3,8 +3,8 @@ import { CalendarClock } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { CauseDetail } from "../types/types";
-import { fadeUp } from "../types/types";
+import type { CauseDetail } from "@/types/campaign-view-types";
+import { fadeUp } from "@/lib/causes/campaign-constants";
 
 const ShareModal = dynamic(
   () =>

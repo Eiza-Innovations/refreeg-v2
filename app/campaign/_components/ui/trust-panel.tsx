@@ -6,8 +6,8 @@ import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { causePublicPath } from "@/lib/causes/slug";
-import type { CauseDetail } from "../types/types";
-import { fadeUp } from "../types/types";
+import type { CauseDetail } from "@/types/campaign-view-types";
+import { fadeUp } from "@/lib/causes/campaign-constants";
 
 const ShareModal = dynamic(
   () =>

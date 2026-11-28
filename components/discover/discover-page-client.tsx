@@ -21,10 +21,12 @@ import { campaignCategoryStyles } from "@/lib/causes/campaign-categories";
 import {
   getDiscoverFacets,
   countDiscoverResults,
-  type DiscoverFilters,
-  type DiscoverItem,
-  type DiscoverSort as DiscoverSortType,
 } from "@/actions/causes/discover-actions";
+import type {
+  DiscoverFilters,
+  DiscoverItem,
+  DiscoverSort as DiscoverSortType,
+} from "@/types/discover-types";
 import { buildDiscoverSearchParams } from "@/lib/causes/discover-url";
 import {
   filterChips,

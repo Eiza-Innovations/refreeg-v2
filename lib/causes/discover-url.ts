@@ -1,7 +1,4 @@
-import type {
-  DiscoverFilters,
-  DiscoverSort,
-} from "@/actions/causes/discover-actions";
+import type { DiscoverFilters, DiscoverSort } from "@/types/discover-types";
 import type { DiscoverTab } from "@/components/discover/discover-tabs";
 
 const VALID_TABS: DiscoverTab[] = [

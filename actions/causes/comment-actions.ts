@@ -1,19 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { Comment } from "@/types/common-types";
 import { recordEventCore as recordEvent } from "@/lib/rewards/reward-core";
+import { mapUserToCommentUser } from "@/lib/comments/map-comment-user";
 import { sendNewCommentEmail } from "@/services/mail";
-
-function mapUserToCommentUser(user: {
-  fullName: string | null;
-  profilePhoto: string | null;
-  username: string | null;
-}) {
-  return {
-    full_name: user.fullName,
-    profile_photo: user.profilePhoto,
-    username: user.username,
-  };
-}
 
 export async function createComment(
   causeId: string,

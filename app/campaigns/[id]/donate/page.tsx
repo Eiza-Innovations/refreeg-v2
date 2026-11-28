@@ -8,9 +8,7 @@ import { causePublicPath } from "@/lib/causes/slug";
 import { CausePausedNotice } from "@/components/causes/CausePausedNotice";
 import { isAdminOrManager } from "@/actions/admin/role-actions";
 import { FunnelStepBeacon } from "@/components/causes/FunnelStepBeacon";
-
-const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuid } from "@/lib/uuid";
 
 export async function generateMetadata({
   params,
@@ -34,7 +32,7 @@ export default async function QuickDonatePage({
   const cause = await getCause(id);
   if (!cause) notFound();
 
-  if (UUID_REGEX.test(id) && cause.slug) {
+  if (isUuid(id) && cause.slug) {
     redirect(`${causePublicPath(cause)}/donate`);
   }
 
