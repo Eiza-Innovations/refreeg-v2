@@ -5,6 +5,7 @@ import { getSessionUser } from "@/lib/auth/session-user";
 import { getCampaignCategoryStyle } from "@/lib/causes/campaign-categories";
 import { causePublicPath } from "@/lib/causes/slug";
 import { wishlistGiftDonorFilter } from "@/lib/wishlist/giving";
+import { wishlistSharePath } from "@/lib/wishlist/payout";
 
 export type GivingPeriod = "year" | "last-year" | "all";
 export type GivingFilter = "all" | "delivered" | "in-progress" | "pledges";
@@ -238,9 +239,9 @@ export async function getGivingOverview({
     title: g.item.name,
     owner: g.item.wishlist.title,
     image: null,
-    href: username
-      ? `/${username}/${g.item.wishlist.slug}`
-      : "/dashboard/wishlists",
+    href:
+      wishlistSharePath(username, g.item.wishlist.slug) ??
+      "/dashboard/wishlists",
     amount: Number(g.amount),
     date: (g.created_at ?? now).toISOString(),
     status: "given" as const,

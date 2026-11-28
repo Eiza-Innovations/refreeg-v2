@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/actions/users/auth-actions";
 import { isAdminOrManager } from "@/actions/admin/role-actions";
 import { logAdminActivity } from "@/actions/admin/database-actions";
+import { wishlistSharePath } from "@/lib/wishlist/payout";
 import { revalidatePath } from "next/cache";
 
 export interface AdminWishlistRow {
@@ -17,7 +18,7 @@ export interface AdminWishlistRow {
   ownerEmail: string;
   itemCount: number;
   giftsTotal: number;
-  contributedTotal: number;
+  targetTotal: number;
   createdAt: string;
   sharePath: string;
 }
@@ -46,16 +47,13 @@ export async function getAdminWishlistQueue(): Promise<AdminWishlistQueue> {
     status: w.status,
     isPublic: w.is_public,
     ownerName: w.user.fullName || w.user.username || "Unknown",
-    ownerUsername: w.user.username,
-    ownerEmail: w.user.email,
+    ownerUsername: w.user.username ?? "",
+    ownerEmail: w.user.email ?? "",
     itemCount: w.items.length,
     giftsTotal: w.items.reduce((sum, i) => sum + Number(i.contributed), 0),
-    contributedTotal: w.items.reduce(
-      (sum, i) => sum + Number(i.contributed),
-      0,
-    ),
+    targetTotal: w.items.reduce((sum, i) => sum + Number(i.price), 0),
     createdAt: w.created_at.toISOString(),
-    sharePath: `/${w.user.username}/${w.slug}`,
+    sharePath: wishlistSharePath(w.user.username, w.slug) ?? "",
   }));
 
   return {
@@ -76,11 +74,7 @@ async function requireAdmin() {
   return user;
 }
 
-/**
- * Admin takedown / restore. "removed" hides the wishlist from discovery and
- * blocks new gifts (assertWishlistAcceptingGifts requires status "active");
- * restore returns it to the owner's control as "active".
- */
+/** Admin takedown / restore; "removed" also blocks new gifts. */
 export async function setWishlistAdminStatus(
   wishlistId: string,
   status: "removed" | "active",
@@ -108,7 +102,7 @@ export async function setWishlistAdminStatus(
       where: { id: wishlistId },
       data: {
         status,
-        ...(notes ? { message: notes } : {}),
+        ...(notes ? { admin_notes: notes } : {}),
       },
     });
     await logAdminActivity(
@@ -116,7 +110,8 @@ export async function setWishlistAdminStatus(
       admin.id,
     );
     revalidatePath("/dashboard/admin/wishlists");
-    revalidatePath(`/${wishlist.user.username}/${wishlist.slug}`);
+    const sharePath = wishlistSharePath(wishlist.user.username, wishlist.slug);
+    if (sharePath) revalidatePath(sharePath);
     return { success: true };
   } catch (error) {
     console.error("Error updating wishlist status (admin):", error);

@@ -27,7 +27,7 @@ const gift = {
   amount: 5000,
   giverName: "Adaeze",
   wishlistTitle: "Nomso's Christmas Wishlist",
-  sharePath: "/nomso/christmas",
+  sharePath: "/nomso/w/christmas",
   createdAt: "2026-11-25T09:30:00.000Z",
 };
 
@@ -97,7 +97,7 @@ describe("WishlistReceived (post-checkout confirmation)", () => {
       );
       expect(
         screen.getByRole("link", { name: "Back to the wishlist" }),
-      ).toHaveAttribute("href", "/nomso/christmas");
+      ).toHaveAttribute("href", "/nomso/w/christmas");
     } finally {
       jest.useRealTimers();
     }

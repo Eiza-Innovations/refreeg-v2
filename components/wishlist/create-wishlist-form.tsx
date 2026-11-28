@@ -17,6 +17,7 @@ import {
   wishlistCreateSchema,
 } from "@/lib/schemas/wishlist.schema";
 import { saveWishlistWithItems } from "@/lib/wishlist/save-wishlist";
+import { wishlistPublicPath } from "@/lib/wishlist/slug";
 
 const WISHLIST_STEPS = [
   {
@@ -84,7 +85,9 @@ export function CreateWishlistForm({
       if (result.notice) {
         toast({ title: "Wishlist created", description: result.notice });
       }
-      router.push(`/${username}/${result.slug}`);
+      router.push(
+        wishlistPublicPath({ ownerUsername: username, slug: result.slug }),
+      );
     } catch {
       setServerError("Something went wrong. Please try again.");
       setSubmitting(false);

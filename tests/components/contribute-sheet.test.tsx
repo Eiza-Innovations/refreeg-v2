@@ -121,7 +121,9 @@ describe("ContributeSheet", () => {
         wishlistItemId: "item-9",
         email: "adaeze@example.com",
         isAnonymous: false,
-        callbackUrl: expect.stringContaining("/nomso/nomsos-wishlist/received"),
+        callbackUrl: expect.stringContaining(
+          "/nomso/w/nomsos-wishlist/received",
+        ),
       }),
     );
   });

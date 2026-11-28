@@ -194,7 +194,7 @@ describe("getGivingOverview", () => {
     expect(wishlistRow).toMatchObject({
       title: "A new study desk",
       owner: "Nomso's Wishlist",
-      href: "/amara/nomsos-wishlist",
+      href: "/amara/w/nomsos-wishlist",
     });
     // Wishlist gifts stay out of the cause-specific filters.
     const delivered = await getGivingOverview({ filter: "delivered" });

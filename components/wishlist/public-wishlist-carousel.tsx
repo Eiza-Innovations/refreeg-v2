@@ -17,11 +17,7 @@ import {
 } from "lucide-react";
 import type { DiscoverableWishlist } from "@/types";
 
-/**
- * Horizontal, swipeable rail of public wishlists on /wishlist.
- * Mirrors the LiveCampaigns carousel (same scroll shell, buttons, hint,
- * GSAP entrance, card anatomy) so the two sections feel identical.
- */
+/** Horizontal, swipeable rail of public wishlists on /wishlist. */
 export function PublicWishlistCarousel({
   items,
   savedKeys,

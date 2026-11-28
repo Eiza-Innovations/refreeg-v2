@@ -5,6 +5,7 @@ import { Check, Link2 } from "lucide-react";
 
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { toast } from "@/hooks/use-toast";
+import { wishlistPublicPath } from "@/lib/wishlist/slug";
 
 export function ShareLinkRow({
   slug,
@@ -17,7 +18,12 @@ export function ShareLinkRow({
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    setUrl(`${window.location.origin}/${ownerUsername}/${slug}`);
+    setUrl(
+      `${window.location.origin}${wishlistPublicPath({
+        ownerUsername,
+        slug,
+      })}`,
+    );
   }, [ownerUsername, slug]);
 
   const copy = async () => {

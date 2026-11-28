@@ -79,11 +79,9 @@ export default async function WishlistSharePage({ params }: WishlistPageProps) {
   } = result.data;
   const viewer = await getSessionUser();
 
-  // Givers are public now: everyone who can open the wishlist sees them.
-  // Anonymous givers keep their name and their email never leaves the query.
   const [givers, bookmarkKeys] = await Promise.all([
     getWishlistGivers(wishlist.id),
-    listBookmarkedKeys().catch(() => []),
+    listBookmarkedKeys().catch(() => [] as string[]),
   ]);
   const initialSaved = bookmarkKeys.includes(`wishlist:${wishlist.id}`);
 

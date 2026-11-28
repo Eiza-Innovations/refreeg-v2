@@ -19,6 +19,7 @@ import {
   mapPrismaToWishlist,
   mapPrismaToWishlistContribution,
   mapPrismaToWishlistItem,
+  pickPreviewImages,
   toIso,
 } from "@/lib/wishlist/mappers";
 import {
@@ -617,10 +618,7 @@ export async function listPublicWishlistsByUsername(username: string): Promise<{
           0,
         ),
         target_total: w.items.reduce((sum, i) => sum + Number(i.price), 0),
-        preview_images: w.items
-          .filter((i) => i.image_url)
-          .slice(0, 3)
-          .map((i) => i.image_url as string),
+        preview_images: pickPreviewImages(w.items),
       })),
     };
   } catch (error) {
@@ -675,10 +673,7 @@ export async function listDiscoverableWishlists(limit = 12): Promise<{
               0,
             ),
             target_total: w.items.reduce((sum, i) => sum + Number(i.price), 0),
-            preview_images: w.items
-              .filter((i) => i.image_url)
-              .slice(0, 3)
-              .map((i) => i.image_url as string),
+            preview_images: pickPreviewImages(w.items),
           },
         ];
       }),
@@ -918,8 +913,14 @@ export async function recordWishlistContribution(
 
     const owner = itemWithWishlist?.wishlist.user;
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com";
-    const wishlistUrl = owner?.username
-      ? `${appUrl}/${owner.username}/${itemWithWishlist?.wishlist.slug}`
+    const sharePath = itemWithWishlist?.wishlist.user.username
+      ? wishlistSharePath(
+          itemWithWishlist.wishlist.user.username,
+          itemWithWishlist.wishlist.slug,
+        )
+      : null;
+    const wishlistUrl = sharePath
+      ? `${appUrl}${sharePath}`
       : `${appUrl}/dashboard/wishlists`;
 
     if (itemWithWishlist && data.email) {
@@ -1015,7 +1016,7 @@ export async function getWishlistGiftByReference(reference: string): Promise<{
         amount: Number(row.amount),
         giverName: row.is_anonymous ? "Anonymous" : row.name || "A giver",
         wishlistTitle: row.item.wishlist.title,
-        sharePath: username ? `/${username}/${row.item.wishlist.slug}` : null,
+        sharePath: wishlistSharePath(username, row.item.wishlist.slug),
         createdAt: toIso(row.created_at),
       },
     };

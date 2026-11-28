@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { SavedGrid } from "@/components/saved/SavedGrid";
 import { WishlistSaveButton } from "@/components/wishlist/wishlist-save-button";
 import { toSavedItems, type SavedListSummary } from "@/lib/saved/saved";
+import { wishlistSharePath } from "@/lib/wishlist/payout";
 
 export default async function SavedPage() {
   const session = await auth();
@@ -129,26 +130,41 @@ export default async function SavedPage() {
               </span>
             </div>
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {savedWishlists.map((wishlist) => (
-                <div
-                  key={wishlist.id}
-                  className="rounded-xl border border-hairline bg-surface p-4 shadow-subtle"
-                >
-                  <Link
-                    href={`/${wishlist.user.username}/${wishlist.slug}`}
-                    className="block font-medium text-ink underline-offset-2 hover:underline"
+              {savedWishlists.map((wishlist) => {
+                const sharePath = wishlistSharePath(
+                  wishlist.user.username,
+                  wishlist.slug,
+                );
+                return (
+                  <div
+                    key={wishlist.id}
+                    className="rounded-xl border border-hairline bg-surface p-4 shadow-subtle"
                   >
-                    {wishlist.title}
-                  </Link>
-                  <p className="mt-0.5 text-xs text-ink/50">
-                    by @{wishlist.user.username}
-                    {wishlist.status !== "active" ? " · archived" : ""}
-                  </p>
-                  <div className="mt-3">
-                    <WishlistSaveButton wishlistId={wishlist.id} initialSaved />
+                    {sharePath ? (
+                      <Link
+                        href={sharePath}
+                        className="block font-medium text-ink underline-offset-2 hover:underline"
+                      >
+                        {wishlist.title}
+                      </Link>
+                    ) : (
+                      <span className="block font-medium text-ink">
+                        {wishlist.title}
+                      </span>
+                    )}
+                    <p className="mt-0.5 text-xs text-ink/50">
+                      by @{wishlist.user.username}
+                      {wishlist.status !== "active" ? " · archived" : ""}
+                    </p>
+                    <div className="mt-3">
+                      <WishlistSaveButton
+                        wishlistId={wishlist.id}
+                        initialSaved
+                      />
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         ) : null}

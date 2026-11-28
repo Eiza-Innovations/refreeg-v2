@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { getWishlistGiftByReference } from "@/actions/wishlists/wishlist-actions";
 import { usePayment } from "@/hooks/use-payment";
 import { formatNaira } from "@/components/giving/format";
+import { wishlistPublicPath } from "@/lib/wishlist/slug";
 import type { WishlistGiftSummary } from "@/types";
 
 const PROVIDER_NAMES: Record<string, string> = {
@@ -45,7 +46,7 @@ export function WishlistReceived({
   provider,
   cancelled,
 }: WishlistReceivedProps) {
-  const backHref = `/${username}/${slug}`;
+  const backHref = wishlistPublicPath({ ownerUsername: username, slug });
   const { verifyPayment } = usePayment();
   const [status, setStatus] = useState<"loading" | "success" | "failed">(
     "loading",

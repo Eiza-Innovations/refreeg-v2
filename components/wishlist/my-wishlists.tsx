@@ -17,6 +17,7 @@ import { listUserWishlists } from "@/actions/wishlists/wishlist-actions";
 import { WishlistRowActions } from "@/components/wishlist/wishlist-row-actions";
 import { formatNaira } from "@/components/giving/format";
 import { formatDate } from "@/lib/format-date";
+import { wishlistPublicPath } from "@/lib/wishlist/slug";
 
 export async function MyWishlists() {
   const result = await listUserWishlists();
@@ -64,7 +65,7 @@ export async function MyWishlists() {
             ? Math.min(100, Math.round((contributed / target) * 100))
             : 0;
         const shareHref = username
-          ? `/${username}/${wishlist.slug}`
+          ? wishlistPublicPath({ ownerUsername: username, slug: wishlist.slug })
           : "/dashboard/wishlists";
 
         return (

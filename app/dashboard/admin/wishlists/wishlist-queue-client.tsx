@@ -22,7 +22,7 @@ const PAGE_SIZE = 10;
 
 const statusBadge: Record<
   string,
-  { label: string; variant: "forest" | "pending" | "destructive" | "surface" }
+  { label: string; variant: "forest" | "pending" | "destructive" }
 > = {
   active: { label: "Live", variant: "forest" },
   archived: { label: "Archived", variant: "pending" },
@@ -44,7 +44,8 @@ export function WishlistQueueClient({
 
   const filtered = useMemo(() => {
     const statuses =
-      wishlistStatusTabs.find((t) => t.value === tab)?.statuses ?? [];
+      wishlistStatusTabs.find((t) => t.value === tab)?.statuses ??
+      ([] as string[]);
     const q = query.trim().toLowerCase();
     return rows.filter((row) => {
       if (!statuses.includes(row.status)) return false;
@@ -148,12 +149,18 @@ export function WishlistQueueClient({
                 return (
                   <tr key={row.id} className="align-middle">
                     <td className="max-w-[220px] px-4 py-3">
-                      <Link
-                        href={row.sharePath}
-                        className="line-clamp-1 font-medium text-ink underline-offset-2 hover:underline"
-                      >
-                        {row.title}
-                      </Link>
+                      {row.sharePath ? (
+                        <Link
+                          href={row.sharePath}
+                          className="line-clamp-1 font-medium text-ink underline-offset-2 hover:underline"
+                        >
+                          {row.title}
+                        </Link>
+                      ) : (
+                        <span className="line-clamp-1 font-medium text-ink">
+                          {row.title}
+                        </span>
+                      )}
                       <span className="block text-xs text-ink/50">
                         {row.itemCount} items
                       </span>
@@ -163,7 +170,7 @@ export function WishlistQueueClient({
                         {row.ownerName}
                       </span>
                       <span className="block text-xs text-ink/50">
-                        @{row.ownerUsername}
+                        @{row.ownerUsername || "—"}
                       </span>
                     </td>
                     <td className="px-4 py-3">
@@ -173,20 +180,25 @@ export function WishlistQueueClient({
                     </td>
                     <td className="px-4 py-3 tabular-nums text-ink">
                       ₦{row.giftsTotal.toLocaleString()}
+                      <span className="block text-xs text-ink/50">
+                        of ₦{row.targetTotal.toLocaleString()} goal
+                      </span>
                     </td>
                     <td className="px-4 py-3">
                       <Badge variant={badge.variant}>{badge.label}</Badge>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
-                        <Button asChild variant="surface" size="sm">
-                          <Link
-                            href={row.sharePath}
-                            aria-label={`Open ${row.title}`}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Link>
-                        </Button>
+                        {row.sharePath ? (
+                          <Button asChild variant="surface" size="sm">
+                            <Link
+                              href={row.sharePath}
+                              aria-label={`Open ${row.title}`}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                        ) : null}
                         {row.status === "active" ? (
                           <Button
                             variant="outline"
