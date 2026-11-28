@@ -18,7 +18,7 @@ const loadUserCausesWithRaised = cache(async (userId: string) => {
   const grouped = await prisma.donation.groupBy({
     by: ["causeId"],
     _sum: { amount: true },
-    where: { causeId: { in: causes.map((c) => c.id) } },
+    where: { causeId: { in: causes.map((c) => c.id) }, status: "completed" },
   });
   for (const d of grouped) {
     raisedByCause[d.causeId] = Number(d._sum.amount || 0);
@@ -67,7 +67,11 @@ export async function getDashboardStats(userId: string) {
 
     const donors = await prisma.donation.groupBy({
       by: ["userId"],
-      where: { causeId: { in: causeIds }, userId: { not: null } },
+      where: {
+        causeId: { in: causeIds },
+        userId: { not: null },
+        status: "completed",
+      },
     });
 
     const totalRaised = causeIds.reduce(
@@ -97,10 +101,10 @@ export async function getUserDonorGivingStats(userId: string) {
     ] = await Promise.all([
       prisma.donation.aggregate({
         _sum: { amount: true },
-        where: { userId },
+        where: { userId, status: "completed" },
       }),
       prisma.donation.findMany({
-        where: { userId },
+        where: { userId, status: "completed" },
         select: { causeId: true },
         distinct: ["causeId"],
       }),
@@ -185,10 +189,16 @@ export async function getPlatformWeeklyDeliveredStats(): Promise<{
   }
 }
 
-export async function getDonationTrends(userId: string) {
+export async function getDonationTrends(userId: string, days?: number) {
   try {
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const since =
+      typeof days === "number" && Number.isFinite(days) && days > 0
+        ? new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+        : (() => {
+            const d = new Date();
+            d.setMonth(d.getMonth() - 6);
+            return d;
+          })();
 
     const causes = (await loadUserCauses(userId)).filter(
       (c) => c.status === "approved",
@@ -201,7 +211,8 @@ export async function getDonationTrends(userId: string) {
     const donations = await prisma.donation.findMany({
       where: {
         causeId: { in: causeIds },
-        createdAt: { gte: sixMonthsAgo },
+        status: "completed",
+        createdAt: { gte: since },
       },
       select: { amount: true, createdAt: true },
       orderBy: { createdAt: "asc" },
@@ -291,7 +302,7 @@ export async function getCauseAnalytics(causeId: string) {
 
   try {
     const donations = await prisma.donation.findMany({
-      where: { causeId },
+      where: { causeId, status: "completed" },
       select: { amount: true, createdAt: true, message: true, userId: true },
     });
 

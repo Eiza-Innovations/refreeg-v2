@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
+import { isUuid } from "@/lib/uuid";
 import { prisma } from "@/lib/prisma";
 
 export async function OPTIONS() {
@@ -16,6 +17,9 @@ export async function POST(
 
   try {
     const { id } = await params;
+    if (!isUuid(id)) {
+      return apiError("Invalid cause id", 400);
+    }
 
     // Check if cause exists
     const cause = await prisma.cause.findUnique({ where: { id } });
@@ -56,6 +60,9 @@ export async function DELETE(
 
   try {
     const { id } = await params;
+    if (!isUuid(id)) {
+      return apiError("Invalid cause id", 400);
+    }
 
     const existing = await prisma.campaign_follows.findFirst({
       where: { user_id: user!.id, cause_id: id },

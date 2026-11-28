@@ -5,6 +5,25 @@ import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
 import { getVerificationStatus } from "@/actions/users/kyc-actions";
 import { prisma } from "@/lib/prisma";
 
+const ALLOWED_KYC_CALLBACK_HOSTS = new Set([
+  "refreeg.com",
+  "www.refreeg.com",
+  "apps.refreeg.com",
+]);
+
+function isAllowedKycCallbackUrl(rawUrl: string): boolean {
+  try {
+    const parsed = new URL(rawUrl);
+    if (parsed.protocol === "refreeg:") return true;
+    return (
+      parsed.protocol === "https:" &&
+      ALLOWED_KYC_CALLBACK_HOSTS.has(parsed.hostname.toLowerCase())
+    );
+  } catch {
+    return false;
+  }
+}
+
 export async function OPTIONS() {
   return handleCorsPreflight();
 }
@@ -107,10 +126,16 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Parse optional callback_url from request body
+    // Parse and validate optional callback_url from request body
     let callbackUrl = "refreeg://kyc/callback"; // Default deep link for Flutter
-    if (body.callback_url && typeof body.callback_url === "string") {
-      callbackUrl = body.callback_url;
+    if (body.callback_url !== undefined && body.callback_url !== null) {
+      if (
+        typeof body.callback_url !== "string" ||
+        !isAllowedKycCallbackUrl(body.callback_url.trim())
+      ) {
+        return apiError("Invalid callback_url", 400);
+      }
+      callbackUrl = body.callback_url.trim();
     }
 
     // Create a new Didit verification session

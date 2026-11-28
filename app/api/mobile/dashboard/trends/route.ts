@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
       return apiError("Invalid range. Must be 7, 30, 90, or 365", 400);
     }
 
-    const trends = await getDonationTrends(user!.id);
+    const trends = await getDonationTrends(user!.id, Number(range));
     return apiSuccess(trends);
   } catch (error: any) {
     console.error("Mobile API Get Donation Trends Error:", error);

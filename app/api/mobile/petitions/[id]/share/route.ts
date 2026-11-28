@@ -1,6 +1,8 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
+import { enforceRateLimit } from "@/lib/api/rate-limit";
 import { savePetitionShare } from "@/actions/petitions/petition-actions";
+import { isUuid } from "@/lib/uuid";
 
 export async function OPTIONS() {
   return handleCorsPreflight();
@@ -10,20 +12,17 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const rateLimited = enforceRateLimit(request, {
+    namespace: "mobile_petition_share",
+    limit: 20,
+    windowMs: 60_000,
+  });
+  if (rateLimited) return rateLimited;
+
   try {
     const { id } = await params;
-
-    let userId: string | undefined;
-    const authHeader = request.headers.get("authorization");
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      try {
-        const { verifyMobileToken } = await import("@/lib/auth/jwt");
-        const token = authHeader.split(" ")[1];
-        const payload = await verifyMobileToken(token);
-        userId = payload.userId;
-      } catch (e) {
-        // Ignore invalid tokens for this endpoint
-      }
+    if (!isUuid(id)) {
+      return apiError("Invalid petition id", 400);
     }
 
     await savePetitionShare(id);

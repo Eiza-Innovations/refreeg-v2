@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
+import { isUuid } from "@/lib/uuid";
 import { prisma } from "@/lib/prisma";
 
 export async function OPTIONS() {
@@ -12,10 +13,13 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    if (!isUuid(id)) {
+      return apiError("Invalid comment id", 400);
+    }
 
-    // Check if parent comment exists
     const parentComment = await prisma.comments.findUnique({
       where: { id },
+      select: { id: true },
     });
 
     if (!parentComment) {
@@ -25,6 +29,7 @@ export async function GET(
     const replies = await prisma.comments.findMany({
       where: { parent_id: id },
       orderBy: { created_at: "asc" },
+      take: 100,
       include: {
         user: {
           select: {
