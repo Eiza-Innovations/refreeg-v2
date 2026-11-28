@@ -87,14 +87,17 @@ jest.mock("@/lib/prisma", () => ({
 
 describe("QA Security & Performance Hardening", () => {
   const originalFetch = global.fetch;
+  const originalEnv = process.env;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    process.env = { ...originalEnv, DIDIT_API_KEY: "test-didit-key" };
     global.fetch = jest.fn();
   });
 
   afterAll(() => {
     global.fetch = originalFetch;
+    process.env = originalEnv;
   });
 
   describe("parsePagination", () => {
