@@ -36,6 +36,7 @@ import {
 import { AskResubmitDialog } from "@/components/admin/kyc/ask-resubmit-dialog";
 import { KycFlashToast } from "@/components/admin/kyc/kyc-flash-toast";
 import KycRejectionDialog from "./KycRejectionDialog";
+import { KycApproveButton } from "./KycApproveButton";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { formatIdTypeLabel, initials } from "@/lib/kyc-review";
 import {
@@ -517,16 +518,9 @@ export default async function KycReviewPage({
           <Card variant="surface">
             <CardContent className="space-y-3 pt-6">
               <form action={approveAction}>
-                <Button
-                  type="submit"
-                  variant="ink"
-                  className="w-full"
-                  aria-label="Approve KYC"
+                <KycApproveButton
                   disabled={disableApprove || kyc.status === "approved"}
-                >
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  Approve identity
-                </Button>
+                />
               </form>
               <div className="flex flex-wrap gap-2">
                 {isDidit && (

@@ -118,10 +118,23 @@ export async function POST(request: NextRequest) {
       return apiError("Crypto checkout is not configured", 503);
     }
 
-    const banks = await fetchBreetBanks().catch((err: any) => {
-      console.error("💥 Could not load Breet bank list:", err?.message);
-      return [];
-    });
+    const configuredAssetId = process.env.BREET_ASSET_ID || null;
+    const [banks, assets] = await Promise.all([
+      fetchBreetBanks().catch((err: any) => {
+        console.error("💥 Could not load Breet bank list:", err?.message);
+        return [];
+      }),
+      configuredAssetId
+        ? Promise.resolve([])
+        : fetchBreetDepositAssets().catch((err: any) => {
+            console.error(
+              "💥 Could not load Breet deposit assets:",
+              err?.message,
+            );
+            return [];
+          }),
+    ]);
+
     const bankId = resolveBreetBankId(bankName, banks);
     if (!bankId) {
       console.error(
@@ -133,17 +146,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let assetId = process.env.BREET_ASSET_ID || null;
-    if (!assetId) {
-      const assets = await fetchBreetDepositAssets().catch((err: any) => {
-        console.error("💥 Could not load Breet deposit assets:", err?.message);
-        return [];
-      });
-      assetId = resolveBreetDepositAssetId(assets, "USDT", "Solana");
-      if (!assetId) {
-        assetId = FALLBACK_ASSET_ID;
-      }
-    }
+    const assetId =
+      configuredAssetId ||
+      resolveBreetDepositAssetId(assets, "USDT", "Solana") ||
+      FALLBACK_ASSET_ID;
 
     const compoundLabel = `${verifiedDonorId}_${causeId}`;
     let walletAddress: string | null = null;

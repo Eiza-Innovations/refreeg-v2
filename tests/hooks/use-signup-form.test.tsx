@@ -35,6 +35,7 @@ function fill(result: { current: ReturnType<typeof useSignupForm> }) {
   act(() => result.current.setFormFields("email", "Jane@Example.com"));
   act(() => result.current.setFormFields("password", "Passw0rd!long"));
   act(() => result.current.setFormFields("confirmPassword", "Passw0rd!long"));
+  act(() => result.current.setFormFields("agreeTerms", true));
 }
 
 const submit = (result: { current: ReturnType<typeof useSignupForm> }) =>
@@ -72,9 +73,9 @@ describe("useSignupForm", () => {
 
   it("requires the terms to be accepted", () => {
     const { result } = renderHook(() => useSignupForm(copy), { wrapper });
+
     fill(result);
     act(() => result.current.setFormFields("agreeTerms", false));
-
     submit(result);
 
     expect(global.fetch).not.toHaveBeenCalled();

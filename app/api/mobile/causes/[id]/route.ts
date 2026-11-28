@@ -25,6 +25,7 @@ async function buildCauseDetail(causeRow: any) {
       .findMany({
         where: { causeId: causeRow.id, status: "completed" },
         orderBy: { createdAt: "desc" },
+        take: 50,
         select: {
           id: true,
           causeId: true,
@@ -275,15 +276,34 @@ export async function PUT(
       return apiError("You already have a pending edit for this cause.", 400);
     }
 
-    let daysActive = null;
-    if (body.startDate && body.endDate) {
-      const startDate = new Date(body.startDate);
-      const endDate = new Date(body.endDate);
-      if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
-        daysActive = Math.ceil(
-          (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
-        );
+    if (body.sections !== undefined && !Array.isArray(body.sections)) {
+      return apiError("Sections must be an array", 400);
+    }
+
+    let parsedStartDate: Date | null = null;
+    let parsedEndDate: Date | null = null;
+    let daysActive: number | null = null;
+
+    if (body.startDate !== undefined && body.startDate !== null) {
+      parsedStartDate = new Date(body.startDate);
+      if (isNaN(parsedStartDate.getTime())) {
+        return apiError("Invalid startDate", 400);
       }
+    }
+    if (body.endDate !== undefined && body.endDate !== null) {
+      parsedEndDate = new Date(body.endDate);
+      if (isNaN(parsedEndDate.getTime())) {
+        return apiError("Invalid endDate", 400);
+      }
+    }
+    if (parsedStartDate && parsedEndDate) {
+      if (parsedEndDate.getTime() < parsedStartDate.getTime()) {
+        return apiError("endDate must be after startDate", 400);
+      }
+      daysActive = Math.ceil(
+        (parsedEndDate.getTime() - parsedStartDate.getTime()) /
+          (1000 * 60 * 60 * 24),
+      );
     }
 
     let parsedEditGoal = Math.round(Number(existingCause.goal));
@@ -305,12 +325,8 @@ export async function PUT(
           goal: parsedEditGoal,
           image: body.coverImageS3Key || existingCause.image,
           days_active: daysActive || existingCause.daysActive,
-          start_date: body.startDate
-            ? new Date(body.startDate)
-            : existingCause.start_date,
-          end_date: body.endDate
-            ? new Date(body.endDate)
-            : existingCause.end_date,
+          start_date: parsedStartDate ?? existingCause.start_date,
+          end_date: parsedEndDate ?? existingCause.end_date,
           multimedia: body.multimediaS3Keys || existingCause.multimedia,
           video_links: body.video_links || existingCause.videoLinks,
           summary: body.summary || existingCause.summary,
@@ -319,12 +335,12 @@ export async function PUT(
         },
       });
 
-      if (body.sections && body.sections.length > 0) {
+      if (Array.isArray(body.sections) && body.sections.length > 0) {
         await tx.cause_edit_sections.createMany({
           data: body.sections.map((section: any) => ({
             cause_edit_id: edit.id,
-            heading: section.heading,
-            description: section.description,
+            heading: String(section?.heading ?? ""),
+            description: String(section?.description ?? ""),
           })),
         });
       }

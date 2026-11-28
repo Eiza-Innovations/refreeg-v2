@@ -21,7 +21,11 @@ describe("lib/utils", () => {
     process.env.NEXT_PUBLIC_REFREEG_SERVICE_FEE = "2";
 
     expect(calculateServiceFee(1000)).toBe(20);
-    expect(calculateServiceFee(1_000_000)).toBe(10_000);
+    // The giver's combined fee (service + provider) is capped at ₦10,000.
+    // On Paystack the provider fee caps at ₦2,000, so even when 2% of
+    // 1,000,000 (₦20,000) exceeds the cap, the service fee can only take
+    // the remaining ₦8,000 of room.
+    expect(calculateServiceFee(1_000_000)).toBe(8_000);
 
     process.env.NEXT_PUBLIC_REFREEG_SERVICE_FEE = original;
   });

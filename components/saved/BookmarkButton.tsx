@@ -18,7 +18,7 @@ import {
 
 interface Props {
   itemId: string;
-  itemType: "cause" | "petition";
+  itemType: "cause" | "petition" | "wishlist";
   initialSaved: boolean;
 }
 

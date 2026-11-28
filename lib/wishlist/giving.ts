@@ -1,6 +1,16 @@
 import { prisma } from "@/lib/prisma";
 import { WISHLIST_KYC_THRESHOLD_NAIRA } from "@/lib/schemas/wishlist.schema";
 
+export function wishlistGiftDonorFilter(
+  userId: string,
+  email: string | null | undefined,
+): { status: string; OR: Record<string, unknown>[] } {
+  return {
+    status: "completed",
+    OR: [{ user_id: userId }, ...(email ? [{ email, user_id: null }] : [])],
+  };
+}
+
 export interface WishlistOwnerSnapshot {
   id: string;
   fullName: string | null;

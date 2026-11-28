@@ -25,7 +25,7 @@ export function useSignupForm(copy: SignupCopy) {
     email: "",
     password: "",
     confirmPassword: "",
-    agreeTerms: true,
+    agreeTerms: false,
   });
   const [termsRejected, setTermsRejected] = useState(false);
   const [tracking, setTracking] = useState<SignupTracking>({

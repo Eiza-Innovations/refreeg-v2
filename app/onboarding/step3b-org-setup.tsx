@@ -178,24 +178,6 @@ export default function OrganizationDetailsStep({
             description="Next we set your giving budget and team."
           />
         ) : null}
-        <div className="mt-8 flex gap-3 lg:mt-auto lg:pt-8">
-          <Button
-            type="button"
-            variant="ink"
-            onClick={handleContinue}
-            disabled={saveMutation.isPending || isSubmitting}
-            className="h-12 px-10"
-          >
-            {saveMutation.isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              "Continue"
-            )}
-          </Button>
-        </div>
       </div>
 
       <Card variant="surface" className="p-6 sm:p-8">
@@ -412,6 +394,25 @@ export default function OrganizationDetailsStep({
           </OnboardingField>
         </div>
       </Card>
+
+      <div className="border-t border-hairline pt-6 lg:col-span-2">
+        <Button
+          type="button"
+          variant="ink"
+          onClick={handleContinue}
+          disabled={saveMutation.isPending || isSubmitting}
+          className="h-12 px-10"
+        >
+          {saveMutation.isPending ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            "Continue"
+          )}
+        </Button>
+      </div>
     </div>
   );
 }

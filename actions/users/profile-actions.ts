@@ -42,21 +42,23 @@ async function assertSelf(userId: string): Promise<void> {
 
 export async function getProfile(userId: string): Promise<Profile | null> {
   try {
-    // A Prisma `_count` include makes Postgres GROUP BY the whole causes and
-    // donations tables on every profile read; a filtered count uses the
-    // user_id index instead.
-    const [profile, donationCount] = await Promise.all([
+    const [profile, fundedCauses] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
         omit: { password: true },
       }),
-      prisma.donation.count({ where: { userId } }),
+
+      prisma.donation.findMany({
+        where: { userId, status: "completed" },
+        select: { causeId: true },
+        distinct: ["causeId"],
+      }),
     ]);
 
     if (!profile) return null;
 
     const mapped = mapPrismaToProfile(profile);
-    mapped.causes_count = donationCount;
+    mapped.causes_count = fundedCauses.length;
     return mapped;
   } catch (error) {
     console.error("Error fetching profile:", error);

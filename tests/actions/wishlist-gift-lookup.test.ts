@@ -52,7 +52,7 @@ describe("getWishlistGiftByReference (received-page lookup)", () => {
       amount: 5000,
       giverName: "Adaeze",
       wishlistTitle: "Nomso's Christmas Wishlist",
-      sharePath: "/nomso/christmas",
+      sharePath: "/nomso/w/christmas",
       createdAt: "2026-11-25T09:30:00.000Z",
     });
     // The query itself is scoped to the reference; no email is selected.

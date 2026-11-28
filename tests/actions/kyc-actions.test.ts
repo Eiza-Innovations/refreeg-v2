@@ -8,6 +8,7 @@ jest.mock("@/lib/prisma", () => ({
       findUnique: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
       findMany: jest.fn(),
     },
     user: {
@@ -64,6 +65,7 @@ const mockPrisma = prisma as unknown as {
     findUnique: jest.Mock;
     create: jest.Mock;
     update: jest.Mock;
+    updateMany: jest.Mock;
     findMany: jest.Mock;
   };
   user: {
@@ -74,6 +76,10 @@ const mockPrisma = prisma as unknown as {
   $queryRaw: jest.Mock;
   $transaction: jest.Mock;
 };
+
+// The decision email is fire-and-forget, so tests flush pending microtasks
+// before asserting on it.
+const flushEmail = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 const personalData = {
   fullName: "Test User",
@@ -92,7 +98,6 @@ describe("kyc-actions", () => {
     (sendKycReminderEmail as jest.Mock).mockResolvedValue({ success: true });
   });
 
-  // Skipped: uploadKycDocument is not implemented in actions/kyc-actions.ts.
   describe("getVerificationStatus", () => {
     it("returns verification with proxied document URL", async () => {
       mockPrisma.kyc_verifications.findFirst.mockResolvedValue({
@@ -145,7 +150,6 @@ describe("kyc-actions", () => {
         document_url: "uuid-123:::https://verify.didit.me/session/shortURL",
       });
 
-      // Mock Didit GET session and Webhook simulate
       const originalFetch = global.fetch;
       global.fetch = jest.fn().mockImplementation((url) => {
         if (url.includes("verification.didit.me")) {
@@ -175,7 +179,6 @@ describe("kyc-actions", () => {
         "https://verify.didit.me/session/shortURL",
       );
 
-      // Restore fetch
       global.fetch = originalFetch;
     });
 
@@ -265,9 +268,10 @@ describe("kyc-actions", () => {
     it("approves verification and sends email", async () => {
       (getCurrentUser as jest.Mock).mockResolvedValue({ id: "admin-1" });
       (isAdminOrManager as jest.Mock).mockResolvedValue(true);
-      mockPrisma.kyc_verifications.update.mockResolvedValue({});
+      mockPrisma.kyc_verifications.updateMany.mockResolvedValue({ count: 1 });
       mockPrisma.kyc_verifications.findUnique.mockResolvedValue({
         user_id: "user-1",
+        status: "pending",
         full_name: "Test User",
       });
       mockPrisma.user.findUnique.mockResolvedValue({
@@ -277,6 +281,7 @@ describe("kyc-actions", () => {
       mockPrisma.$queryRaw.mockResolvedValue([]);
 
       const result = await updateVerificationStatus("kyc-1", "approved");
+      await flushEmail();
 
       expect(result).toEqual({ error: null });
       expect(logAdminActivity).toHaveBeenCalledWith("approve-kyc", "admin-1");
@@ -285,6 +290,50 @@ describe("kyc-actions", () => {
         "Test User",
       );
       expect(revalidatePath).toHaveBeenCalledWith("/dashboard/admin/users");
+    });
+
+    it("skips the email and Didit sync when the decision is already in place", async () => {
+      (getCurrentUser as jest.Mock).mockResolvedValue({ id: "admin-1" });
+      (isAdminOrManager as jest.Mock).mockResolvedValue(true);
+      mockPrisma.kyc_verifications.findUnique.mockResolvedValue({
+        user_id: "user-1",
+        status: "approved",
+        full_name: "Test User",
+        document_type: "didit",
+        document_url: "https://verification.didit.me/session/abc",
+      });
+      mockPrisma.user.findUnique.mockResolvedValue({
+        email: "user@test.com",
+      });
+
+      const result = await updateVerificationStatus("kyc-1", "approved");
+      await flushEmail();
+
+      expect(result).toEqual({ error: null, alreadyProcessed: true });
+      expect(mockPrisma.kyc_verifications.updateMany).not.toHaveBeenCalled();
+      expect(sendKycApprovedEmail).not.toHaveBeenCalled();
+      expect(logAdminActivity).not.toHaveBeenCalled();
+    });
+
+    it("skips side effects when a concurrent submit claimed the decision first", async () => {
+      (getCurrentUser as jest.Mock).mockResolvedValue({ id: "admin-1" });
+      (isAdminOrManager as jest.Mock).mockResolvedValue(true);
+      mockPrisma.kyc_verifications.updateMany.mockResolvedValue({ count: 0 });
+      mockPrisma.kyc_verifications.findUnique.mockResolvedValue({
+        user_id: "user-1",
+        status: "pending",
+        full_name: "Test User",
+      });
+      mockPrisma.user.findUnique.mockResolvedValue({
+        email: "user@test.com",
+      });
+
+      const result = await updateVerificationStatus("kyc-1", "approved");
+      await flushEmail();
+
+      expect(result).toEqual({ error: null, alreadyProcessed: true });
+      expect(sendKycApprovedEmail).not.toHaveBeenCalled();
+      expect(logAdminActivity).not.toHaveBeenCalled();
     });
   });
 

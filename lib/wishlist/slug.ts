@@ -13,3 +13,7 @@ export function slugifyWishlistTitle(title: string): string {
 
   return base || "wishlist";
 }
+
+export function wishlistPublicPath(w: { ownerUsername: string; slug: string }) {
+  return `/${w.ownerUsername}/w/${w.slug}`;
+}

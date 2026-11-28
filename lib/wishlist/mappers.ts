@@ -25,3 +25,13 @@ export const mapPrismaToWishlistContribution = (
   amount: Number(c.amount),
   created_at: toIso(c.created_at),
 });
+
+/** Cover-first previews: first images in item display order, imageless items skipped. */
+export const pickPreviewImages = (
+  items: { image_url: string | null | undefined }[],
+  limit = 3,
+): string[] =>
+  items
+    .map((item) => item.image_url)
+    .filter((url): url is string => Boolean(url))
+    .slice(0, limit);

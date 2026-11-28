@@ -12,6 +12,7 @@ import { Icons } from "@/components/layout/Icons";
 import { usePayment } from "@/hooks/use-payment";
 import { useValidator } from "@/hooks/use-validator";
 import { rememberAbandonedGift } from "@/lib/wishlist/gift-reminder";
+import { wishlistPublicPath } from "@/lib/wishlist/slug";
 import {
   WISHLIST_CONTRIBUTION_MIN,
   wishlistContributionSchema,
@@ -133,7 +134,10 @@ export function ContributeSheet({
         subaccounts: [],
         message: form.message.trim(),
         isAnonymous: form.isAnonymous,
-        callbackUrl: `${window.location.origin}/${ownerUsername}/${wishlistSlug}/received`,
+        callbackUrl: `${window.location.origin}${wishlistPublicPath({
+          ownerUsername: ownerUsername,
+          slug: wishlistSlug,
+        })}/received`,
       });
     } catch {}
   };
@@ -148,7 +152,10 @@ export function ContributeSheet({
           giverName: giverName === "Anonymous" ? "" : giverName,
           itemName: item.name,
           wishlistTitle,
-          wishlistUrl: `${window.location.origin}/${ownerUsername}/${wishlistSlug}`,
+          wishlistUrl: `${window.location.origin}${wishlistPublicPath({
+            ownerUsername: ownerUsername,
+            slug: wishlistSlug,
+          })}`,
           attemptedAt: new Date().toISOString(),
         });
       }

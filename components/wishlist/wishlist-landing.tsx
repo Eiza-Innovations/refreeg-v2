@@ -119,8 +119,7 @@ export function WishlistLanding({ seasonal }: { seasonal: boolean }) {
           <div className="wl-landing-actions mt-7 flex flex-col items-center gap-3">
             <Button
               asChild
-              variant="lime"
-              className="h-14 w-full rounded-2xl px-8 text-base font-semibold text-ink shadow-[0_10px_24px_-12px_hsl(var(--forest)/0.7)] sm:w-auto"
+              className="h-14 w-full rounded-2xl bg-brand-blue px-8 text-base font-semibold text-brand-blue-foreground shadow-[0_10px_24px_-12px_hsl(var(--forest)/0.7)] hover:bg-brand-blue/90 sm:w-auto"
             >
               <Link href="/dashboard/wishlists/create">
                 Create your wishlist

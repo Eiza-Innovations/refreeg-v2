@@ -84,6 +84,12 @@ export interface PublicWishlistSummary {
   preview_images: string[];
 }
 
+/** Public, active wishlist for the /wishlist landing carousel. */
+export interface DiscoverableWishlist extends PublicWishlistSummary {
+  ownerUsername: string;
+  ownerName: string | null;
+}
+
 export interface WishlistGiftAttempt {
   email: string;
   giverName: string;

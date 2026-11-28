@@ -14,6 +14,20 @@ import {
   STORE_REVIEW_DEMO_SAVED_CARD,
 } from "@/lib/auth/store-review-demo";
 
+const inflightCardCharges = new Set<string>();
+
+function formatCardChargeDonation(donation: any) {
+  if (!donation) return null;
+  return {
+    id: donation.id,
+    amount: Number(donation.amount),
+    donorName: donation.is_anonymous ? "Anonymous" : donation.name,
+    causeTitle: donation.cause?.title,
+    reference: donation.paystack_reference,
+    createdAt: donation.createdAt,
+  };
+}
+
 export async function OPTIONS() {
   return handleCorsPreflight();
 }
@@ -175,6 +189,13 @@ export async function POST(request: NextRequest) {
       : `mc_${Date.now()}_${crypto.randomBytes(6).toString("hex")}`;
 
     if (rawIdempotencyKey) {
+      if (inflightCardCharges.has(reference)) {
+        return apiError(
+          "A charge with this idempotency key is already in progress",
+          409,
+        );
+      }
+
       const existingDonation = await prisma.donation.findFirst({
         where: { paystack_reference: reference },
         include: {
@@ -198,98 +219,88 @@ export async function POST(request: NextRequest) {
           providerFee,
           tipAmount: tip,
           totalCharged: numAmount + totalFees,
-          donation: {
-            id: existingDonation.id,
-            amount: Number(existingDonation.amount),
-            donorName: existingDonation.is_anonymous
-              ? "Anonymous"
-              : existingDonation.name,
-            causeTitle: existingDonation.cause?.title,
-            reference: existingDonation.paystack_reference,
-            createdAt: existingDonation.createdAt,
-          },
+          donation: formatCardChargeDonation(existingDonation),
         });
       }
+
+      inflightCardCharges.add(reference);
     }
 
     const subaccount = cause.user?.subAccountCode || undefined;
 
-    // Call Paystack chargeAuthorization with bearer: "account" so providerFee
-    // is not double-deducted from the creator's subaccount.
-    const chargeResult = await Paystack.chargeAuthorization({
-      authorizationCode: card.authorization_code,
-      email: card.email || user.email,
-      amountNgn: numAmount,
-      serviceFeeNgn: totalFees,
-      reference,
-      causeId,
-      subaccount,
-      bearer: "account",
-      metadata: {
-        cause_id: causeId,
-        user_id: user.id,
-        amount: numAmount,
-        tip_amount: tip,
-        customer_name: effectiveName,
-        email: user.email,
-        message: message || "",
-        is_anonymous: Boolean(isAnonymous),
-      },
-    });
+    try {
+      // Call Paystack chargeAuthorization with bearer: "account" so providerFee
+      // is not double-deducted from the creator's subaccount.
+      const chargeResult = await Paystack.chargeAuthorization({
+        authorizationCode: card.authorization_code,
+        email: card.email || user.email,
+        amountNgn: numAmount,
+        serviceFeeNgn: totalFees,
+        reference,
+        causeId,
+        subaccount,
+        bearer: "account",
+        metadata: {
+          cause_id: causeId,
+          user_id: user.id,
+          amount: numAmount,
+          tip_amount: tip,
+          customer_name: effectiveName,
+          email: user.email,
+          message: message || "",
+          is_anonymous: Boolean(isAnonymous),
+        },
+      });
 
-    if (chargeResult.status !== "success") {
-      return apiError(
-        chargeResult.gateway_response ||
-          "Payment charge failed. Please try another card.",
-        400,
-      );
-    }
+      if (chargeResult.status !== "success") {
+        return apiError(
+          chargeResult.gateway_response ||
+            "Payment charge failed. Please try another card.",
+          400,
+        );
+      }
 
-    // Process the successful charge to record donation, update stats, notify donor
-    const processResult = await processSuccessfulCharge(reference);
-    if (!processResult.ok) {
-      return apiError(
-        `Payment succeeded but could not be recorded: ${processResult.reason}`,
-        422,
-      );
-    }
+      // Process the successful charge to record donation, update stats, notify donor
+      const processResult = await processSuccessfulCharge(reference);
+      if (!processResult.ok) {
+        return apiError(
+          `Payment succeeded but could not be recorded: ${processResult.reason}`,
+          422,
+        );
+      }
 
-    // Fetch created donation details
-    const donation = await prisma.donation.findFirst({
-      where: { paystack_reference: reference },
-      include: {
-        cause: {
-          select: {
-            id: true,
-            title: true,
-            raised: true,
-            goal: true,
+      // Fetch created donation details
+      const donation = await prisma.donation.findFirst({
+        where: { paystack_reference: reference },
+        include: {
+          cause: {
+            select: {
+              id: true,
+              title: true,
+              raised: true,
+              goal: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    return apiSuccess({
-      status: "success",
-      reference,
-      amount: numAmount,
-      serviceFee,
-      providerFee,
-      tipAmount: tip,
-      totalCharged: numAmount + totalFees,
-      donation: donation
-        ? {
-            id: donation.id,
-            amount: Number(donation.amount),
-            donorName: donation.is_anonymous ? "Anonymous" : donation.name,
-            causeTitle: donation.cause?.title,
-            reference: donation.paystack_reference,
-            createdAt: donation.createdAt,
-          }
-        : null,
-    });
+      return apiSuccess({
+        status: "success",
+        reference,
+        amount: numAmount,
+        serviceFee,
+        providerFee,
+        tipAmount: tip,
+        totalCharged: numAmount + totalFees,
+        donation: formatCardChargeDonation(donation),
+      });
+    } finally {
+      if (rawIdempotencyKey) {
+        inflightCardCharges.delete(reference);
+      }
+    }
   } catch (error: any) {
     console.error("Error charging saved card:", error);
-    return apiError(error.message || "Failed to process card payment", 500);
+    return apiError("Failed to process card payment", 500);
   }
 }

@@ -49,6 +49,7 @@ export function OwnerToolbar({
   const [details, setDetails] = useState({
     title: wishlist.title,
     message: wishlist.message ?? "",
+    isPublic: wishlist.is_public,
   });
   const validator = useValidator({
     store: details,
@@ -61,6 +62,7 @@ export function OwnerToolbar({
     const result = await updateWishlist(wishlist.id, {
       title: details.title,
       message: details.message || undefined,
+      isPublic: details.isPublic,
     });
     setSaving(false);
     if (!result.success || !result.data) {
@@ -100,6 +102,7 @@ export function OwnerToolbar({
           setDetails({
             title: wishlist.title,
             message: wishlist.message ?? "",
+            isPublic: wishlist.is_public,
           });
           setDetailsOpen(true);
         }}
@@ -173,6 +176,31 @@ export function OwnerToolbar({
               {validator.errors.message}
             </p>
           )}
+          <div className="mt-4 rounded-xl border border-hairline bg-bone p-3">
+            <label
+              htmlFor="toolbar-public"
+              className="flex cursor-pointer items-start gap-3"
+            >
+              {/* Native input: Radix Checkbox loops on its ref under React 19 here. */}
+              <input
+                id="toolbar-public"
+                type="checkbox"
+                checked={details.isPublic}
+                onChange={(e) =>
+                  setDetails({ ...details, isPublic: e.target.checked })
+                }
+                className="mt-0.5 h-4 w-4 shrink-0 accent-ink"
+              />
+              <span className="text-sm leading-6">
+                <span className="font-medium text-ink">Public wishlist</span>
+                <span className="block text-ink/60">
+                  Show this wishlist on the Wishlist page and your profile so
+                  others can find it. Untick to keep it private, so only people
+                  with your link can open it.
+                </span>
+              </span>
+            </label>
+          </div>
           <div className="mt-5 flex justify-end gap-2.5">
             <Button
               variant="surface"

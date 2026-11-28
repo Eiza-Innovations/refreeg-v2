@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { formatNaira } from "@/components/giving/format";
 import { formatDate } from "@/components/profile/profile-display";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
+import { wishlistPublicPath } from "@/lib/wishlist/slug";
 import type { PublicWishlistSummary } from "@/types/wishlist-types";
 
 interface ProfileWishlistCardProps {
@@ -37,7 +38,10 @@ export function ProfileWishlistCard({
     <Card variant="surface" className="shadow-none">
       <CardContent className="p-5">
         <Link
-          href={`/${username}/${wishlist.slug}`}
+          href={wishlistPublicPath({
+            ownerUsername: username,
+            slug: wishlist.slug,
+          })}
           className="group flex items-start gap-4"
         >
           {preview ? (
