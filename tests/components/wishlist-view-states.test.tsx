@@ -1,3 +1,7 @@
+jest.mock("@/lib/auth/auth", () => ({
+  auth: jest.fn(),
+}));
+
 jest.mock("@/actions/wishlists/wishlist-actions", () => ({
   reorderWishlistItems: jest.fn(),
   deleteWishlistItem: jest.fn(),
@@ -82,8 +86,6 @@ describe("WishlistView states", () => {
   it("shows the owner an empty-list call to action with the page outline intact", () => {
     renderView({ viewerIsOwner: true, viewer });
 
-    // The wishlist title stays the page's single h1; the empty state is a
-    // section heading, not a second document title.
     expect(
       screen.getByRole("heading", { name: "Nomso's Wishlist", level: 1 }),
     ).toBeInTheDocument();
@@ -110,8 +112,6 @@ describe("WishlistView states", () => {
 
   it("switches the eyebrow with the season", () => {
     const { unmount } = renderView();
-    // The accent word renders in its own span (the "lands." styling), so
-    // match the eyebrow element by its full text.
     const eyebrow = (text: string) =>
       screen.getByText(
         (_, el) =>
@@ -190,8 +190,6 @@ describe("WishlistView states", () => {
       screen.getByText("Funded before this wishlist was archived."),
     ).toBeInTheDocument();
 
-    // The owner can still manage the list: unarchive is offered, adding is
-    // not (new items would be invisible to the paused link's purpose).
     expect(
       screen.queryByRole("button", { name: /Add an item/ }),
     ).not.toBeInTheDocument();
